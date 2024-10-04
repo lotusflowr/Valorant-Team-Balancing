@@ -1,7 +1,7 @@
 /** @OnlyCurrentDoc */
 let TIME_SLOTS = getTimeSlots();
 let GAME_DAY = getGameDay();
-const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
+const DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
 const TIME_SLOTS_COLUMN = 5;
 const TEAM_SIZE = 5;
 
@@ -10,7 +10,7 @@ function onOpen() {
   ui.createMenu('SCRIPTS')
     .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
-    .addItem('Clear All Sheets', 'clearAllSheets')
+    .addItem('Clear Responses', 'clearResponses')
     .addToUi();
 }
 
@@ -643,46 +643,40 @@ function getRankName(rankValue) {
   return rankNames[rankValue - 1] || "Unranked";
 }
 
-function clearAllSheets() {
+function clearResponses() {
+  // Get the active spreadsheet
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Get the UI
   var ui = SpreadsheetApp.getUi();
+
+  // Get the first sheet
+  var sheet = ss.getSheets()[0];
   
-  // Show a confirmation dialog
-  var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all data from Form Responses, Teams, and Discord Pings sheets? This action cannot be undone.', ui.ButtonSet.YES_NO);
+  // Get the number of rows in the sheet
+  var lastRow = sheet.getLastRow();
   
-  // If the user clicks "Yes", proceed with deletion
-  if (response == ui.Button.YES) {
-    // Clear Form Responses (first sheet)
-    var formResponsesSheet = ss.getSheets()[0];
-    var lastRow = formResponsesSheet.getLastRow();
-    if (lastRow > 1) {
-      formResponsesSheet.getRange(2, 1, lastRow - 1, formResponsesSheet.getLastColumn()).clear();
-    }
-    
-    // Clear Teams sheet
-    var teamsSheet = ss.getSheetByName("Teams");
-    if (teamsSheet) {
-      teamsSheet.clear();
+  // Check if there are any rows to delete
+  if (lastRow > 1) {
+    // Show a confirmation dialog
+    var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all responses? This action cannot be undone.', ui.ButtonSet.YES_NO);
+
+    // If the user clicks "Yes", proceed with deletion
+    if (response == ui.Button.YES) {
+      // Delete all rows below the header
+      sheet.deleteRows(2, lastRow - 1);
+      
+      // Log the action
+      Logger.log("Cleared all responses from the Forms Responses sheet.");
+      
+      // Show a confirmation message
+      ui.alert('Success', 'All responses have been cleared.', ui.ButtonSet.OK);
     } else {
-      Logger.log("Teams sheet not found.");
+      // If the user clicks "No", log that the operation was cancelled
+      Logger.log("Clear responses operation cancelled by user.");
     }
-    
-    // Clear Discord Pings sheet
-    var discordPingsSheet = ss.getSheetByName("Discord Pings");
-    if (discordPingsSheet) {
-      discordPingsSheet.clear();
-    } else {
-      Logger.log("Discord Pings sheet not found.");
-    }
-    
-    // Log the action
-    Logger.log("Cleared all data from Form Responses, Teams, and Discord Pings sheets.");
-    
-    // Show a confirmation message
-    ui.alert('Success', 'All data has been cleared from Form Responses, Teams, and Discord Pings sheets.', ui.ButtonSet.OK);
   } else {
-    // If the user clicks "No", log that the operation was cancelled
-    Logger.log("Clear all sheets operation cancelled by user.");
-    ui.alert('Cancelled', 'Operation cancelled. No data was cleared.', ui.ButtonSet.OK);
+    // If there are no responses to clear, inform the user
+    ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
   }
 }
