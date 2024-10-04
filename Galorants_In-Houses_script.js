@@ -1,13 +1,8 @@
 /** @OnlyCurrentDoc */
-const TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
-const GAME_DAY = "Saturday"; 
-const TEAM_SIZE = 5;
-
-/** @OnlyCurrentDoc */
 let TIME_SLOTS = getTimeSlots();
+let GAME_DAY = getGameDay();
 const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
 const TIME_SLOTS_COLUMN = 5;
-const GAME_DAY = "Sunday"; 
 const TEAM_SIZE = 5;
 
 function onOpen() {
@@ -15,7 +10,7 @@ function onOpen() {
   ui.createMenu('SCRIPTS')
     .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
-    .addItem('Clear Responses', 'clearResponses')
+    .addItem('Clear All Sheets', 'clearAllSheets')
     .addToUi();
 }
 
@@ -30,15 +25,26 @@ function setTimeSlots(newTimeSlots) {
   scriptProperties.setProperty('TIME_SLOTS', JSON.stringify(newTimeSlots));
 }
 
+function getGameDay() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Sunday if not set
+}
+
+function setGameDay(newGameDay) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperty('GAME_DAY', newGameDay);
+}
+
 function manageTimeSlots() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
-    'Manage Time Slots',
-    `Do you want to change the time slots? (Default is "${DEFAULT_TIME_SLOTS.join(", ")}")\n\n` +
+    'Manage Time Slots and Game Day',
+    `Current settings:\n` +
+    `Game Day: ${GAME_DAY}\n` +
+    `Time Slots: ${TIME_SLOTS.join(", ")}\n\n` +
     'Enter your choice:\n' +
-    '[M]: Manually input time slots\n' +
-    '[A]: Automatically find the time slots from the "Time Slots" column (if available)\n' +
-    '[C]: Cancel (Keep current time slots)',
+    '[1]: Manage Time Slots\n' +
+    '[2]: Change Game Day\n',
     ui.ButtonSet.OK_CANCEL
   );
 
@@ -46,22 +52,77 @@ function manageTimeSlots() {
     const choice = result.getResponseText().trim().toUpperCase();
     
     switch (choice) {
-      case 'M':
-        manuallyInputTimeSlots();
+      case '1':
+        manageTimeSlotsMenu();
         break;
-      case 'A':
-        setAutomaticTimeSlots();
-        break;
-      case 'C':
-        ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
+      case '2':
+        changeGameDay();
         break;
       default:
-        ui.alert('Invalid Choice', 'Please enter M, A, or C.', ui.ButtonSet.OK);
+        ui.alert('Invalid Choice', 'Please enter T, G, or click on Cancel.', ui.ButtonSet.OK);
         manageTimeSlots(); // Recursive call to try again
     }
   } else {
     // User clicked Cancel or closed the dialog
+    ui.alert('Cancelled', 'Settings management was cancelled. Current settings remain unchanged.', ui.ButtonSet.OK);
+  }
+}
+
+function manageTimeSlotsMenu() {
+  const ui = SpreadsheetApp.getUi();
+  const result = ui.prompt(
+    'Manage Time Slots',
+    `Current Time Slots: ${TIME_SLOTS.join(", ")}\n\n` +
+    'Enter your choice:\n' +
+    '[1]: Automatically determines the time slots from the "Time Slots" column (if available)\n' +
+    '[2]: Manually input time slots\n' +
+    '[3]: Cancel (Keep current time slots)',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (result.getSelectedButton() == ui.Button.OK) {
+    const choice = result.getResponseText().trim().toUpperCase();
+    
+    switch (choice) {
+      case '1':
+        setAutomaticTimeSlots();
+        break;
+      case '2':
+        manuallyInputTimeSlots();
+        break;
+      case '3':
+        ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
+        break;
+      default:
+        ui.alert('Invalid Choice', 'Please enter M, A, or C.', ui.ButtonSet.OK);
+        manageTimeSlotsMenu(); // Recursive call to try again
+    }
+  } else {
+    // User clicked Cancel or closed the dialog
     ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
+  }
+}
+
+function changeGameDay() {
+  const ui = SpreadsheetApp.getUi();
+  const result = ui.prompt(
+    'Change Game Day',
+    `Current Game Day: ${GAME_DAY}\n\n` +
+    'Enter the new game day (e.g., "Sunday", "Monday", etc.):',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (result.getSelectedButton() == ui.Button.OK) {
+    const newGameDay = result.getResponseText().trim();
+    if (newGameDay) {
+      setGameDay(newGameDay);
+      GAME_DAY = newGameDay; // Update the current script's variable
+      ui.alert('Game Day Updated', `Game day has been set to: ${GAME_DAY}`, ui.ButtonSet.OK);
+    } else {
+      ui.alert('No Input', 'No game day was entered. Keeping the current game day.', ui.ButtonSet.OK);
+    }
+  } else {
+    ui.alert('Cancelled', 'Game day change was cancelled. Current game day remains unchanged.', ui.ButtonSet.OK);
   }
 }
 
@@ -117,10 +178,14 @@ function setAutomaticTimeSlots() {
 
 function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function started");
-  TIME_SLOTS = getTimeSlots(); 
+
+  // Update Time and Day variables
+  TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
+  GAME_DAY = getGameDay(); // Refresh GAME_DAY at the start of the function
+
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const playersSheet = ss.getActiveSheet();
+    const playersSheet = ss.getSheets()[0];
     const teamsSheet = ss.getSheetByName("Teams") || ss.insertSheet("Teams");
 
     Logger.log("Sheets retrieved successfully");
@@ -578,40 +643,46 @@ function getRankName(rankValue) {
   return rankNames[rankValue - 1] || "Unranked";
 }
 
-function clearResponses() {
-  // Get the active spreadsheet
+function clearAllSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Get the UI
   var ui = SpreadsheetApp.getUi();
-
-  // Get the first sheet
-  var sheet = ss.getSheets()[0];
   
-  // Get the number of rows in the sheet
-  var lastRow = sheet.getLastRow();
+  // Show a confirmation dialog
+  var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all data from Form Responses, Teams, and Discord Pings sheets? This action cannot be undone.', ui.ButtonSet.YES_NO);
   
-  // Check if there are any rows to delete
-  if (lastRow > 1) {
-    // Show a confirmation dialog
-    var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all responses? This action cannot be undone.', ui.ButtonSet.YES_NO);
-
-    // If the user clicks "Yes", proceed with deletion
-    if (response == ui.Button.YES) {
-      // Delete all rows below the header
-      sheet.deleteRows(2, lastRow - 1);
-      
-      // Log the action
-      Logger.log("Cleared all responses from the Forms Responses sheet.");
-      
-      // Show a confirmation message
-      ui.alert('Success', 'All responses have been cleared.', ui.ButtonSet.OK);
-    } else {
-      // If the user clicks "No", log that the operation was cancelled
-      Logger.log("Clear responses operation cancelled by user.");
+  // If the user clicks "Yes", proceed with deletion
+  if (response == ui.Button.YES) {
+    // Clear Form Responses (first sheet)
+    var formResponsesSheet = ss.getSheets()[0];
+    var lastRow = formResponsesSheet.getLastRow();
+    if (lastRow > 1) {
+      formResponsesSheet.getRange(2, 1, lastRow - 1, formResponsesSheet.getLastColumn()).clear();
     }
+    
+    // Clear Teams sheet
+    var teamsSheet = ss.getSheetByName("Teams");
+    if (teamsSheet) {
+      teamsSheet.clear();
+    } else {
+      Logger.log("Teams sheet not found.");
+    }
+    
+    // Clear Discord Pings sheet
+    var discordPingsSheet = ss.getSheetByName("Discord Pings");
+    if (discordPingsSheet) {
+      discordPingsSheet.clear();
+    } else {
+      Logger.log("Discord Pings sheet not found.");
+    }
+    
+    // Log the action
+    Logger.log("Cleared all data from Form Responses, Teams, and Discord Pings sheets.");
+    
+    // Show a confirmation message
+    ui.alert('Success', 'All data has been cleared from Form Responses, Teams, and Discord Pings sheets.', ui.ButtonSet.OK);
   } else {
-    // If there are no responses to clear, inform the user
-    ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
+    // If the user clicks "No", log that the operation was cancelled
+    Logger.log("Clear all sheets operation cancelled by user.");
+    ui.alert('Cancelled', 'Operation cancelled. No data was cleared.', ui.ButtonSet.OK);
   }
 }
