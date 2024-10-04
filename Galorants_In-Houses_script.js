@@ -3,20 +3,124 @@ const TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
 const GAME_DAY = "Saturday"; 
 const TEAM_SIZE = 5;
 
+/** @OnlyCurrentDoc */
+let TIME_SLOTS = getTimeSlots();
+const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
+const TIME_SLOTS_COLUMN = 5;
+const GAME_DAY = "Sunday"; 
+const TEAM_SIZE = 5;
+
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('SCRIPTS')
+    .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
     .addItem('Clear Responses', 'clearResponses')
     .addToUi();
 }
 
+function getTimeSlots() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const storedTimeSlots = scriptProperties.getProperty('TIME_SLOTS');
+  return storedTimeSlots ? JSON.parse(storedTimeSlots) : DEFAULT_TIME_SLOTS;
+}
+
+function setTimeSlots(newTimeSlots) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperty('TIME_SLOTS', JSON.stringify(newTimeSlots));
+}
+
+function manageTimeSlots() {
+  const ui = SpreadsheetApp.getUi();
+  const result = ui.prompt(
+    'Manage Time Slots',
+    `Do you want to change the time slots? (Default is "${DEFAULT_TIME_SLOTS.join(", ")}")\n\n` +
+    'Enter your choice:\n' +
+    '[M]: Manually input time slots\n' +
+    '[A]: Automatically find the time slots from the "Time Slots" column (if available)\n' +
+    '[C]: Cancel (Keep current time slots)',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (result.getSelectedButton() == ui.Button.OK) {
+    const choice = result.getResponseText().trim().toUpperCase();
+    
+    switch (choice) {
+      case 'M':
+        manuallyInputTimeSlots();
+        break;
+      case 'A':
+        setAutomaticTimeSlots();
+        break;
+      case 'C':
+        ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
+        break;
+      default:
+        ui.alert('Invalid Choice', 'Please enter M, A, or C.', ui.ButtonSet.OK);
+        manageTimeSlots(); // Recursive call to try again
+    }
+  } else {
+    // User clicked Cancel or closed the dialog
+    ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
+  }
+}
+
+function manuallyInputTimeSlots() {
+  const ui = SpreadsheetApp.getUi();
+  const result = ui.prompt(
+    'Set Custom Time Slots',
+    'Please enter time slots separated by commas (e.g., "6pm PST/9pm EST, 7pm PST/10pm EST"):',
+    ui.ButtonSet.OK_CANCEL);
+
+  const button = result.getSelectedButton();
+  const text = result.getResponseText();
+  
+  if (button == ui.Button.OK) {
+    if (text) {
+      const newTimeSlots = text.split(',').map(slot => slot.trim());
+      setTimeSlots(newTimeSlots); // Store the new time slots
+      TIME_SLOTS = newTimeSlots; // Update the current script's variable
+      ui.alert('Time Slots Set', `Time slots have been set to: ${TIME_SLOTS.join(", ")}`, ui.ButtonSet.OK);
+    } else {
+      ui.alert('No Input', 'No time slots were entered. Using current time slots.', ui.ButtonSet.OK);
+    }
+  } else if (button == ui.Button.CANCEL) {
+    ui.alert('Cancelled', 'Manual time slot setting was cancelled. Using current time slots.', ui.ButtonSet.OK);
+  }
+}
+
+function setAutomaticTimeSlots() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheets()[0]; // Get the first sheet
+  
+  // Get time slots from the 5th column
+  const timeSlotsRange = sheet.getRange(2, TIME_SLOTS_COLUMN, sheet.getLastRow() - 1, 1);
+  const timeSlotValues = timeSlotsRange.getValues().flat().filter(Boolean);
+  
+  // Split any combined time slots
+  const splitTimeSlots = timeSlotValues.flatMap(slot => slot.split(',').map(s => s.trim()));
+  
+  // Use Set to remove duplicates, then convert back to array
+  const uniqueTimeSlots = [...new Set(splitTimeSlots)];
+  
+  if (uniqueTimeSlots.length > 0) {
+    setTimeSlots(uniqueTimeSlots); // Store the new time slots
+    TIME_SLOTS = uniqueTimeSlots; // Update the current script's variable
+    const message = `Time slots have been set to: ${TIME_SLOTS.join(", ")}`;
+    ui.alert('Time Slots Updated', message, ui.ButtonSet.OK);
+  } else {
+    ui.alert('No Time Slots Found', 'No time slots were found in the "Time Slots" column. Using current time slots.', ui.ButtonSet.OK);
+  }
+}
+
+
 function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function started");
-  
+  TIME_SLOTS = getTimeSlots(); 
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const playersSheet = ss.getSheets()[0];
+    const playersSheet = ss.getActiveSheet();
     const teamsSheet = ss.getSheetByName("Teams") || ss.insertSheet("Teams");
 
     Logger.log("Sheets retrieved successfully");
@@ -49,6 +153,51 @@ function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function completed");
 }
 
+function getPlayersData(sheet) {
+  const data = sheet.getDataRange().getValues();
+  Logger.log(`Raw data: ${JSON.stringify(data.slice(0, 2))}`);
+
+  if (data.length < 2) {
+    Logger.log("Not enough data in the sheet. Make sure there's at least one player entry.");
+    return [];
+  }
+
+  const players = data.slice(1).map((row, index) => {
+    const player = {
+      timestamp: row[0],
+      discordUsername: row[1],
+      riotID: row[2],
+      pronouns: row[3],
+      timeSlots: row[TIME_SLOTS_COLUMN - 1] ? row[TIME_SLOTS_COLUMN - 1].toString().split(',').map(s => s.trim()) : TIME_SLOTS,
+      multipleGames: row[5],
+      substitute: row[6].toString().toLowerCase() === 'yes',
+      lobbyHost: row[7],
+      duo: row[8],
+      currentRank: getRankValue(row[9]),
+      peakRank: getRankValue(row[10]),
+    };
+    player.averageRank = (player.currentRank + player.peakRank) / 2;
+
+    Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername}, Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}), Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
+
+    return player;
+  });
+
+  const validPlayers = players.filter(player => {
+    const isValid = player.currentRank > 0 || player.peakRank > 0;
+    if (!isValid) {
+      Logger.log(`Filtered out player: ${player.discordUsername} (Current Rank: ${player.currentRank}, Peak Rank: ${player.peakRank})`);
+    }
+    return isValid;
+  });
+
+  Logger.log(`Number of players before filtering: ${players.length}`);
+  Logger.log(`Number of players after filtering: ${validPlayers.length}`);
+  Logger.log(`Sample player data: ${JSON.stringify(validPlayers[0])}`);
+
+  return validPlayers;
+}
+
 function createOptimalTeams(players) {
   let result = {
     teams: [],
@@ -68,7 +217,6 @@ function createOptimalTeams(players) {
 
   return result;
 }
-
 
 function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   const numPlayers = players.length;
@@ -128,51 +276,6 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
 function getTeamSpread(teams) {
   const totals = teams.map(team => team.total);
   return Math.max(...totals) - Math.min(...totals);
-}
-
-function getPlayersData(sheet) {
-  const data = sheet.getDataRange().getValues();
-  Logger.log(`Raw data: ${JSON.stringify(data.slice(0, 2))}`); // Log headers and first row
-
-  if (data.length < 2) {
-    Logger.log("Not enough data in the sheet. Make sure there's at least one player entry.");
-    return [];
-  }
-
-  const players = data.slice(1).map((row, index) => {
-    const player = {
-      timestamp: row[0],
-      discordUsername: row[1],
-      riotID: row[2],
-      pronouns: row[3],
-      timeSlots: row[4] ? row[4].toString().split(',').map(s => s.trim()) : [],
-      multipleGames: row[5],
-      substitute: row[6].toString().toLowerCase() === 'yes',
-      lobbyHost: row[7],
-      duo: row[8],
-      currentRank: getRankValue(row[9]),
-      peakRank: getRankValue(row[10]),
-    };
-    player.averageRank = (player.currentRank + player.peakRank) / 2;
-
-    Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername}, Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}), Substitute: ${player.substitute}`);
-
-    return player;
-  });
-
-  const validPlayers = players.filter(player => {
-    const isValid = player.currentRank > 0 || player.peakRank > 0;
-    if (!isValid) {
-      Logger.log(`Filtered out player: ${player.discordUsername} (Current Rank: ${player.currentRank}, Peak Rank: ${player.peakRank})`);
-    }
-    return isValid;
-  });
-
-  Logger.log(`Number of players before filtering: ${players.length}`);
-  Logger.log(`Number of players after filtering: ${validPlayers.length}`);
-  Logger.log(`Sample player data: ${JSON.stringify(validPlayers[0])}`);
-
-  return validPlayers;
 }
 
 function writeTeamsToSheet(sheet, teamsAndSubs) {
@@ -450,29 +553,29 @@ function getRankValue(rank) {
     "Iron 1": 1, "Iron 2": 2, "Iron 3": 3,
     "Bronze 1": 4, "Bronze 2": 5, "Bronze 3": 6,
     "Silver 1": 7, "Silver 2": 8, "Silver 3": 9,
-    "Gold 1": 11, "Gold 2": 12, "Gold 3": 13,
-    "Platinum 1": 15, "Platinum 2": 16, "Platinum 3": 17,
-    "Diamond 1": 19, "Diamond 2": 20, "Diamond 3": 21,
-    "Ascendant 1": 24, "Ascendant 2": 25, "Ascendant 3": 26,
-    "Immortal 1": 29, "Immortal 2": 31, "Immortal 3": 34,
-    "Radiant": 36
+    "Gold 1": 10, "Gold 2": 11, "Gold 3": 12,
+    "Platinum 1": 13, "Platinum 2": 14, "Platinum 3": 15,
+    "Diamond 1": 16, "Diamond 2": 17, "Diamond 3": 18,
+    "Ascendant 1": 19, "Ascendant 2": 20, "Ascendant 3": 21,
+    "Immortal 1": 22, "Immortal 2": 23, "Immortal 3": 24,
+    "Radiant": 25
   };
   return ranks[rank] || 0;
 }
 
 function getRankName(rankValue) {
-  const rankNames = {
-    1: "Iron 1", 2: "Iron 2", 3: "Iron 3",
-    4: "Bronze 1", 5: "Bronze 2", 6: "Bronze 3",
-    7: "Silver 1", 8: "Silver 2", 9: "Silver 3",
-    11: "Gold 1", 12: "Gold 2", 13: "Gold 3",
-    15: "Platinum 1", 16: "Platinum 2", 17: "Platinum 3",
-    19: "Diamond 1", 20: "Diamond 2", 21: "Diamond 3",
-    24: "Ascendant 1", 25: "Ascendant 2", 26: "Ascendant 3",
-    29: "Immortal 1", 31: "Immortal 2", 34: "Immortal 3",
-    36: "Radiant"
-  };
-  return rankNames[rankValue] || "Unranked";
+  const rankNames = [
+    "Iron 1", "Iron 2", "Iron 3",
+    "Bronze 1", "Bronze 2", "Bronze 3",
+    "Silver 1", "Silver 2", "Silver 3",
+    "Gold 1", "Gold 2", "Gold 3",
+    "Platinum 1", "Platinum 2", "Platinum 3",
+    "Diamond 1", "Diamond 2", "Diamond 3",
+    "Ascendant 1", "Ascendant 2", "Ascendant 3",
+    "Immortal 1", "Immortal 2", "Immortal 3",
+    "Radiant"
+  ];
+  return rankNames[rankValue - 1] || "Unranked";
 }
 
 function clearResponses() {
