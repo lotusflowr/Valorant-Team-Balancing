@@ -304,32 +304,37 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   // Sort players by average rank (descending)
   const sortedPlayers = players.slice().sort((a, b) => b.averageRank - a.averageRank);
 
-  // Distribute top players evenly
-  for (let i = 0; i < teams.length; i++) {
-    if (sortedPlayers.length > 0) {
-      const player = sortedPlayers.shift();
-      teams[i].players.push(player);
-      teams[i].total += player.averageRank;
+  // Calculate the number of substitutes
+  const numSubstitutes = Math.max(0, numPlayers - (adjustedNumTeams * TEAM_SIZE));
+
+  // Distribute players evenly across teams and substitutes
+  let substituteIndex = 0;
+  const substitutes = [];
+  for (let i = 0; i < sortedPlayers.length; i++) {
+    const player = sortedPlayers[i];
+    if (i % (adjustedNumTeams + 1) === 0 && substitutes.length < numSubstitutes) {
+      // Add to substitutes
+      substitutes.push(player);
+    } else {
+      // Add to team
+      const teamIndex = i % teams.length;
+      teams[teamIndex].players.push(player);
+      teams[teamIndex].total += player.averageRank;
     }
   }
 
-  // Distribute remaining players using greedy approach
-  while (sortedPlayers.length > 0) {
-    // Find the team with the lowest total rank and fewer than TEAM_SIZE players
-    const eligibleTeams = teams.filter(team => team.players.length < TEAM_SIZE);
-    if (eligibleTeams.length === 0) break; // No more space in teams
-
-    const teamWithLowestRank = eligibleTeams.reduce((prev, curr) => 
-      (prev.total < curr.total ? prev : curr)
-    );
-
-    const player = sortedPlayers.shift();
-    teamWithLowestRank.players.push(player);
-    teamWithLowestRank.total += player.averageRank;
+  // Optimize team balance
+  for (let iteration = 0; iteration < 100; iteration++) {
+    let improved = false;
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = i + 1; j < teams.length; j++) {
+        if (trySwapPlayers(teams[i], teams[j])) {
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
   }
-
-  // Handle substitutes (any remaining players)
-  const substitutes = sortedPlayers;
 
   // Calculate team spread for logging
   const teamSpread = getTeamSpread(teams);
@@ -340,6 +345,30 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     substitutes,
     assignedPlayers: new Set([...assignedPlayers, ...teams.flatMap(team => team.players.map(p => p.discordUsername))])
   };
+}
+
+function trySwapPlayers(team1, team2) {
+  for (let i = 0; i < team1.players.length; i++) {
+    for (let j = 0; j < team2.players.length; j++) {
+      const diff1 = team1.players[i].averageRank - team2.players[j].averageRank;
+      const newTotal1 = team1.total - diff1;
+      const newTotal2 = team2.total + diff1;
+
+      if (Math.abs(newTotal1 - newTotal2) < Math.abs(team1.total - team2.total)) {
+        // Swap players
+        const temp = team1.players[i];
+        team1.players[i] = team2.players[j];
+        team2.players[j] = temp;
+
+        // Update totals
+        team1.total = newTotal1;
+        team2.total = newTotal2;
+
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function getTeamSpread(teams) {
@@ -380,16 +409,18 @@ function writeTeamsToSheet(sheet, teamsAndSubs) {
         .setHorizontalAlignment("center");
       
       // Add Team Total in the same row
-      sheet.getRange(rowIndex + 1, 6)
-        .setFontWeight("bold")
+      const totalCell = sheet.getRange(rowIndex + 1, 6);
+      totalCell.setFontWeight("bold")
         .setBackground(teamColor)
         .setFontColor("#000000")
         .setFontSize(12)
         .setHorizontalAlignment("right");
       
-      // Add formula for team total
-      const totalFormula = `SUM($F${rowIndex + 3}:$F${rowIndex + 3 + TEAM_SIZE - 1})`;
-      sheet.getRange(rowIndex + 1, 6).setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
+      // Add formula for team total using column and row references
+      const startRow = rowIndex + 3;
+      const endRow = startRow + TEAM_SIZE - 1;
+      const totalFormula = `SUM($F${startRow}:$F${endRow})`;
+      totalCell.setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
       
       rowIndex++;
 
