@@ -290,52 +290,40 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   // Ensure even number of teams
   const adjustedNumTeams = numTeams % 2 === 0 ? numTeams : numTeams - 1;
   
-  let bestTeams = null;
-  let minSpread = Infinity;
-
-  // Sort players: prioritize those who haven't played yet, then by average rank
-  players.sort((a, b) => {
-    if (assignedPlayers.has(a.discordUsername) && !assignedPlayers.has(b.discordUsername)) return 1;
-    if (!assignedPlayers.has(a.discordUsername) && assignedPlayers.has(b.discordUsername)) return -1;
-    return b.averageRank - a.averageRank;
-  });
-
-  // Try different team configurations
-  for (let attempt = 0; attempt < 1000; attempt++) {
-    const teams = [];
-    for (let i = 0; i < adjustedNumTeams; i++) {
-      teams.push({
-        name: `Team ${i + 1}`,
-        timeSlot: timeSlot,
-        players: [],
-        total: 0
-      });
-    }
-
-    // Assign players to teams
-    const shuffledPlayers = players.slice().sort(() => Math.random() - 0.5);
-    const currentAssignedPlayers = new Set(assignedPlayers);
-    for (let i = 0; i < adjustedNumTeams * TEAM_SIZE; i++) {
-      const teamIndex = i % adjustedNumTeams;
-      const player = shuffledPlayers[i];
-      teams[teamIndex].players.push(player);
-      teams[teamIndex].total += player.averageRank;
-      currentAssignedPlayers.add(player.discordUsername);
-    }
-
-    // Calculate spread
-    const spread = getTeamSpread(teams);
-    
-    if (spread < minSpread) {
-      minSpread = spread;
-      bestTeams = teams;
-    }
+  let teams = [];
+  
+  // Initialize empty teams
+  for (let i = 0; i < adjustedNumTeams; i++) {
+    teams.push({
+      name: `Team ${i + 1}`,
+      timeSlot: timeSlot,
+      players: [],
+      total: 0 // total rank power of the team
+    });
   }
 
-  // Handle substitutes
-  const substitutes = players.filter(player => !bestTeams.some(team => team.players.includes(player)));
+  // Sort players by average rank (descending for strong-to-weak assignment)
+  const sortedPlayers = players.slice().sort((a, b) => b.averageRank - a.averageRank);
 
-  return { teams: bestTeams, substitutes, assignedPlayers: new Set([...assignedPlayers, ...bestTeams.flatMap(team => team.players.map(p => p.discordUsername))]) };
+  // Greedy team assignment: Assign players to the team with the lowest total rank
+  sortedPlayers.forEach(player => {
+    // Find the team with the lowest total rank power
+    const teamWithLowestRank = teams.reduce((prev, curr) => (prev.total < curr.total ? prev : curr));
+    
+    // Add the player to this team
+    teamWithLowestRank.players.push(player);
+    teamWithLowestRank.total += player.averageRank;
+  });
+
+  // Handle substitutes (any remaining players)
+  const substitutes = players.filter(player => !teams.some(team => team.players.includes(player)));
+
+  // Return the teams and substitutes for this time slot
+  return {
+    teams,
+    substitutes,
+    assignedPlayers: new Set([...assignedPlayers, ...teams.flatMap(team => team.players.map(p => p.discordUsername))])
+  };
 }
 
 function getTeamSpread(teams) {
@@ -384,7 +372,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs) {
         .setHorizontalAlignment("right");
       
       // Add formula for team total
-      const totalFormula = `SUM(F${rowIndex + 3}:F${rowIndex + 3 + TEAM_SIZE - 1})`;
+      const totalFormula = `SUM($F${rowIndex + 3}:$F${rowIndex + 3 + TEAM_SIZE - 1})`;
       sheet.getRange(rowIndex + 1, 6).setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
       
       rowIndex++;
@@ -615,33 +603,35 @@ function getContrastColor(hexcolor) {
 
 function getRankValue(rank) {
   const ranks = {
-    "Iron 1": 1, "Iron 2": 2, "Iron 3": 3,
-    "Bronze 1": 4, "Bronze 2": 5, "Bronze 3": 6,
-    "Silver 1": 7, "Silver 2": 8, "Silver 3": 9,
-    "Gold 1": 10, "Gold 2": 11, "Gold 3": 12,
-    "Platinum 1": 13, "Platinum 2": 14, "Platinum 3": 15,
-    "Diamond 1": 16, "Diamond 2": 17, "Diamond 3": 18,
-    "Ascendant 1": 19, "Ascendant 2": 20, "Ascendant 3": 21,
-    "Immortal 1": 22, "Immortal 2": 23, "Immortal 3": 24,
-    "Radiant": 25
+    "Iron 1": 1, "Iron 2": 5, "Iron 3": 10,
+    "Bronze 1": 15, "Bronze 2": 20, "Bronze 3": 25,
+    "Silver 1": 35, "Silver 2": 40, "Silver 3": 45,
+    "Gold 1": 55, "Gold 2": 60, "Gold 3": 65,
+    "Platinum 1": 75, "Platinum 2": 80, "Platinum 3": 85,
+    "Diamond 1": 95, "Diamond 2": 100, "Diamond 3": 110,
+    "Ascendant 1": 125, "Ascendant 2": 130, "Ascendant 3": 140,
+    "Immortal 1": 160, "Immortal 2": 165, "Immortal 3": 180,
+    "Radiant": 220
   };
   return ranks[rank] || 0;
 }
 
+
 function getRankName(rankValue) {
-  const rankNames = [
-    "Iron 1", "Iron 2", "Iron 3",
-    "Bronze 1", "Bronze 2", "Bronze 3",
-    "Silver 1", "Silver 2", "Silver 3",
-    "Gold 1", "Gold 2", "Gold 3",
-    "Platinum 1", "Platinum 2", "Platinum 3",
-    "Diamond 1", "Diamond 2", "Diamond 3",
-    "Ascendant 1", "Ascendant 2", "Ascendant 3",
-    "Immortal 1", "Immortal 2", "Immortal 3",
-    "Radiant"
-  ];
-  return rankNames[rankValue - 1] || "Unranked";
+  const rankNames = {
+    1: "Iron 1", 5: "Iron 2", 10: "Iron 3",
+    15: "Bronze 1", 20: "Bronze 2", 25: "Bronze 3",
+    35: "Silver 1", 40: "Silver 2", 45: "Silver 3",
+    55: "Gold 1", 60: "Gold 2", 65: "Gold 3",
+    75: "Platinum 1", 80: "Platinum 2", 85: "Platinum 3",
+    95: "Diamond 1", 100: "Diamond 2", 110: "Diamond 3",
+    125: "Ascendant 1", 130: "Ascendant 2", 140: "Ascendant 3",
+    160: "Immortal 1", 165: "Immortal 2", 180: "Immortal 3",
+    220: "Radiant"
+  };
+  return rankNames[rankValue] || "Unranked";
 }
+
 
 function clearResponses() {
   // Get the active spreadsheet
