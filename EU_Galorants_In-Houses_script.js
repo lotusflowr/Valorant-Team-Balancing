@@ -27,7 +27,7 @@ function setTimeSlots(newTimeSlots) {
 
 function getGameDay() {
   const scriptProperties = PropertiesService.getScriptProperties();
-  return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Saturday if not set
+  return scriptProperties.getProperty('GAME_DAY') || "Sunday"; // Default to Saturday if not set
 }
 
 function setGameDay(newGameDay) {
