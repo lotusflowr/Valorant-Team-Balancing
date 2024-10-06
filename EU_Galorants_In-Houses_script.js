@@ -175,7 +175,6 @@ function setAutomaticTimeSlots() {
   }
 }
 
-
 function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function started");
 
@@ -302,23 +301,40 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     });
   }
 
-  // Sort players by average rank (descending for strong-to-weak assignment)
+  // Sort players by average rank (descending)
   const sortedPlayers = players.slice().sort((a, b) => b.averageRank - a.averageRank);
 
-  // Greedy team assignment: Assign players to the team with the lowest total rank
-  sortedPlayers.forEach(player => {
-    // Find the team with the lowest total rank power
-    const teamWithLowestRank = teams.reduce((prev, curr) => (prev.total < curr.total ? prev : curr));
-    
-    // Add the player to this team
+  // Distribute top players evenly
+  for (let i = 0; i < teams.length; i++) {
+    if (sortedPlayers.length > 0) {
+      const player = sortedPlayers.shift();
+      teams[i].players.push(player);
+      teams[i].total += player.averageRank;
+    }
+  }
+
+  // Distribute remaining players using greedy approach
+  while (sortedPlayers.length > 0) {
+    // Find the team with the lowest total rank and fewer than TEAM_SIZE players
+    const eligibleTeams = teams.filter(team => team.players.length < TEAM_SIZE);
+    if (eligibleTeams.length === 0) break; // No more space in teams
+
+    const teamWithLowestRank = eligibleTeams.reduce((prev, curr) => 
+      (prev.total < curr.total ? prev : curr)
+    );
+
+    const player = sortedPlayers.shift();
     teamWithLowestRank.players.push(player);
     teamWithLowestRank.total += player.averageRank;
-  });
+  }
 
   // Handle substitutes (any remaining players)
-  const substitutes = players.filter(player => !teams.some(team => team.players.includes(player)));
+  const substitutes = sortedPlayers;
 
-  // Return the teams and substitutes for this time slot
+  // Calculate team spread for logging
+  const teamSpread = getTeamSpread(teams);
+  Logger.log(`Team spread for ${timeSlot}: ${teamSpread.toFixed(2)}`);
+
   return {
     teams,
     substitutes,
