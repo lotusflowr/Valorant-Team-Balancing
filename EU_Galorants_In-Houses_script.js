@@ -269,25 +269,59 @@ function createOptimalTeams(players) {
   };
   let assignedPlayers = new Set();
 
-  TIME_SLOTS.forEach(timeSlot => {
-    let timeSlotPlayers = players.filter(p => p.timeSlots.includes(timeSlot));
+  // Ensure TIME_SLOTS is defined and not empty
+  if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
+    Logger.log("Error: TIME_SLOTS is undefined or empty");
+    return result;
+  }
+
+  // Sort players based on the number of available time slots (ascending)
+  players.sort((a, b) => a.timeSlots.length - b.timeSlots.length);
+
+  // Process each time slot
+  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+    let timeSlotPlayers = [];
+
+    // First, add players who can only play in this time slot
+    players.forEach(player => {
+      if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Then, add players who haven't played yet and can play in this slot
+    players.forEach(player => {
+      if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Finally, add any remaining available players
+    players.forEach(player => {
+      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Create teams for this time slot
+    let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
     
-    let { teams, substitutes, assignedPlayers: newAssignedPlayers } = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
-    
-    result.teams = result.teams.concat(teams);
-    result.substitutes[timeSlot] = substitutes;
-    assignedPlayers = newAssignedPlayers;
+    result.teams = result.teams.concat(slotResult.teams);
+    result.substitutes[timeSlot] = slotResult.substitutes;
+    assignedPlayers = new Set([...assignedPlayers, ...slotResult.assignedPlayers]);
+
+    Logger.log(`Created ${slotResult.teams.length} teams for time slot: ${timeSlot}`);
+    Logger.log(`Substitutes for time slot ${timeSlot}: ${slotResult.substitutes.length}`);
   });
 
   return result;
 }
-
 function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   const numPlayers = players.length;
-  const numTeams = Math.floor(numPlayers / TEAM_SIZE);
+  const maxTeams = Math.floor(numPlayers / TEAM_SIZE);
   
-  // Ensure even number of teams
-  const adjustedNumTeams = numTeams % 2 === 0 ? numTeams : numTeams - 1;
+  // Ensure even number of teams and all teams have exactly TEAM_SIZE players
+  const adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
   
   let teams = [];
   
@@ -301,27 +335,27 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     });
   }
 
-  // Sort players by average rank (descending)
-  const sortedPlayers = players.slice().sort((a, b) => b.averageRank - a.averageRank);
-
-  // Calculate the number of substitutes
-  const numSubstitutes = Math.max(0, numPlayers - (adjustedNumTeams * TEAM_SIZE));
-
-  // Distribute players evenly across teams and substitutes
-  let substituteIndex = 0;
-  const substitutes = [];
-  for (let i = 0; i < sortedPlayers.length; i++) {
-    const player = sortedPlayers[i];
-    if (i % (adjustedNumTeams + 1) === 0 && substitutes.length < numSubstitutes) {
-      // Add to substitutes
-      substitutes.push(player);
-    } else {
-      // Add to team
-      const teamIndex = i % teams.length;
-      teams[teamIndex].players.push(player);
-      teams[teamIndex].total += player.averageRank;
+  // Sort players: single time slot first, then unassigned, then by rank (descending)
+  players.sort((a, b) => {
+    if (a.timeSlots.length !== b.timeSlots.length) {
+      return a.timeSlots.length - b.timeSlots.length;
     }
+    if (assignedPlayers.has(a.discordUsername) !== assignedPlayers.has(b.discordUsername)) {
+      return assignedPlayers.has(a.discordUsername) ? 1 : -1;
+    }
+    return b.averageRank - a.averageRank;
+  });
+
+  // Distribute players evenly across teams
+  const teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
+  for (let i = 0; i < teamPlayers.length; i++) {
+    const teamIndex = i % adjustedNumTeams;
+    teams[teamIndex].players.push(teamPlayers[i]);
+    teams[teamIndex].total += teamPlayers[i].averageRank;
   }
+
+  // Remaining players become substitutes
+  const substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
 
   // Optimize team balance
   for (let iteration = 0; iteration < 100; iteration++) {
