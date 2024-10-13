@@ -1,7 +1,5 @@
-const TeamBalanceModule = require('../src/TeamBalance.js')
-
 /** @OnlyCurrentDoc */
-let DEFAULT_TIME_SLOTS = [];
+const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
 let TIME_SLOTS = getTimeSlots();
 let GAME_DAY = getGameDay();
 const TIME_SLOTS_COLUMN = 5;
@@ -13,72 +11,16 @@ const TEAM_SIZE = 5;
  * Starting point
  * See Google Workspace Scripts reference
  */
-function onOpen() {
+export function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS') //creates a menu called SCRIPTS as a tab in the Google sheet
-    .addSubMenu(ui.createMenu('EU') //creates a menu with the options shown below
-      .addItem('Manage Time Slots', 'manageEUTimeSlots')
-      .addItem('Balance Teams and Players', 'sortEUPlayersIntoBalancedTeams')
-      .addItem('Clear Responses', 'clearEUResponses')
-    )
-    .addSubMenu(ui.createMenu('NA') //creates a menu with the options shown below
-      .addItem('Manage Time Slots', 'manageNATimeSlots')
-      .addItem('Balance Teams and Players', 'sortNAPlayersIntoBalancedTeams')
-    )
-    .addItem('Clear Responses', 'clearResponses') //clears Google Form responses
+  ui.createMenu('SCRIPTS')
+    .addItem('Manage Time Slots', 'manageTimeSlots')
+    .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
+    .addItem('Clear Responses', 'clearResponses')
     .addToUi();
 }
 
-/** 
- * Wrapper for setting default time slots to prevent script duplication
- */
-function setDefaultTimeSlots(region) {
-  if (region == 'NA') {
-    DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
-  } else if (region == 'EU') {
-    DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
-  } else { //default value if for some reason the function call is invalid, should never reach this point but it's here in case
-    DEFAULT_TIME_SLOTS = ["12pm GMT", "1pm GMT"];
-  }
-}
-
-/**
- * Wrapper for managing time slots from the EU submenu
- * Includes setting default times for EU
- */
-function manageEUTimeSlots() {
-  setDefaultTimeSlots('EU');
-  manageTimeSlots();
-}
-
-/**
- * Wrapper for balancing the teams from the EU submenu
- * Includes setting default times for EU
- */
-function sortEUPlayersIntoBalancedTeams() {
-  setDefaultTimeSlots('EU');
-  sortPlayersIntoBalancedTeams();
-}
-
-/**
- * Wrapper for managing time slots from the NA submenu
- * Includes setting default times for NA
- */
-function manageNATimeSlots() {
-    setDefaultTimeSlots('NA');
-    manageTimeSlots();
-}
-
-/**
- * Wrapper for balancing the teams from the NA submenu
- * Includes setting default times for NA
- */
-function sortNAPlayersIntoBalancedTeams() {
-    setDefaultTimeSlots('NA');
-    sortPlayersIntoBalancedTeams();
-}
-
-function getTimeSlots() {
+export function getTimeSlots() {
   const scriptProperties = PropertiesService.getScriptProperties();
   const storedTimeSlots = scriptProperties.getProperty('TIME_SLOTS');
   return storedTimeSlots ? JSON.parse(storedTimeSlots) : DEFAULT_TIME_SLOTS;
@@ -89,17 +31,17 @@ function getTimeSlots() {
  * TODO: validation/sanitization of input (is it a valid time slot, will the input cause an error, is it dangerous to use/run, etc)
  * @param {array} newTimeSlots time slots that will be used for creating teams
  */
-function setTimeSlots(newTimeSlots) {
+export function setTimeSlots(newTimeSlots) {
   const scriptProperties = PropertiesService.getScriptProperties();
   scriptProperties.setProperty('TIME_SLOTS', JSON.stringify(newTimeSlots));
 }
 
-function getGameDay() {
+export function getGameDay() {
   const scriptProperties = PropertiesService.getScriptProperties();
   return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Saturday if not set
 }
 
-function setGameDay(newGameDay) {
+export function setGameDay(newGameDay) {
   const scriptProperties = PropertiesService.getScriptProperties();
   scriptProperties.setProperty('GAME_DAY', newGameDay);
 }
@@ -107,7 +49,7 @@ function setGameDay(newGameDay) {
 /**
  * Creates a UI for managing the timeslots using UI prompts
  */
-function manageTimeSlots() {
+export function manageTimeSlots() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
     'Manage Time Slots and Game Day', //title
@@ -145,7 +87,7 @@ function manageTimeSlots() {
  * They can have the script parse the time slots given in the Google form or manually enter their own time slots
  * Called from user input
  */
-function manageTimeSlotsMenu() {
+export function manageTimeSlotsMenu() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
     'Manage Time Slots', //title
@@ -180,7 +122,7 @@ function manageTimeSlotsMenu() {
   }
 }
 
-function changeGameDay() {
+export function changeGameDay() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
     'Change Game Day', //title
@@ -207,7 +149,7 @@ function changeGameDay() {
  * Allows the user to change the timeslots using values that they manually provide
  * Called from user input
  */
-function manuallyInputTimeSlots() {
+export function manuallyInputTimeSlots() {
   const ui = SpreadsheetApp.getUi();
   const result = ui.prompt(
     'Set Custom Time Slots',
@@ -236,7 +178,7 @@ function manuallyInputTimeSlots() {
  * time slots to use those values.
  * Called from user input.
  */
-function setAutomaticTimeSlots() {
+export function setAutomaticTimeSlots() {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheets()[0]; // Get the first sheet
@@ -261,7 +203,7 @@ function setAutomaticTimeSlots() {
   }
 }
 
-function sortPlayersIntoBalancedTeams() {
+export function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function started");
 
   // Update Time and Day variables
@@ -303,7 +245,7 @@ function sortPlayersIntoBalancedTeams() {
   Logger.log("sortPlayersIntoBalancedTeams function completed");
 }
 
-function getPlayersData(sheet) {
+export function getPlayersData(sheet) {
   const data = sheet.getDataRange().getValues();
   Logger.log(`Raw data: ${JSON.stringify(data.slice(0, 2))}`);
 
@@ -349,7 +291,7 @@ function getPlayersData(sheet) {
 }
 
 
-function writeTeamsToSheet(sheet, teamsAndSubs) {
+export function writeTeamsToSheet(sheet, teamsAndSubs) {
   sheet.clear();
   let rowIndex = 0;
   const teamColors = ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"];
@@ -489,7 +431,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs) {
   sheet.setFrozenRows(1);
 }
 
-function createDiscordPings(teams, substitutes) {
+export function createDiscordPings(teams, substitutes) {
   const currentDate = new Date();
   const nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + ((7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(GAME_DAY) - currentDate.getDay()) % 7)));
   const formattedDate = nextGameDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -536,7 +478,7 @@ function createDiscordPings(teams, substitutes) {
   return pings;
 }
 
-function writeDiscordPingsToSheet(sheet, pings) {
+export function writeDiscordPingsToSheet(sheet, pings) {
   sheet.clear();
   
   const lines = pings.split("\n");
@@ -584,7 +526,7 @@ function writeDiscordPingsToSheet(sheet, pings) {
   sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
 }
 
-function setConditionalFormatting(range) {
+export function setConditionalFormatting(range) {
   const rules = [
     {rank: "Iron", color: "#464646"},
     {rank: "Bronze", color: "#a6824c"},
@@ -611,7 +553,7 @@ function setConditionalFormatting(range) {
   );
 }
 
-function getContrastColor(hexcolor) {
+export function getContrastColor(hexcolor) {
   const r = parseInt(hexcolor.substr(1,2), 16);
   const g = parseInt(hexcolor.substr(3,2), 16);
   const b = parseInt(hexcolor.substr(5,2), 16);
@@ -621,7 +563,7 @@ function getContrastColor(hexcolor) {
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
-function getRankValue(rank) {
+export function getRankValue(rank) {
   const ranks = {
     "Iron 1": 1, "Iron 2": 5, "Iron 3": 10,
     "Bronze 1": 15, "Bronze 2": 20, "Bronze 3": 25,
@@ -637,7 +579,7 @@ function getRankValue(rank) {
 }
 
 
-function getRankName(rankValue) {
+export function getRankName(rankValue) {
   const rankNames = {
     1: "Iron 1", 5: "Iron 2", 10: "Iron 3",
     15: "Bronze 1", 20: "Bronze 2", 25: "Bronze 3",
@@ -653,7 +595,7 @@ function getRankName(rankValue) {
 }
 
 
-function clearResponses() {
+export function clearResponses() {
   // Get the active spreadsheet
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
@@ -689,4 +631,161 @@ function clearResponses() {
     // If there are no responses to clear, inform the user
     ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
   }
+}
+
+/***** TEAM BALANCING LOGIC FUNCTIONS *****/
+
+
+//here for testing jest, remove when first real jest test is done
+export function sum(a, b) {
+  return a + b;
+}
+
+export function createOptimalTeams(players) {
+  let result = {
+    teams: [],
+    substitutes: {}
+  };
+  let assignedPlayers = new Set();
+
+  // Ensure TIME_SLOTS is defined and not empty
+  if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
+    Logger.log("Error: TIME_SLOTS is undefined or empty");
+    return result;
+  }
+
+  // Sort players based on the number of available time slots (ascending)
+  players.sort((a, b) => a.timeSlots.length - b.timeSlots.length);
+
+  // Process each time slot
+  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+    let timeSlotPlayers = [];
+
+    // First, add players who can only play in this time slot
+    players.forEach(player => {
+      if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Then, add players who haven't played yet and can play in this slot
+    players.forEach(player => {
+      if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Finally, add any remaining available players
+    players.forEach(player => {
+      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Create teams for this time slot
+    let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
+    
+    result.teams = result.teams.concat(slotResult.teams);
+    result.substitutes[timeSlot] = slotResult.substitutes;
+    assignedPlayers = new Set([...assignedPlayers, ...slotResult.assignedPlayers]);
+
+    Logger.log(`Created ${slotResult.teams.length} teams for time slot: ${timeSlot}`);
+    Logger.log(`Substitutes for time slot ${timeSlot}: ${slotResult.substitutes.length}`);
+  });
+
+  return result;
+}
+
+export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
+  const numPlayers = players.length;
+  const maxTeams = Math.floor(numPlayers / TEAM_SIZE);
+  
+  // Ensure even number of teams and all teams have exactly TEAM_SIZE players
+  const adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
+  
+  let teams = [];
+  
+  // Initialize empty teams
+  for (let i = 0; i < adjustedNumTeams; i++) {
+    teams.push({
+      name: `Team ${i + 1}`,
+      timeSlot: timeSlot,
+      players: [],
+      total: 0 // total rank power of the team
+    });
+  }
+
+  // Sort players: single time slot first, then unassigned, then by rank (descending)
+  players.sort((a, b) => {
+    if (a.timeSlots.length !== b.timeSlots.length) {
+      return a.timeSlots.length - b.timeSlots.length;
+    }
+    if (assignedPlayers.has(a.discordUsername) !== assignedPlayers.has(b.discordUsername)) {
+      return assignedPlayers.has(a.discordUsername) ? 1 : -1;
+    }
+    return b.averageRank - a.averageRank;
+  });
+
+  // Distribute players evenly across teams
+  const teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
+  for (let i = 0; i < teamPlayers.length; i++) {
+    const teamIndex = i % adjustedNumTeams;
+    teams[teamIndex].players.push(teamPlayers[i]);
+    teams[teamIndex].total += teamPlayers[i].averageRank;
+  }
+
+  // Remaining players become substitutes
+  const substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
+
+  // Optimize team balance
+  for (let iteration = 0; iteration < 100; iteration++) {
+    let improved = false;
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = i + 1; j < teams.length; j++) {
+        if (trySwapPlayers(teams[i], teams[j])) {
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+
+  // Calculate team spread for logging
+  const teamSpread = getTeamSpread(teams);
+  Logger.log(`Team spread for ${timeSlot}: ${teamSpread.toFixed(2)}`);
+
+  return {
+    teams,
+    substitutes,
+    assignedPlayers: new Set([...assignedPlayers, ...teams.flatMap(team => team.players.map(p => p.discordUsername))])
+  };
+}
+
+export function trySwapPlayers(team1, team2) {
+  for (let i = 0; i < team1.players.length; i++) {
+    for (let j = 0; j < team2.players.length; j++) {
+      const diff1 = team1.players[i].averageRank - team2.players[j].averageRank;
+      const newTotal1 = team1.total - diff1;
+      const newTotal2 = team2.total + diff1;
+
+      if (Math.abs(newTotal1 - newTotal2) < Math.abs(team1.total - team2.total)) {
+        // Swap players
+        const temp = team1.players[i];
+        team1.players[i] = team2.players[j];
+        team2.players[j] = temp;
+
+        // Update totals
+        team1.total = newTotal1;
+        team2.total = newTotal2;
+
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+export function getTeamSpread(teams) {
+  const totals = teams.map(team => team.total);
+  return Math.max(...totals) - Math.min(...totals);
 }
