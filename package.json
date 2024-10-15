@@ -2,10 +2,16 @@
   "name": "galorants-in-houses",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "rollup --config"
   },
   "devDependencies": {
+    "@babel/cli": "^7.25.7",
+    "@babel/core": "^7.25.8",
     "@babel/preset-env": "^7.25.8",
-    "jest": "^29.7.0"
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "jest": "^29.7.0",
+    "rollup": "^4.24.0"
   }
 }

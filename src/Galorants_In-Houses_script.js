@@ -1,3 +1,7 @@
+import {
+  sum
+} from "./TeamBalance.js"
+
 /** @OnlyCurrentDoc */
 const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
 let TIME_SLOTS = getTimeSlots();
@@ -17,6 +21,7 @@ export function onOpen() {
     .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
     .addItem('Clear Responses', 'clearResponses')
+    .addItem('Hi', 'sum')
     .addToUi();
 }
 
@@ -634,13 +639,6 @@ export function clearResponses() {
 }
 
 /***** TEAM BALANCING LOGIC FUNCTIONS *****/
-
-
-//here for testing jest, remove when first real jest test is done
-export function sum(a, b) {
-  return a + b;
-}
-
 export function createOptimalTeams(players) {
   let result = {
     teams: [],
