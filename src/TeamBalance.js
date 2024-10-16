@@ -1,3 +1,4 @@
+/** @OnlyCurrentDoc */
 
 //here for testing jest, remove when first real jest test is done
 export function sum(a, b) {
