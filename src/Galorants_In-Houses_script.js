@@ -318,6 +318,9 @@ export function writeTeamsToSheet(sheet, teamsAndSubs) {
     timeSlotTeams.forEach((team, teamIndex) => {
       const teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
       
+      // Sort players by Avg Rank (descending)
+      team.players.sort((a, b) => b.averageRank - a.averageRank);
+      
       // Write team header
       sheet.getRange(rowIndex + 1, 1, 1, 5).merge()
         .setValue(team.name)
@@ -380,6 +383,9 @@ export function writeTeamsToSheet(sheet, teamsAndSubs) {
     // Write substitutes for this time slot
     const substitutes = teamsAndSubs.substitutes[timeSlot];
     if (substitutes && substitutes.length > 0) {
+      // Sort substitutes by Avg Rank (descending)
+      substitutes.sort((a, b) => b.averageRank - a.averageRank);
+      
       // Write substitutes header
       sheet.getRange(rowIndex + 1, 1, 1, 6).merge()
         .setValue(`Substitutes`)
@@ -627,7 +633,6 @@ function getRankName(rankValue) {
   };
   return rankNames[rankValue] || "Unranked";
 }
-
 
 export function clearResponses() {
   // Get the active spreadsheet
