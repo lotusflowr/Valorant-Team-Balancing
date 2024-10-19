@@ -2,7 +2,6 @@ import {
   sum
 } from "./TeamBalance.js"
 
-/** @OnlyCurrentDoc */
 const DEFAULT_TIME_SLOTS = ["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"];
 let TIME_SLOTS = getTimeSlots();
 let GAME_DAY = getGameDay();
