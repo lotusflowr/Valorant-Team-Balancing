@@ -568,33 +568,63 @@ export function getContrastColor(hexcolor) {
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
-export function getRankValue(rank) {
-  const ranks = {
-    "Iron 1": 1, "Iron 2": 5, "Iron 3": 10,
-    "Bronze 1": 15, "Bronze 2": 20, "Bronze 3": 25,
-    "Silver 1": 35, "Silver 2": 40, "Silver 3": 45,
-    "Gold 1": 55, "Gold 2": 60, "Gold 3": 65,
-    "Platinum 1": 75, "Platinum 2": 80, "Platinum 3": 85,
-    "Diamond 1": 95, "Diamond 2": 100, "Diamond 3": 110,
-    "Ascendant 1": 125, "Ascendant 2": 130, "Ascendant 3": 140,
-    "Immortal 1": 160, "Immortal 2": 165, "Immortal 3": 180,
-    "Radiant": 220
+function getRankValue(rank) {
+  var ranks = {
+    "Iron 1": 1,
+    "Iron 2": 3,
+    "Iron 3": 6,
+    "Bronze 1": 10,
+    "Bronze 2": 12,
+    "Bronze 3": 15,
+    "Silver 1": 20,
+    "Silver 2": 22,
+    "Silver 3": 25,
+    "Gold 1": 30,
+    "Gold 2": 32,
+    "Gold 3": 35,
+    "Platinum 1": 40,
+    "Platinum 2": 42,
+    "Platinum 3": 45,
+    "Diamond 1": 50,
+    "Diamond 2": 52,
+    "Diamond 3": 55,
+    "Ascendant 1": 60,
+    "Ascendant 2": 65,
+    "Ascendant 3": 70,
+    "Immortal 1": 80,
+    "Immortal 2": 85,
+    "Immortal 3": 95,
+    "Radiant": 110
   };
   return ranks[rank] || 0;
 }
-
-
-export function getRankName(rankValue) {
-  const rankNames = {
-    1: "Iron 1", 5: "Iron 2", 10: "Iron 3",
-    15: "Bronze 1", 20: "Bronze 2", 25: "Bronze 3",
-    35: "Silver 1", 40: "Silver 2", 45: "Silver 3",
-    55: "Gold 1", 60: "Gold 2", 65: "Gold 3",
-    75: "Platinum 1", 80: "Platinum 2", 85: "Platinum 3",
-    95: "Diamond 1", 100: "Diamond 2", 110: "Diamond 3",
-    125: "Ascendant 1", 130: "Ascendant 2", 140: "Ascendant 3",
-    160: "Immortal 1", 165: "Immortal 2", 180: "Immortal 3",
-    220: "Radiant"
+function getRankName(rankValue) {
+  var rankNames = {
+    1: "Iron 1",
+    3: "Iron 2",
+    6: "Iron 3",
+    10: "Bronze 1",
+    12: "Bronze 2",
+    15: "Bronze 3",
+    20: "Silver 1",
+    22: "Silver 2",
+    25: "Silver 3",
+    30: "Gold 1",
+    32: "Gold 2",
+    35: "Gold 3",
+    40: "Platinum 1",
+    42: "Platinum 2",
+    45: "Platinum 3",
+    50: "Diamond 1",
+    52: "Diamond 2",
+    55: "Diamond 3",
+    60: "Ascendant 1",
+    65: "Ascendant 2",
+    70: "Ascendant 3",
+    80: "Immortal 1",
+    85: "Immortal 2",
+    95: "Immortal 3",
+    110: "Radiant"
   };
   return rankNames[rankValue] || "Unranked";
 }
