@@ -534,6 +534,9 @@ export function writeDiscordPingsToSheet(sheet, pings) {
   
   sheet.autoResizeColumns(1, 1);
   sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
+  
+  // Apply trimWhitespace to the entire range
+  range.trimWhitespace();
 }
 
 export function setConditionalFormatting(range) {
