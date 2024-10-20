@@ -20,7 +20,6 @@ export function onOpen() {
     .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
     .addItem('Clear Responses', 'clearResponses')
-    .addItem('Hi', 'sum')
     .addToUi();
 }
 
@@ -220,32 +219,32 @@ export function sortPlayersIntoBalancedTeams() {
     const teamsSheet = ss.getSheetByName("Teams") || ss.insertSheet("Teams");
 
     Logger.log("Sheets retrieved successfully");
-    
+
     const allPlayers = getPlayersData(playersSheet);
     Logger.log("All players data retrieved: " + JSON.stringify(allPlayers));
-    
+
     if (allPlayers.length === 0) {
       throw new Error("No valid players found. Please check the player data.");
     }
-    
-    const teamsAndSubs = TeamBalanceModule.createOptimalTeams(allPlayers);
+
+    const teamsAndSubs = createOptimalTeams(allPlayers);
     Logger.log("Teams and substitutes created: " + JSON.stringify(teamsAndSubs));
-    
+
     writeTeamsToSheet(teamsSheet, teamsAndSubs);
     Logger.log("Teams written to sheet");
-    
+
     const discordPings = createDiscordPings(teamsAndSubs.teams, teamsAndSubs.substitutes);
-  
+
     // Write Discord pings to a new sheet
     const discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
     writeDiscordPingsToSheet(discordPingsSheet, discordPings);
     Logger.log("Discord Pings completed");
-    
+
   } catch (e) {
     Logger.log(`Error: ${e.message}`);
     throw e;
   }
-  
+
   Logger.log("sortPlayersIntoBalancedTeams function completed");
 }
 
@@ -294,388 +293,6 @@ export function getPlayersData(sheet) {
   return validPlayers;
 }
 
-
-export function writeTeamsToSheet(sheet, teamsAndSubs) {
-  sheet.clear();
-  let rowIndex = 0;
-  const teamColors = ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"];
-  const headerColor = "#4A86E8";
-  const subHeaderColor = "#A4C2F4";
-
-  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
-    // Write time slot header
-    sheet.getRange(rowIndex + 1, 1, 1, 6).merge()
-      .setValue(timeSlot)
-      .setFontWeight("bold")
-      .setBackground(headerColor)
-      .setFontColor("#ffffff")
-      .setFontSize(14)
-      .setHorizontalAlignment("center");
-    rowIndex++;
-
-    const timeSlotTeams = teamsAndSubs.teams.filter(team => team.timeSlot === timeSlot);
-
-    timeSlotTeams.forEach((team, teamIndex) => {
-      const teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
-      
-      // Sort players by Avg Rank (descending)
-      team.players.sort((a, b) => b.averageRank - a.averageRank);
-      
-      // Write team header
-      sheet.getRange(rowIndex + 1, 1, 1, 5).merge()
-        .setValue(team.name)
-        .setFontWeight("bold")
-        .setBackground(teamColor)
-        .setFontColor("#000000")
-        .setFontSize(12)
-        .setHorizontalAlignment("center");
-      
-      // Add Team Total in the same row
-      const totalCell = sheet.getRange(rowIndex + 1, 6);
-      totalCell.setFontWeight("bold")
-        .setBackground(teamColor)
-        .setFontColor("#000000")
-        .setFontSize(12)
-        .setHorizontalAlignment("right");
-      
-      // Add formula for team total using column and row references
-      const startRow = rowIndex + 3;
-      const endRow = startRow + TEAM_SIZE - 1;
-      const totalFormula = `SUM($F${startRow}:$F${endRow})`;
-      totalCell.setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
-      
-      rowIndex++;
-
-      // Write player header
-      const headerRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
-      headerRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]])
-        .setFontWeight("bold")
-        .setBackground(teamColor)
-        .setFontColor("#000000")
-        .setHorizontalAlignment("center");
-      rowIndex++;
-
-      // Write player data
-      team.players.forEach(player => {
-        const playerRow = [
-          player.discordUsername,
-          player.riotID,
-          getRankName(player.currentRank),
-          getRankName(player.peakRank),
-          player.lobbyHost,
-          player.averageRank.toFixed(2)
-        ];
-        const range = sheet.getRange(rowIndex + 1, 1, 1, playerRow.length);
-        range.setValues([playerRow]).setBackground(teamColor);
-        
-        // Set alignment
-        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
-        range.setVerticalAlignment("middle");
-        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
-
-        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
-        rowIndex++;
-      });
-      
-      rowIndex++; // Add an empty row between teams
-    });
-
-    // Write substitutes for this time slot
-    const substitutes = teamsAndSubs.substitutes[timeSlot];
-    if (substitutes && substitutes.length > 0) {
-      // Sort substitutes by Avg Rank (descending)
-      substitutes.sort((a, b) => b.averageRank - a.averageRank);
-      
-      // Write substitutes header
-      sheet.getRange(rowIndex + 1, 1, 1, 6).merge()
-        .setValue(`Substitutes`)
-        .setFontWeight("bold")
-        .setBackground(subHeaderColor)
-        .setFontColor("#000000")
-        .setFontSize(12)
-        .setHorizontalAlignment("center");
-      rowIndex++;
-
-      // Write substitutes column headers
-      const subHeaderRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
-      subHeaderRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]])
-        .setFontWeight("bold")
-        .setBackground(subHeaderColor)
-        .setFontColor("#000000")
-        .setHorizontalAlignment("center");
-      rowIndex++;
-
-      // Write substitute player data
-      substitutes.forEach(sub => {
-        const subRow = [
-          sub.discordUsername,
-          sub.riotID,
-          getRankName(sub.currentRank),
-          getRankName(sub.peakRank),
-          sub.lobbyHost,
-          sub.averageRank.toFixed(2)
-        ];
-        const range = sheet.getRange(rowIndex + 1, 1, 1, subRow.length);
-        range.setValues([subRow]).setBackground("#F3F3F3");
-        
-        // Set alignment
-        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
-        range.setVerticalAlignment("middle");
-        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
-
-        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
-        rowIndex++;
-      });
-
-      rowIndex++; // Add an empty row after substitutes
-    }
-
-    rowIndex += 2; // Add some space before the next time slot
-  });
-
-  // Adjust column widths
-  sheet.autoResizeColumns(1, 6);
-  sheet.setColumnWidth(1, 150); // Set Discord column width
-  sheet.setColumnWidth(2, 150); // Set Riot ID column width
-  sheet.setColumnWidth(6, 100); // Set Avg Rank column width
-  sheet.setFrozenRows(1);
-}
-
-export function createDiscordPings(teams, substitutes) {
-  const currentDate = new Date();
-  const nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + ((7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(GAME_DAY) - currentDate.getDay()) % 7)));
-  const formattedDate = nextGameDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-  
-  let pings = `# Here are the teams for ${GAME_DAY}, ${formattedDate}!\n\n`;
-  
-  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
-    const timeSlotTeams = teams.filter(team => team.timeSlot === timeSlot);
-    const timeSlotSubstitutes = substitutes[timeSlot] || [];
-    
-    if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-      pings += `## TIMESLOT ${slotIndex + 1}\n\n`;
-      
-      for (let i = 0; i < timeSlotTeams.length; i += 2) {
-        const twoTeams = timeSlotTeams.slice(i, i + 2);
-        const lobbyHost = twoTeams.flatMap(team => team.players).find(player => player.lobbyHost === "Yes");
-        if (lobbyHost) {
-          if (timeSlotTeams.length > 2) {
-            pings += `### LOBBY HOST **Team ${i + 1} & ${i + 2}**\n@${lobbyHost.discordUsername}\n\n`;
-          } else {
-            pings += `### LOBBY HOST\n@${lobbyHost.discordUsername}\n\n`;
-          }
-        }
-        
-        twoTeams.forEach((team, index) => {
-          pings += `### Team ${i + index + 1}\n`;
-          team.players.forEach(player => {
-            pings += `@${player.discordUsername}\n`;
-          });
-          pings += "\n";
-        });
-      }
-      
-      if (timeSlotSubstitutes.length > 0) {
-        pings += "### Substitutes\n";
-        timeSlotSubstitutes.forEach(sub => {
-          pings += `@${sub.discordUsername}\n`;
-        });
-        pings += "\n";
-      }
-    }
-  });
-  
-  return pings;
-}
-
-export function writeDiscordPingsToSheet(sheet, pings) {
-  sheet.clear();
-  
-  const lines = pings.split("\n");
-  const numRows = lines.length;
-  const range = sheet.getRange(1, 1, numRows, 1);
-  
-  // Set values and basic formatting
-  range.setValues(lines.map(line => [line]));
-  range.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
-  range.setVerticalAlignment("top");
-  
-  // Apply formatting based on line content
-  for (let i = 0; i < numRows; i++) {
-    const cell = range.getCell(i + 1, 1);
-    const content = lines[i];
-    
-    if (content.startsWith("# Here are the teams")) {
-      // First line (title)
-      cell.setFontWeight("bold").setFontSize(18).setBackground("#4A86E8").setFontColor("#ffffff");
-    } else if (content.startsWith("##")) {
-      // Time slot headers
-      cell.setFontWeight("bold").setFontSize(14).setBackground("#4A86E8").setFontColor("#ffffff");
-    } else if (content.startsWith("### LOBBY HOST")) {
-      // Lobby host headers
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
-    } else if (content.startsWith("### Team")) {
-      // Team headers
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
-    } else if (content.startsWith("### Substitutes")) {
-      // Substitutes header
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
-    } else if (content.startsWith("@")) {
-      // Player names
-      cell.setFontSize(11).setValue("  " + content); // Add two spaces for indentation
-    } else if (content.trim() === "") {
-      // Empty lines
-      cell.setValue(""); // Clear the cell content
-    }
-    
-    // Adjust row height
-    sheet.setRowHeight(i + 1, 21);
-  }
-  
-  sheet.autoResizeColumns(1, 1);
-  sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
-  
-  // Apply trimWhitespace to the entire range
-  range.trimWhitespace();
-}
-
-export function setConditionalFormatting(range) {
-  const rules = [
-    {rank: "Iron", color: "#464646"},
-    {rank: "Bronze", color: "#a6824c"},
-    {rank: "Silver", color: "#dce1dc"},
-    {rank: "Gold", color: "#dc8e21"},
-    {rank: "Platinum", color: "#27697a"},
-    {rank: "Diamond", color: "#c688f7"},
-    {rank: "Ascendant", color: "#40b57e"},
-    {rank: "Immortal", color: "#953640"},
-    {rank: "Radiant", color: "#f2dc95"}
-  ];
-  
-  const conditionalFormatRules = rules.map(rule => 
-    SpreadsheetApp.newConditionalFormatRule()
-      .setRanges([range])
-      .whenTextContains(rule.rank)
-      .setBackground(rule.color)
-      .setFontColor(getContrastColor(rule.color))
-      .build()
-  );
-  
-  range.getSheet().setConditionalFormatRules(
-    range.getSheet().getConditionalFormatRules().concat(conditionalFormatRules)
-  );
-}
-
-export function getContrastColor(hexcolor) {
-  const r = parseInt(hexcolor.substr(1,2), 16);
-  const g = parseInt(hexcolor.substr(3,2), 16);
-  const b = parseInt(hexcolor.substr(5,2), 16);
-  
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
-  return luminance > 0.5 ? "#000000" : "#ffffff";
-}
-
-function getRankValue(rank) {
-  var ranks = {
-    "Iron 1": 1,
-    "Iron 2": 3,
-    "Iron 3": 6,
-    "Bronze 1": 10,
-    "Bronze 2": 12,
-    "Bronze 3": 15,
-    "Silver 1": 20,
-    "Silver 2": 22,
-    "Silver 3": 25,
-    "Gold 1": 30,
-    "Gold 2": 32,
-    "Gold 3": 35,
-    "Platinum 1": 40,
-    "Platinum 2": 42,
-    "Platinum 3": 45,
-    "Diamond 1": 50,
-    "Diamond 2": 52,
-    "Diamond 3": 55,
-    "Ascendant 1": 60,
-    "Ascendant 2": 65,
-    "Ascendant 3": 70,
-    "Immortal 1": 80,
-    "Immortal 2": 85,
-    "Immortal 3": 95,
-    "Radiant": 110
-  };
-  return ranks[rank] || 0;
-}
-function getRankName(rankValue) {
-  var rankNames = {
-    1: "Iron 1",
-    3: "Iron 2",
-    6: "Iron 3",
-    10: "Bronze 1",
-    12: "Bronze 2",
-    15: "Bronze 3",
-    20: "Silver 1",
-    22: "Silver 2",
-    25: "Silver 3",
-    30: "Gold 1",
-    32: "Gold 2",
-    35: "Gold 3",
-    40: "Platinum 1",
-    42: "Platinum 2",
-    45: "Platinum 3",
-    50: "Diamond 1",
-    52: "Diamond 2",
-    55: "Diamond 3",
-    60: "Ascendant 1",
-    65: "Ascendant 2",
-    70: "Ascendant 3",
-    80: "Immortal 1",
-    85: "Immortal 2",
-    95: "Immortal 3",
-    110: "Radiant"
-  };
-  return rankNames[rankValue] || "Unranked";
-}
-
-export function clearResponses() {
-  // Get the active spreadsheet
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Get the UI
-  var ui = SpreadsheetApp.getUi();
-
-  // Get the first sheet
-  var sheet = ss.getSheets()[0];
-  
-  // Get the number of rows in the sheet
-  var lastRow = sheet.getLastRow();
-  
-  // Check if there are any rows to delete
-  if (lastRow > 1) {
-    // Show a confirmation dialog
-    var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all responses? This action cannot be undone.', ui.ButtonSet.YES_NO);
-
-    // If the user clicks "Yes", proceed with deletion
-    if (response == ui.Button.YES) {
-      // Delete all rows below the header
-      sheet.deleteRows(2, lastRow - 1);
-      
-      // Log the action
-      Logger.log("Cleared all responses from the Forms Responses sheet.");
-      
-      // Show a confirmation message
-      ui.alert('Success', 'All responses have been cleared.', ui.ButtonSet.OK);
-    } else {
-      // If the user clicks "No", log that the operation was cancelled
-      Logger.log("Clear responses operation cancelled by user.");
-    }
-  } else {
-    // If there are no responses to clear, inform the user
-    ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
-  }
-}
-
-/***** TEAM BALANCING LOGIC FUNCTIONS *****/
 export function createOptimalTeams(players) {
   let result = {
     teams: [],
@@ -719,7 +336,7 @@ export function createOptimalTeams(players) {
 
     // Create teams for this time slot
     let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
-    
+
     result.teams = result.teams.concat(slotResult.teams);
     result.substitutes[timeSlot] = slotResult.substitutes;
     assignedPlayers = new Set([...assignedPlayers, ...slotResult.assignedPlayers]);
@@ -730,16 +347,15 @@ export function createOptimalTeams(players) {
 
   return result;
 }
-
 export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   const numPlayers = players.length;
   const maxTeams = Math.floor(numPlayers / TEAM_SIZE);
-  
+
   // Ensure even number of teams and all teams have exactly TEAM_SIZE players
   const adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
-  
+
   let teams = [];
-  
+
   // Initialize empty teams
   for (let i = 0; i < adjustedNumTeams; i++) {
     teams.push({
@@ -823,4 +439,346 @@ export function trySwapPlayers(team1, team2) {
 export function getTeamSpread(teams) {
   const totals = teams.map(team => team.total);
   return Math.max(...totals) - Math.min(...totals);
+}
+
+export function writeTeamsToSheet(sheet, teamsAndSubs) {
+  sheet.clear();
+  let rowIndex = 0;
+  const teamColors = ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"];
+  const headerColor = "#4A86E8";
+  const subHeaderColor = "#A4C2F4";
+
+  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+    // Write time slot header
+    sheet.getRange(rowIndex + 1, 1, 1, 6).merge()
+      .setValue(timeSlot)
+      .setFontWeight("bold")
+      .setBackground(headerColor)
+      .setFontColor("#ffffff")
+      .setFontSize(14)
+      .setHorizontalAlignment("center");
+    rowIndex++;
+
+    const timeSlotTeams = teamsAndSubs.teams.filter(team => team.timeSlot === timeSlot);
+
+    timeSlotTeams.forEach((team, teamIndex) => {
+      const teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
+
+      // Write team header
+      sheet.getRange(rowIndex + 1, 1, 1, 5).merge()
+        .setValue(team.name)
+        .setFontWeight("bold")
+        .setBackground(teamColor)
+        .setFontColor("#000000")
+        .setFontSize(12)
+        .setHorizontalAlignment("center");
+
+      // Add Team Total in the same row
+      const totalCell = sheet.getRange(rowIndex + 1, 6);
+      totalCell.setFontWeight("bold")
+        .setBackground(teamColor)
+        .setFontColor("#000000")
+        .setFontSize(12)
+        .setHorizontalAlignment("right");
+
+      // Add formula for team total using column and row references
+      const startRow = rowIndex + 3;
+      const endRow = startRow + TEAM_SIZE - 1;
+      const totalFormula = `SUM($F${startRow}:$F${endRow})`;
+      totalCell.setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
+
+      rowIndex++;
+
+      // Write player header
+      const headerRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
+      headerRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]])
+        .setFontWeight("bold")
+        .setBackground(teamColor)
+        .setFontColor("#000000")
+        .setHorizontalAlignment("center");
+      rowIndex++;
+
+      // Write player data
+      team.players.forEach(player => {
+        const playerRow = [
+          player.discordUsername,
+          player.riotID,
+          getRankName(player.currentRank),
+          getRankName(player.peakRank),
+          player.lobbyHost,
+          player.averageRank.toFixed(2)
+        ];
+        const range = sheet.getRange(rowIndex + 1, 1, 1, playerRow.length);
+        range.setValues([playerRow]).setBackground(teamColor);
+
+        // Set alignment
+        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
+        range.setVerticalAlignment("middle");
+        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+
+        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
+        rowIndex++;
+      });
+
+      rowIndex++; // Add an empty row between teams
+    });
+
+    // Write substitutes for this time slot
+    const substitutes = teamsAndSubs.substitutes[timeSlot];
+    if (substitutes && substitutes.length > 0) {
+      // Write substitutes header
+      sheet.getRange(rowIndex + 1, 1, 1, 6).merge()
+        .setValue(`Substitutes`)
+        .setFontWeight("bold")
+        .setBackground(subHeaderColor)
+        .setFontColor("#000000")
+        .setFontSize(12)
+        .setHorizontalAlignment("center");
+      rowIndex++;
+
+      // Write substitutes column headers
+      const subHeaderRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
+      subHeaderRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]])
+        .setFontWeight("bold")
+        .setBackground(subHeaderColor)
+        .setFontColor("#000000")
+        .setHorizontalAlignment("center");
+      rowIndex++;
+
+      // Write substitute player data
+      substitutes.forEach(sub => {
+        const subRow = [
+          sub.discordUsername,
+          sub.riotID,
+          getRankName(sub.currentRank),
+          getRankName(sub.peakRank),
+          sub.lobbyHost,
+          sub.averageRank.toFixed(2)
+        ];
+        const range = sheet.getRange(rowIndex + 1, 1, 1, subRow.length);
+        range.setValues([subRow]).setBackground("#F3F3F3");
+
+        // Set alignment
+        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
+        range.setVerticalAlignment("middle");
+        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+
+        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
+        rowIndex++;
+      });
+
+      rowIndex++; // Add an empty row after substitutes
+    }
+
+    rowIndex += 2; // Add some space before the next time slot
+  });
+
+  // Adjust column widths
+  sheet.autoResizeColumns(1, 6);
+  sheet.setColumnWidth(1, 150); // Set Discord column width
+  sheet.setColumnWidth(2, 150); // Set Riot ID column width
+  sheet.setColumnWidth(6, 100); // Set Avg Rank column width
+  sheet.setFrozenRows(1);
+}
+
+export function createDiscordPings(teams, substitutes) {
+  const currentDate = new Date();
+  const nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + ((7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(GAME_DAY) - currentDate.getDay()) % 7)));
+  const formattedDate = nextGameDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+  let pings = `# Here are the teams for ${GAME_DAY}, ${formattedDate}!\n\n`;
+
+  TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+    const timeSlotTeams = teams.filter(team => team.timeSlot === timeSlot);
+    const timeSlotSubstitutes = substitutes[timeSlot] || [];
+
+    if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
+      pings += `## TIMESLOT ${slotIndex + 1}\n\n`;
+
+      for (let i = 0; i < timeSlotTeams.length; i += 2) {
+        const twoTeams = timeSlotTeams.slice(i, i + 2);
+        const lobbyHost = twoTeams.flatMap(team => team.players).find(player => player.lobbyHost === "Yes");
+        if (lobbyHost) {
+          if (timeSlotTeams.length > 2) {
+            pings += `### LOBBY HOST **Team ${i + 1} & ${i + 2}**\n@${lobbyHost.discordUsername}\n\n`;
+          } else {
+            pings += `### LOBBY HOST\n@${lobbyHost.discordUsername}\n\n`;
+          }
+        }
+
+        twoTeams.forEach((team, index) => {
+          pings += `### Team ${i + index + 1}\n`;
+          team.players.forEach(player => {
+            pings += `@${player.discordUsername}\n`;
+          });
+          pings += "\n";
+        });
+      }
+
+      if (timeSlotSubstitutes.length > 0) {
+        pings += "### Substitutes\n";
+        timeSlotSubstitutes.forEach(sub => {
+          pings += `@${sub.discordUsername}\n`;
+        });
+        pings += "\n";
+      }
+    }
+  });
+
+  return pings;
+}
+
+export function writeDiscordPingsToSheet(sheet, pings) {
+  sheet.clear();
+
+  const lines = pings.split("\n");
+  const numRows = lines.length;
+  const range = sheet.getRange(1, 1, numRows, 1);
+
+  // Set values and basic formatting
+  range.setValues(lines.map(line => [line]));
+  range.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+  range.setVerticalAlignment("top");
+
+  // Apply formatting based on line content
+  for (let i = 0; i < numRows; i++) {
+    const cell = range.getCell(i + 1, 1);
+    const content = lines[i];
+
+    if (content.startsWith("# Here are the teams")) {
+      // First line (title)
+      cell.setFontWeight("bold").setFontSize(18).setBackground("#4A86E8").setFontColor("#ffffff");
+    } else if (content.startsWith("##")) {
+      // Time slot headers
+      cell.setFontWeight("bold").setFontSize(14).setBackground("#4A86E8").setFontColor("#ffffff");
+    } else if (content.startsWith("### LOBBY HOST")) {
+      // Lobby host headers
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+    } else if (content.startsWith("### Team")) {
+      // Team headers
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+    } else if (content.startsWith("### Substitutes")) {
+      // Substitutes header
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+    } else if (content.startsWith("@")) {
+      // Player names
+      cell.setFontSize(11).setValue("  " + content); // Add two spaces for indentation
+    } else if (content.trim() === "") {
+      // Empty lines
+      cell.setValue(""); // Clear the cell content
+    }
+
+    // Adjust row height
+    sheet.setRowHeight(i + 1, 21);
+  }
+
+  sheet.autoResizeColumns(1, 1);
+  sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
+}
+
+export function setConditionalFormatting(range) {
+  const rules = [
+    {rank: "Iron", color: "#464646"},
+    {rank: "Bronze", color: "#a6824c"},
+    {rank: "Silver", color: "#dce1dc"},
+    {rank: "Gold", color: "#dc8e21"},
+    {rank: "Platinum", color: "#27697a"},
+    {rank: "Diamond", color: "#c688f7"},
+    {rank: "Ascendant", color: "#40b57e"},
+    {rank: "Immortal", color: "#953640"},
+    {rank: "Radiant", color: "#f2dc95"}
+  ];
+
+  const conditionalFormatRules = rules.map(rule =>
+    SpreadsheetApp.newConditionalFormatRule()
+      .setRanges([range])
+      .whenTextContains(rule.rank)
+      .setBackground(rule.color)
+      .setFontColor(getContrastColor(rule.color))
+      .build()
+  );
+
+  range.getSheet().setConditionalFormatRules(
+    range.getSheet().getConditionalFormatRules().concat(conditionalFormatRules)
+  );
+}
+
+export function getContrastColor(hexcolor) {
+  const r = parseInt(hexcolor.substr(1,2), 16);
+  const g = parseInt(hexcolor.substr(3,2), 16);
+  const b = parseInt(hexcolor.substr(5,2), 16);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.5 ? "#000000" : "#ffffff";
+}
+
+export function getRankValue(rank) {
+  const ranks = {
+    "Iron 1": 1, "Iron 2": 5, "Iron 3": 10,
+    "Bronze 1": 15, "Bronze 2": 20, "Bronze 3": 25,
+    "Silver 1": 35, "Silver 2": 40, "Silver 3": 45,
+    "Gold 1": 55, "Gold 2": 60, "Gold 3": 65,
+    "Platinum 1": 75, "Platinum 2": 80, "Platinum 3": 85,
+    "Diamond 1": 95, "Diamond 2": 100, "Diamond 3": 110,
+    "Ascendant 1": 125, "Ascendant 2": 130, "Ascendant 3": 140,
+    "Immortal 1": 160, "Immortal 2": 165, "Immortal 3": 180,
+    "Radiant": 220
+  };
+  return ranks[rank] || 0;
+}
+
+
+export function getRankName(rankValue) {
+  const rankNames = {
+    1: "Iron 1", 5: "Iron 2", 10: "Iron 3",
+    15: "Bronze 1", 20: "Bronze 2", 25: "Bronze 3",
+    35: "Silver 1", 40: "Silver 2", 45: "Silver 3",
+    55: "Gold 1", 60: "Gold 2", 65: "Gold 3",
+    75: "Platinum 1", 80: "Platinum 2", 85: "Platinum 3",
+    95: "Diamond 1", 100: "Diamond 2", 110: "Diamond 3",
+    125: "Ascendant 1", 130: "Ascendant 2", 140: "Ascendant 3",
+    160: "Immortal 1", 165: "Immortal 2", 180: "Immortal 3",
+    220: "Radiant"
+  };
+  return rankNames[rankValue] || "Unranked";
+}
+
+
+export function clearResponses() {
+  // Get the active spreadsheet
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Get the UI
+  var ui = SpreadsheetApp.getUi();
+
+  // Get the first sheet
+  var sheet = ss.getSheets()[0];
+
+  // Get the number of rows in the sheet
+  var lastRow = sheet.getLastRow();
+
+  // Check if there are any rows to delete
+  if (lastRow > 1) {
+    // Show a confirmation dialog
+    var response = ui.alert('Confirm Deletion', 'Are you sure you want to clear all responses? This action cannot be undone.', ui.ButtonSet.YES_NO);
+
+    // If the user clicks "Yes", proceed with deletion
+    if (response == ui.Button.YES) {
+      // Delete all rows below the header
+      sheet.deleteRows(2, lastRow - 1);
+
+      // Log the action
+      Logger.log("Cleared all responses from the Forms Responses sheet.");
+
+      // Show a confirmation message
+      ui.alert('Success', 'All responses have been cleared.', ui.ButtonSet.OK);
+    } else {
+      // If the user clicks "No", log that the operation was cancelled
+      Logger.log("Clear responses operation cancelled by user.");
+    }
+  } else {
+    // If there are no responses to clear, inform the user
+    ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
+  }
 }
