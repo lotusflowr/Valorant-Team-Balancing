@@ -1,0 +1,19 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "sheets": {
+    "macros": [{
+      "menuName": "Sort and Balance Players",
+      "functionName": "sortPlayersIntoBalancedTeams"
+    }, {
+      "menuName": "Clear Responses",
+      "functionName": "clearResponses"
+    }, {
+      "menuName": "Manage Time Slots",
+      "functionName": "manageTimeSlots"
+    }]
+  }
+}

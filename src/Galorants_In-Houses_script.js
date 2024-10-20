@@ -20,6 +20,7 @@ export function onOpen() {
     .addItem('Manage Time Slots', 'manageTimeSlots')
     .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
     .addItem('Clear Responses', 'clearResponses')
+    .addItem('Sum', 'sum')
     .addToUi();
 }
 

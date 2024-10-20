@@ -29,7 +29,7 @@ var TEAM_SIZE = 5;
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('Manage Time Slots', 'manageTimeSlots').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Clear Responses', 'clearResponses').addToUi();
+  ui.createMenu('SCRIPTS').addItem('Manage Time Slots', 'manageTimeSlots').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Clear Responses', 'clearResponses').addItem('Sum', 'sum').addToUi();
 }
 function getTimeSlots() {
   var scriptProperties = PropertiesService.getScriptProperties();

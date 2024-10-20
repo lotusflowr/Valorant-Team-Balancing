@@ -1,0 +1,10 @@
+**/.git/**
+**/legacy/**
+**/node_modules/**
+**/src/**
+**/tests/**
+!appsscript.json
+!babel.config.json
+!package-lock.json
+!package.json
+!rollup.config.mjs
