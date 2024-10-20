@@ -227,7 +227,7 @@ export function sortPlayersIntoBalancedTeams() {
       throw new Error("No valid players found. Please check the player data.");
     }
 
-    const teamsAndSubs = TeamBalanceModule.createOptimalTeams(allPlayers);
+    const teamsAndSubs = createOptimalTeams(allPlayers);
     Logger.log("Teams and substitutes created: " + JSON.stringify(teamsAndSubs));
 
     writeTeamsToSheet(teamsSheet, teamsAndSubs);

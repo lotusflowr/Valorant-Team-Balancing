@@ -277,152 +277,6 @@ function getPlayersData(sheet) {
   Logger.log("Sample player data: ".concat(JSON.stringify(validPlayers[0])));
   return validPlayers;
 }
-function createOptimalTeams(players) {
-  var result = {
-    teams: [],
-    substitutes: {}
-  };
-  var assignedPlayers = new Set();
-
-  // Ensure TIME_SLOTS is defined and not empty
-  if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
-    Logger.log("Error: TIME_SLOTS is undefined or empty");
-    return result;
-  }
-
-  // Sort players based on the number of available time slots (ascending)
-  players.sort(function (a, b) {
-    return a.timeSlots.length - b.timeSlots.length;
-  });
-
-  // Process each time slot
-  TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
-    var timeSlotPlayers = [];
-
-    // First, add players who can only play in this time slot
-    players.forEach(function (player) {
-      if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
-        timeSlotPlayers.push(player);
-      }
-    });
-
-    // Then, add players who haven't played yet and can play in this slot
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
-        timeSlotPlayers.push(player);
-      }
-    });
-
-    // Finally, add any remaining available players
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
-        timeSlotPlayers.push(player);
-      }
-    });
-
-    // Create teams for this time slot
-    var slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
-    result.teams = result.teams.concat(slotResult.teams);
-    result.substitutes[timeSlot] = slotResult.substitutes;
-    assignedPlayers = new Set([].concat(_toConsumableArray(assignedPlayers), _toConsumableArray(slotResult.assignedPlayers)));
-    Logger.log("Created ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
-    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(slotResult.substitutes.length));
-  });
-  return result;
-}
-function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
-  var numPlayers = players.length;
-  var maxTeams = Math.floor(numPlayers / TEAM_SIZE);
-
-  // Ensure even number of teams and all teams have exactly TEAM_SIZE players
-  var adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
-  var teams = [];
-
-  // Initialize empty teams
-  for (var i = 0; i < adjustedNumTeams; i++) {
-    teams.push({
-      name: "Team ".concat(i + 1),
-      timeSlot: timeSlot,
-      players: [],
-      total: 0 // total rank power of the team
-    });
-  }
-
-  // Sort players: single time slot first, then unassigned, then by rank (descending)
-  players.sort(function (a, b) {
-    if (a.timeSlots.length !== b.timeSlots.length) {
-      return a.timeSlots.length - b.timeSlots.length;
-    }
-    if (assignedPlayers.has(a.discordUsername) !== assignedPlayers.has(b.discordUsername)) {
-      return assignedPlayers.has(a.discordUsername) ? 1 : -1;
-    }
-    return b.averageRank - a.averageRank;
-  });
-
-  // Distribute players evenly across teams
-  var teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
-  for (var _i = 0; _i < teamPlayers.length; _i++) {
-    var teamIndex = _i % adjustedNumTeams;
-    teams[teamIndex].players.push(teamPlayers[_i]);
-    teams[teamIndex].total += teamPlayers[_i].averageRank;
-  }
-
-  // Remaining players become substitutes
-  var substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
-
-  // Optimize team balance
-  for (var iteration = 0; iteration < 100; iteration++) {
-    var improved = false;
-    for (var _i2 = 0; _i2 < teams.length; _i2++) {
-      for (var j = _i2 + 1; j < teams.length; j++) {
-        if (trySwapPlayers(teams[_i2], teams[j])) {
-          improved = true;
-        }
-      }
-    }
-    if (!improved) break;
-  }
-
-  // Calculate team spread for logging
-  var teamSpread = getTeamSpread(teams);
-  Logger.log("Team spread for ".concat(timeSlot, ": ").concat(teamSpread.toFixed(2)));
-  return {
-    teams: teams,
-    substitutes: substitutes,
-    assignedPlayers: new Set([].concat(_toConsumableArray(assignedPlayers), _toConsumableArray(teams.flatMap(function (team) {
-      return team.players.map(function (p) {
-        return p.discordUsername;
-      });
-    }))))
-  };
-}
-function trySwapPlayers(team1, team2) {
-  for (var i = 0; i < team1.players.length; i++) {
-    for (var j = 0; j < team2.players.length; j++) {
-      var diff1 = team1.players[i].averageRank - team2.players[j].averageRank;
-      var newTotal1 = team1.total - diff1;
-      var newTotal2 = team2.total + diff1;
-      if (Math.abs(newTotal1 - newTotal2) < Math.abs(team1.total - team2.total)) {
-        // Swap players
-        var temp = team1.players[i];
-        team1.players[i] = team2.players[j];
-        team2.players[j] = temp;
-
-        // Update totals
-        team1.total = newTotal1;
-        team2.total = newTotal2;
-        return true;
-      }
-    }
-  }
-  return false;
-}
-function getTeamSpread(teams) {
-  var totals = teams.map(function (team) {
-    return team.total;
-  });
-  return Math.max.apply(Math, _toConsumableArray(totals)) - Math.min.apply(Math, _toConsumableArray(totals));
-}
 function writeTeamsToSheet(sheet, teamsAndSubs) {
   sheet.clear();
   var rowIndex = 0;
@@ -652,60 +506,60 @@ function getContrastColor(hexcolor) {
 function getRankValue(rank) {
   var ranks = {
     "Iron 1": 1,
-    "Iron 2": 5,
-    "Iron 3": 10,
-    "Bronze 1": 15,
-    "Bronze 2": 20,
-    "Bronze 3": 25,
-    "Silver 1": 35,
-    "Silver 2": 40,
-    "Silver 3": 45,
-    "Gold 1": 55,
-    "Gold 2": 60,
-    "Gold 3": 65,
-    "Platinum 1": 75,
-    "Platinum 2": 80,
-    "Platinum 3": 85,
-    "Diamond 1": 95,
-    "Diamond 2": 100,
-    "Diamond 3": 110,
-    "Ascendant 1": 125,
-    "Ascendant 2": 130,
-    "Ascendant 3": 140,
-    "Immortal 1": 160,
-    "Immortal 2": 165,
-    "Immortal 3": 180,
-    "Radiant": 220
+    "Iron 2": 3,
+    "Iron 3": 6,
+    "Bronze 1": 10,
+    "Bronze 2": 12,
+    "Bronze 3": 15,
+    "Silver 1": 20,
+    "Silver 2": 22,
+    "Silver 3": 25,
+    "Gold 1": 30,
+    "Gold 2": 32,
+    "Gold 3": 35,
+    "Platinum 1": 40,
+    "Platinum 2": 42,
+    "Platinum 3": 45,
+    "Diamond 1": 50,
+    "Diamond 2": 52,
+    "Diamond 3": 55,
+    "Ascendant 1": 60,
+    "Ascendant 2": 65,
+    "Ascendant 3": 70,
+    "Immortal 1": 80,
+    "Immortal 2": 85,
+    "Immortal 3": 95,
+    "Radiant": 110
   };
   return ranks[rank] || 0;
 }
 function getRankName(rankValue) {
   var rankNames = {
     1: "Iron 1",
-    5: "Iron 2",
-    10: "Iron 3",
-    15: "Bronze 1",
-    20: "Bronze 2",
-    25: "Bronze 3",
-    35: "Silver 1",
-    40: "Silver 2",
-    45: "Silver 3",
-    55: "Gold 1",
-    60: "Gold 2",
-    65: "Gold 3",
-    75: "Platinum 1",
-    80: "Platinum 2",
-    85: "Platinum 3",
-    95: "Diamond 1",
-    100: "Diamond 2",
-    110: "Diamond 3",
-    125: "Ascendant 1",
-    130: "Ascendant 2",
-    140: "Ascendant 3",
-    160: "Immortal 1",
-    165: "Immortal 2",
-    180: "Immortal 3",
-    220: "Radiant"
+    3: "Iron 2",
+    6: "Iron 3",
+    10: "Bronze 1",
+    12: "Bronze 2",
+    15: "Bronze 3",
+    20: "Silver 1",
+    22: "Silver 2",
+    25: "Silver 3",
+    30: "Gold 1",
+    32: "Gold 2",
+    35: "Gold 3",
+    40: "Platinum 1",
+    42: "Platinum 2",
+    45: "Platinum 3",
+    50: "Diamond 1",
+    52: "Diamond 2",
+    55: "Diamond 3",
+    60: "Ascendant 1",
+    65: "Ascendant 2",
+    70: "Ascendant 3",
+    80: "Immortal 1",
+    85: "Immortal 2",
+    95: "Immortal 3",
+    110: "Radiant"
   };
   return rankNames[rankValue] || "Unranked";
 }
@@ -745,6 +599,154 @@ function clearResponses() {
     // If there are no responses to clear, inform the user
     ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
   }
+}
+
+/***** TEAM BALANCING LOGIC FUNCTIONS *****/
+function createOptimalTeams(players) {
+  var result = {
+    teams: [],
+    substitutes: {}
+  };
+  var assignedPlayers = new Set();
+
+  // Ensure TIME_SLOTS is defined and not empty
+  if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
+    Logger.log("Error: TIME_SLOTS is undefined or empty");
+    return result;
+  }
+
+  // Sort players based on the number of available time slots (ascending)
+  players.sort(function (a, b) {
+    return a.timeSlots.length - b.timeSlots.length;
+  });
+
+  // Process each time slot
+  TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
+    var timeSlotPlayers = [];
+
+    // First, add players who can only play in this time slot
+    players.forEach(function (player) {
+      if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Then, add players who haven't played yet and can play in this slot
+    players.forEach(function (player) {
+      if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Finally, add any remaining available players
+    players.forEach(function (player) {
+      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
+        timeSlotPlayers.push(player);
+      }
+    });
+
+    // Create teams for this time slot
+    var slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
+    result.teams = result.teams.concat(slotResult.teams);
+    result.substitutes[timeSlot] = slotResult.substitutes;
+    assignedPlayers = new Set([].concat(_toConsumableArray(assignedPlayers), _toConsumableArray(slotResult.assignedPlayers)));
+    Logger.log("Created ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
+    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(slotResult.substitutes.length));
+  });
+  return result;
+}
+function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
+  var numPlayers = players.length;
+  var maxTeams = Math.floor(numPlayers / TEAM_SIZE);
+
+  // Ensure even number of teams and all teams have exactly TEAM_SIZE players
+  var adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
+  var teams = [];
+
+  // Initialize empty teams
+  for (var i = 0; i < adjustedNumTeams; i++) {
+    teams.push({
+      name: "Team ".concat(i + 1),
+      timeSlot: timeSlot,
+      players: [],
+      total: 0 // total rank power of the team
+    });
+  }
+
+  // Sort players: single time slot first, then unassigned, then by rank (descending)
+  players.sort(function (a, b) {
+    if (a.timeSlots.length !== b.timeSlots.length) {
+      return a.timeSlots.length - b.timeSlots.length;
+    }
+    if (assignedPlayers.has(a.discordUsername) !== assignedPlayers.has(b.discordUsername)) {
+      return assignedPlayers.has(a.discordUsername) ? 1 : -1;
+    }
+    return b.averageRank - a.averageRank;
+  });
+
+  // Distribute players evenly across teams
+  var teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
+  for (var _i = 0; _i < teamPlayers.length; _i++) {
+    var teamIndex = _i % adjustedNumTeams;
+    teams[teamIndex].players.push(teamPlayers[_i]);
+    teams[teamIndex].total += teamPlayers[_i].averageRank;
+  }
+
+  // Remaining players become substitutes
+  var substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
+
+  // Optimize team balance
+  for (var iteration = 0; iteration < 100; iteration++) {
+    var improved = false;
+    for (var _i2 = 0; _i2 < teams.length; _i2++) {
+      for (var j = _i2 + 1; j < teams.length; j++) {
+        if (trySwapPlayers(teams[_i2], teams[j])) {
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+
+  // Calculate team spread for logging
+  var teamSpread = getTeamSpread(teams);
+  Logger.log("Team spread for ".concat(timeSlot, ": ").concat(teamSpread.toFixed(2)));
+  return {
+    teams: teams,
+    substitutes: substitutes,
+    assignedPlayers: new Set([].concat(_toConsumableArray(assignedPlayers), _toConsumableArray(teams.flatMap(function (team) {
+      return team.players.map(function (p) {
+        return p.discordUsername;
+      });
+    }))))
+  };
+}
+function trySwapPlayers(team1, team2) {
+  for (var i = 0; i < team1.players.length; i++) {
+    for (var j = 0; j < team2.players.length; j++) {
+      var diff1 = team1.players[i].averageRank - team2.players[j].averageRank;
+      var newTotal1 = team1.total - diff1;
+      var newTotal2 = team2.total + diff1;
+      if (Math.abs(newTotal1 - newTotal2) < Math.abs(team1.total - team2.total)) {
+        // Swap players
+        var temp = team1.players[i];
+        team1.players[i] = team2.players[j];
+        team2.players[j] = temp;
+
+        // Update totals
+        team1.total = newTotal1;
+        team2.total = newTotal2;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function getTeamSpread(teams) {
+  var totals = teams.map(function (team) {
+    return team.total;
+  });
+  return Math.max.apply(Math, _toConsumableArray(totals)) - Math.min.apply(Math, _toConsumableArray(totals));
 }
 
 var global = {};
