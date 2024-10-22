@@ -4,8 +4,8 @@
   "scripts": {
     "test": "jest",
     "build": "rollup --config",
-    "deploy_dev_kili": "./prepare.sh dev-kili && npx clasp push",
-    "deploy_dev_lotus": "/.prepare.sh dev-lotus && npx clasp push"
+    "deploy_dev_kili": "bash prepare.sh dev-kili && npx clasp push",
+    "deploy_dev_lotus": "bash prepare.sh dev-lotus && npx clasp push"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.7",

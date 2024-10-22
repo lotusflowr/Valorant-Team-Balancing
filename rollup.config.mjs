@@ -18,7 +18,7 @@ const preventTreeShakingPlugin = () => {
 export default {
   input: 'src/main.js',
   output: {
-    file: 'code.js',
+    file: 'dist/code.js',
     name: 'GalorantsInHouses',
     format: 'esm'
   },
