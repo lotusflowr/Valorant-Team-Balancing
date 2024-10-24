@@ -4,8 +4,8 @@
   "scripts": {
     "test": "jest",
     "build": "rollup --config",
-    "deploy_dev_kili": "bash deploy.sh -m dev-kili",
-    "deploy_dev_lotus": "bash deploy.sh -m dev-lotus"
+    "deploy_dev_kili": "python deploy.py -m dev-kili",
+    "deploy_dev_lotus": "python deploy.py -m dev-lotus"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.7",
