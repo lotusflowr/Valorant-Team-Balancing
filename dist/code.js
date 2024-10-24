@@ -226,12 +226,6 @@ function sortPlayersIntoBalancedTeams() {
     Logger.log("Teams and substitutes created: " + JSON.stringify(teamsAndSubs));
     writeTeamsToSheet(teamsSheet, teamsAndSubs);
     Logger.log("Teams written to sheet");
-    var discordPings = createDiscordPings(teamsAndSubs.teams, teamsAndSubs.substitutes);
-
-    // Write Discord pings to a new sheet
-    var discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
-    writeDiscordPingsToSheet(discordPingsSheet, discordPings);
-    Logger.log("Discord Pings completed");
   } catch (e) {
     Logger.log("Error: ".concat(e.message));
     throw e;
@@ -369,143 +363,235 @@ function generateDiscordPings() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var teamsSheet = ss.getSheetByName("Teams");
   if (!teamsSheet) {
+    Logger.log("Error: Teams sheet not found.");
     throw new Error("Teams sheet not found. Please create teams first.");
   }
 
   // Get all data from the Teams sheet
   var data = teamsSheet.getDataRange().getValues();
+  Logger.log("Total rows in Teams sheet: ".concat(data.length));
 
   // Initialize variables
   var currentTimeSlot = null;
   var currentTeam = null;
   var teams = [];
   var substitutes = {};
-  var inSubstitutesSection = false;
+  var currentSection = null; // Possible values: null, "team", "players", "substitutes", "substitutesPlayers"
 
   // Process each row in the Teams sheet
   for (var i = 0; i < data.length; i++) {
     var row = data[i];
     var firstCell = row[0].toString().trim();
+    Logger.log("Processing row ".concat(i + 1, ": \"").concat(firstCell, "\""));
 
-    // Skip empty rows
-    if (!firstCell) continue;
-
-    // Check if this is a time slot row
-    if (row.length === 6 && row.slice(1).every(function (cell) {
-      return !cell;
-    })) {
-      currentTimeSlot = "X Timeslot"; // Replace actual timeslot with X Timeslot
-      substitutes[currentTimeSlot] = [];
-      inSubstitutesSection = false;
+    // Detect Time Slot
+    if (row.length === 6 && (firstCell.includes("CEST") || firstCell.includes("WEST"))) {
+      currentTimeSlot = firstCell;
+      currentSection = "timeSlot";
+      if (!substitutes[currentTimeSlot]) {
+        substitutes[currentTimeSlot] = [];
+      }
+      Logger.log("Detected Time Slot: \"".concat(currentTimeSlot, "\""));
       continue;
     }
 
-    // Check if this is a team header row
+    // Detect Team Header
     if (firstCell.startsWith("Team")) {
       currentTeam = {
         name: firstCell,
+        // e.g., "Team 1"
         timeSlot: currentTimeSlot,
         players: []
       };
       teams.push(currentTeam);
-      inSubstitutesSection = false;
+      currentSection = "team";
+      Logger.log("Detected Team: \"".concat(currentTeam.name, "\" under Time Slot: \"").concat(currentTimeSlot, "\""));
       continue;
     }
 
-    // Check if this is a substitutes header
+    // Detect "Discord" header indicating the start of Players section for a Team
+    if (firstCell === "Discord" && currentSection === "team") {
+      currentSection = "players";
+      Logger.log("Detected Players section under Team: \"".concat(currentTeam.name, "\""));
+      continue;
+    }
+
+    // Detect "Substitutes" header
     if (firstCell === "Substitutes") {
       currentTeam = null;
-      inSubstitutesSection = true;
+      currentSection = "substitutes";
+      Logger.log("Detected Substitutes section under Time Slot: \"".concat(currentTimeSlot, "\""));
       continue;
     }
 
-    // Skip the column headers row
-    if (firstCell === "Discord") {
-      inSubstitutesSection = false;
+    // Detect "Discord" header indicating the start of Players section for Substitutes
+    if (firstCell === "Discord" && currentSection === "substitutes") {
+      currentSection = "substitutesPlayers";
+      Logger.log("Detected Players section under Substitutes for Time Slot: \"".concat(currentTimeSlot, "\""));
       continue;
     }
 
-    // Process player row
-    if (firstCell.includes("@") || firstCell.includes("#") || firstCell.match(/[A-Za-z0-9]/)) {
+    // Process Player Rows for Teams
+    if (currentSection === "players" && firstCell !== "") {
       var player = {
-        discordUsername: firstCell.replace(/^@/, ''),
-        // Remove @ if present for consistency
-        riotID: row[1],
-        lobbyHost: row[4]
+        discordUsername: firstCell.replace(/^@/, '').trim(),
+        // Remove "@" if present
+        riotID: row[1] ? row[1].toString().trim() : "",
+        lobbyHost: row[4] ? row[4].toString().trim().toLowerCase() === "yes" : false
       };
-      if (inSubstitutesSection && currentTimeSlot) {
-        substitutes[currentTimeSlot].push(player);
-      } else if (currentTeam) {
-        currentTeam.players.push(player);
-      }
+      currentTeam.players.push(player);
+      Logger.log("Added Player to Team \"".concat(currentTeam.name, "\": \"@").concat(player.discordUsername, "\" (Lobby Host: ").concat(player.lobbyHost, ")"));
+      continue;
+    }
+
+    // Process Player Rows for Substitutes
+    if (currentSection === "substitutesPlayers" && firstCell !== "") {
+      var substitute = {
+        discordUsername: firstCell.replace(/^@/, '').trim(),
+        // Remove "@" if present
+        riotID: row[1] ? row[1].toString().trim() : "",
+        lobbyHost: row[4] ? row[4].toString().trim().toLowerCase() === "yes" : false
+      };
+      substitutes[currentTimeSlot].push(substitute);
+      Logger.log("Added Substitute to Time Slot \"".concat(currentTimeSlot, "\": \"@").concat(substitute.discordUsername, "\" (Lobby Host: ").concat(substitute.lobbyHost, ")"));
+      continue;
+    }
+
+    // Reset section if encountering an empty row
+    if (firstCell === "") {
+      currentSection = null;
+      Logger.log("Encountered empty row. Resetting current section.");
+      continue;
     }
   }
+  Logger.log("Total Teams Parsed: ".concat(teams.length));
+  Logger.log("Total Substitutes Parsed: ".concat(JSON.stringify(substitutes)));
 
   // Create pings content
   var currentDate = new Date();
   var gameDay = PropertiesService.getScriptProperties().getProperty('GAME_DAY') || "Saturday";
-  var nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + (7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(gameDay) - currentDate.getDay()) % 7));
+  var daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var gameDayIndex = daysOfWeek.indexOf(gameDay);
+  var currentDayIndex = currentDate.getDay();
+  var daysUntilGame = (7 + gameDayIndex - currentDayIndex) % 7;
+  var nextGameDay = new Date(currentDate);
+  nextGameDay.setDate(currentDate.getDate() + daysUntilGame);
   var formattedDate = nextGameDay.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric'
   });
-  var pings = "# Here are the teams for ".concat(gameDay, ", ").concat(formattedDate, "!\n\n");
+  Logger.log("Game Day: \"".concat(gameDay, "\", Date: \"").concat(formattedDate, "\""));
+
+  // Create the content array
+  var contentArray = [];
+
+  // Add title as first element
+  contentArray.push("# Here are the teams for ".concat(gameDay, ", ").concat(formattedDate, "!"));
+  Logger.log("Added title to contentArray.");
 
   // Group teams by time slot
   var timeSlots = _toConsumableArray(new Set(teams.map(function (team) {
     return team.timeSlot;
   })));
-  timeSlots.forEach(function (timeSlot, slotIndex) {
+  Logger.log("Unique Time Slots: ".concat(timeSlots.join(", ")));
+  timeSlots.forEach(function (timeSlot) {
     var timeSlotTeams = teams.filter(function (team) {
       return team.timeSlot === timeSlot;
     });
     var timeSlotSubstitutes = substitutes[timeSlot] || [];
     if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-      pings += "## ".concat(timeSlot, "\n\n");
+      // Add time slot header with "Timeslot"
+      contentArray.push("## ".concat(timeSlot, " Timeslot"));
+      Logger.log("Added Time Slot Header: \"".concat(timeSlot, " Timeslot\""));
 
-      // Process teams
-      timeSlotTeams.forEach(function (team, teamIndex) {
-        // Add lobby host before Team 3 & 4
-        if (teamIndex === 2) {
-          // Index 2 would be Team 3
-          var nextTeam = timeSlotTeams[teamIndex + 1]; // Team 4
-          if (nextTeam) {
-            var lobbyHost = [].concat(_toConsumableArray(team.players), _toConsumableArray(nextTeam.players)).find(function (player) {
-              return player.lobbyHost === "Yes";
-            });
-            if (lobbyHost) {
-              pings += "### LOBBY HOST **Teams ".concat(teamIndex + 1, " & ").concat(teamIndex + 2, "**\n@").concat(lobbyHost.discordUsername, "\n\n");
-            }
-          }
+      // Group teams into pairs (e.g., Team 1 & Team 2)
+      for (var _i = 0; _i < timeSlotTeams.length; _i += 2) {
+        var pair = timeSlotTeams.slice(_i, _i + 2);
+        Logger.log("Processing Team Pair: \"".concat(pair.map(function (t) {
+          return t.name;
+        }).join(" & "), "\""));
+
+        // Assign one Lobby Host per pair
+        var lobbyHosts = pair.flatMap(function (team) {
+          return team.players;
+        }).filter(function (player) {
+          return player.lobbyHost;
+        });
+        var selectedHost = null;
+        if (lobbyHosts.length > 0) {
+          selectedHost = lobbyHosts[0]; // Select the first Lobby Host found
+          Logger.log("Selected Lobby Host: \"@".concat(selectedHost.discordUsername, "\" for Team Pair: \"").concat(pair.map(function (t) {
+            return t.name;
+          }).join(" & "), "\""));
+        } else {
+          Logger.log("No Lobby Host found for Team Pair: \"".concat(pair.map(function (t) {
+            return t.name;
+          }).join(" & "), "\""));
         }
-        pings += "### ".concat(team.name, "\n");
-        team.players.forEach(function (player) {
-          pings += "@".concat(player.discordUsername, "\n");
-        });
-        pings += "\n";
-      });
 
-      // Add substitutes section with clear separation
-      if (timeSlotSubstitutes.length > 0) {
-        pings += "### Substitutes\n";
-        timeSlotSubstitutes.forEach(function (sub) {
-          pings += "@".concat(sub.discordUsername, "\n");
+        // Add Lobby Host section if a host is selected
+        if (selectedHost) {
+          contentArray.push("### Lobby Host");
+          contentArray.push("@".concat(selectedHost.discordUsername));
+          contentArray.push(''); // Blank line after Lobby Host
+          Logger.log("Added Lobby Host Section: \"@".concat(selectedHost.discordUsername, "\""));
+        }
+
+        // Add each team in the pair
+        pair.forEach(function (team) {
+          contentArray.push("### ".concat(team.name));
+          Logger.log("Added Team Header: \"".concat(team.name, "\""));
+          team.players.forEach(function (player) {
+            contentArray.push("@".concat(player.discordUsername));
+            Logger.log("Added Player Mention: \"@".concat(player.discordUsername, "\""));
+          });
+          contentArray.push(''); // Blank line after each team
+          Logger.log("Added blank line after Team: \"".concat(team.name, "\""));
         });
-        pings += "\n";
       }
+
+      // Add substitutes section if there are any
+      if (timeSlotSubstitutes.length > 0) {
+        contentArray.push("### Substitutes");
+        Logger.log("Added Substitutes Header for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+        timeSlotSubstitutes.forEach(function (sub) {
+          contentArray.push("@".concat(sub.discordUsername));
+          Logger.log("Added Substitute Mention: \"@".concat(sub.discordUsername, "\""));
+        });
+        contentArray.push(''); // Blank line after substitutes
+        Logger.log("Added blank line after Substitutes for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+      }
+
+      // Add separator
+      contentArray.push(''); // Blank line after separator
+      Logger.log("Added separator for Time Slot: \"".concat(timeSlot, " Timeslot\""));
     }
   });
 
-  // Write pings to Discord Pings sheet
-  var discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
-  writeDiscordPingsToSheet(discordPingsSheet, pings);
-  return pings;
+  // Join all text for potential direct usage (e.g., sending via API)
+  var discordPingText = contentArray.join('\n');
+  Logger.log("Generated Discord Ping Text:\n" + discordPingText);
+
+  // Invoke the write function to write to the "Discord Pings" sheet
+  try {
+    var discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
+    writeDiscordPingsToSheet(discordPingsSheet, discordPingText);
+    Logger.log("Successfully wrote Discord pings to the 'Discord Pings' sheet.");
+  } catch (error) {
+    Logger.log("Error writing to Discord Pings sheet: ".concat(error.message));
+    throw error;
+  }
+
+  // Optionally, return the ping text if needed elsewhere
+  return discordPingText;
 }
 function writeDiscordPingsToSheet(sheet, pings) {
   sheet.clear();
+  Logger.log("Cleared existing content in Discord Pings sheet.");
   var lines = pings.split("\n");
   var numRows = lines.length;
   var range = sheet.getRange(1, 1, numRows, 1);
+  Logger.log("Total lines to write: ".concat(numRows));
 
   // Set values and basic formatting
   range.setValues(lines.map(function (line) {
@@ -513,42 +599,56 @@ function writeDiscordPingsToSheet(sheet, pings) {
   }));
   range.setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
   range.setVerticalAlignment("top");
+  Logger.log("Set values and basic formatting.");
 
   // Apply formatting based on line content
   for (var i = 0; i < numRows; i++) {
     var cell = range.getCell(i + 1, 1);
-    var content = lines[i];
-    if (content.startsWith("# Here are the teams")) {
-      // First line (title)
-      cell.setFontWeight("bold").setFontSize(18).setBackground("#4A86E8").setFontColor("#ffffff");
-    } else if (content.startsWith("##")) {
-      // Time slot headers
-      cell.setFontWeight("bold").setFontSize(14).setBackground("#4A86E8").setFontColor("#ffffff");
-    } else if (content.startsWith("### LOBBY HOST")) {
-      // Lobby host headers
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+    var content = lines[i].trim();
+    Logger.log("Formatting row ".concat(i + 1, ": \"").concat(content, "\""));
+    if (content.startsWith("# ")) {
+      // Title Header: Darker Blue
+      cell.setFontWeight("bold").setFontSize(18).setBackground("#002B80") // Darker Blue
+      .setFontColor("#ffffff");
+      Logger.log("Formatted Title: \"".concat(content, "\""));
+    } else if (content.startsWith("## ") && content.endsWith("Timeslot")) {
+      // Timeslot Headers: Original Blue
+      cell.setFontWeight("bold").setFontSize(14).setBackground("#4A86E8") // Original Blue
+      .setFontColor("#ffffff");
+      Logger.log("Formatted Timeslot Header: \"".concat(content, "\""));
+    } else if (content.startsWith("### Lobby Host")) {
+      // Lobby Host Headers: Light Blue
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3") // Light Blue
+      .setFontColor("#000000"); // Black text
+      Logger.log("Formatted Lobby Host Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Team")) {
-      // Team headers
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+      // Team Headers: Light Blue
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3") // Light Blue
+      .setFontColor("#000000"); // Black text
+      Logger.log("Formatted Team Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Substitutes")) {
-      // Substitutes header
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3");
+      // Substitutes Header: Different Shade of Blue
+      cell.setFontWeight("bold").setFontSize(13).setBackground("#A9D0F5") // Light Sky Blue
+      .setFontColor("#000000"); // Black text
+      Logger.log("Formatted Substitutes Header: \"".concat(content, "\""));
     } else if (content.startsWith("@")) {
-      // Player names
-      cell.setFontSize(11).setValue("  " + content); // Add two spaces for indentation
-    } else if (content.trim() === "") {
-      // Empty lines
-      cell.setValue(""); // Clear the cell content
+      // Player Names: Indented
+      cell.setFontSize(11).setFontColor("#000000"); // Black test
+      Logger.log("Formatted Player Mention: \"".concat(content, "\""));
+    } else if (content === "") {
+      // Empty Lines: Clear Content and Remove Background
+      cell.setValue("").setBackground(null); // Remove any background color
+      Logger.log("Cleared empty row ".concat(i + 1));
     }
 
-    // Adjust row height
-    sheet.setRowHeight(i + 1, 21);
+    // Adjust row height for non-separator rows
+    if (!content.startsWith("---")) {
+      sheet.setRowHeight(i + 1, 21);
+    }
   }
   sheet.autoResizeColumns(1, 1);
   sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
-
-  // Apply trimWhitespace to the entire range
-  range.trimWhitespace();
+  Logger.log("Auto-resized and set minimum column width.");
 }
 function setConditionalFormatting(range) {
   var rules = [{
@@ -774,10 +874,10 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
 
   // Distribute players evenly across teams
   var teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
-  for (var _i = 0; _i < teamPlayers.length; _i++) {
-    var teamIndex = _i % adjustedNumTeams;
-    teams[teamIndex].players.push(teamPlayers[_i]);
-    teams[teamIndex].total += teamPlayers[_i].averageRank;
+  for (var _i2 = 0; _i2 < teamPlayers.length; _i2++) {
+    var teamIndex = _i2 % adjustedNumTeams;
+    teams[teamIndex].players.push(teamPlayers[_i2]);
+    teams[teamIndex].total += teamPlayers[_i2].averageRank;
   }
 
   // Remaining players become substitutes
@@ -786,9 +886,9 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   // Optimize team balance
   for (var iteration = 0; iteration < 100; iteration++) {
     var improved = false;
-    for (var _i2 = 0; _i2 < teams.length; _i2++) {
-      for (var j = _i2 + 1; j < teams.length; j++) {
-        if (trySwapPlayers(teams[_i2], teams[j])) {
+    for (var _i3 = 0; _i3 < teams.length; _i3++) {
+      for (var j = _i3 + 1; j < teams.length; j++) {
+        if (trySwapPlayers(teams[_i3], teams[j])) {
           improved = true;
         }
       }

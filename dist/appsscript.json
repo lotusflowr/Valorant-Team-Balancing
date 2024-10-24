@@ -5,15 +5,23 @@
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "sheets": {
-    "macros": [{
-      "menuName": "Sort and Balance Players",
-      "functionName": "sortPlayersIntoBalancedTeams"
-    }, {
-      "menuName": "Clear Responses",
-      "functionName": "clearResponses"
-    }, {
-      "menuName": "Manage Time Slots",
-      "functionName": "manageTimeSlots"
-    }]
+    "macros": [
+        {
+            "menuName": "Manage Time Slots",
+            "functionName": "manageTimeSlots"
+        },
+        {
+            "menuName": "Sort and Balance Players",
+            "functionName": "sortPlayersIntoBalancedTeams"
+        },
+        {
+            "menuName": "Generate Discord Pings",
+            "functionName": "generateDiscordPings"
+        },
+        {
+            "menuName": "Clear Responses",
+            "functionName": "clearResponses"
+        }
+    ]
   }
 }
