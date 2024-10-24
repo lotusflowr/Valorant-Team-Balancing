@@ -29,7 +29,7 @@ var TEAM_SIZE = 5;
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('Manage Time Slots', 'manageTimeSlots').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Clear Responses', 'clearResponses').addToUi();
+  ui.createMenu('SCRIPTS').addItem('Manage Time Slots', 'manageTimeSlots').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Generate Discord Pings', 'generateDiscordPings').addItem('Clear Responses', 'clearResponses').addToUi();
 }
 function getTimeSlots() {
   var scriptProperties = PropertiesService.getScriptProperties();
@@ -365,46 +365,127 @@ function writeTeamsToSheet(sheet, teamsAndSubs) {
   sheet.setColumnWidth(6, 100); // Set Avg Rank column width
   sheet.setFrozenRows(1);
 }
-function createDiscordPings(teams, substitutes) {
+function generateDiscordPings() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var teamsSheet = ss.getSheetByName("Teams");
+  if (!teamsSheet) {
+    throw new Error("Teams sheet not found. Please create teams first.");
+  }
+
+  // Get all data from the Teams sheet
+  var data = teamsSheet.getDataRange().getValues();
+
+  // Initialize variables
+  var currentTimeSlot = null;
+  var currentTeam = null;
+  var teams = [];
+  var substitutes = {};
+  var inSubstitutesSection = false;
+
+  // Process each row in the Teams sheet
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var firstCell = row[0].toString().trim();
+
+    // Skip empty rows
+    if (!firstCell) continue;
+
+    // Check if this is a time slot row
+    if (row.length === 6 && row.slice(1).every(function (cell) {
+      return !cell;
+    })) {
+      currentTimeSlot = "X Timeslot"; // Replace actual timeslot with X Timeslot
+      substitutes[currentTimeSlot] = [];
+      inSubstitutesSection = false;
+      continue;
+    }
+
+    // Check if this is a team header row
+    if (firstCell.startsWith("Team")) {
+      currentTeam = {
+        name: firstCell,
+        timeSlot: currentTimeSlot,
+        players: []
+      };
+      teams.push(currentTeam);
+      inSubstitutesSection = false;
+      continue;
+    }
+
+    // Check if this is a substitutes header
+    if (firstCell === "Substitutes") {
+      currentTeam = null;
+      inSubstitutesSection = true;
+      continue;
+    }
+
+    // Skip the column headers row
+    if (firstCell === "Discord") {
+      inSubstitutesSection = false;
+      continue;
+    }
+
+    // Process player row
+    if (firstCell.includes("@") || firstCell.includes("#") || firstCell.match(/[A-Za-z0-9]/)) {
+      var player = {
+        discordUsername: firstCell.replace(/^@/, ''),
+        // Remove @ if present for consistency
+        riotID: row[1],
+        lobbyHost: row[4]
+      };
+      if (inSubstitutesSection && currentTimeSlot) {
+        substitutes[currentTimeSlot].push(player);
+      } else if (currentTeam) {
+        currentTeam.players.push(player);
+      }
+    }
+  }
+
+  // Create pings content
   var currentDate = new Date();
-  var nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + (7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(GAME_DAY) - currentDate.getDay()) % 7));
+  var gameDay = PropertiesService.getScriptProperties().getProperty('GAME_DAY') || "Saturday";
+  var nextGameDay = new Date(currentDate.setDate(currentDate.getDate() + (7 + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(gameDay) - currentDate.getDay()) % 7));
   var formattedDate = nextGameDay.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric'
   });
-  var pings = "# Here are the teams for ".concat(GAME_DAY, ", ").concat(formattedDate, "!\n\n");
-  TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
+  var pings = "# Here are the teams for ".concat(gameDay, ", ").concat(formattedDate, "!\n\n");
+
+  // Group teams by time slot
+  var timeSlots = _toConsumableArray(new Set(teams.map(function (team) {
+    return team.timeSlot;
+  })));
+  timeSlots.forEach(function (timeSlot, slotIndex) {
     var timeSlotTeams = teams.filter(function (team) {
       return team.timeSlot === timeSlot;
     });
     var timeSlotSubstitutes = substitutes[timeSlot] || [];
     if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-      pings += "## TIMESLOT ".concat(slotIndex + 1, "\n\n");
-      var _loop = function _loop(i) {
-        var twoTeams = timeSlotTeams.slice(i, i + 2);
-        var lobbyHost = twoTeams.flatMap(function (team) {
-          return team.players;
-        }).find(function (player) {
-          return player.lobbyHost === "Yes";
-        });
-        if (lobbyHost) {
-          if (timeSlotTeams.length > 2) {
-            pings += "### LOBBY HOST **Team ".concat(i + 1, " & ").concat(i + 2, "**\n@").concat(lobbyHost.discordUsername, "\n\n");
-          } else {
-            pings += "### LOBBY HOST\n@".concat(lobbyHost.discordUsername, "\n\n");
+      pings += "## ".concat(timeSlot, "\n\n");
+
+      // Process teams
+      timeSlotTeams.forEach(function (team, teamIndex) {
+        // Add lobby host before Team 3 & 4
+        if (teamIndex === 2) {
+          // Index 2 would be Team 3
+          var nextTeam = timeSlotTeams[teamIndex + 1]; // Team 4
+          if (nextTeam) {
+            var lobbyHost = [].concat(_toConsumableArray(team.players), _toConsumableArray(nextTeam.players)).find(function (player) {
+              return player.lobbyHost === "Yes";
+            });
+            if (lobbyHost) {
+              pings += "### LOBBY HOST **Teams ".concat(teamIndex + 1, " & ").concat(teamIndex + 2, "**\n@").concat(lobbyHost.discordUsername, "\n\n");
+            }
           }
         }
-        twoTeams.forEach(function (team, index) {
-          pings += "### Team ".concat(i + index + 1, "\n");
-          team.players.forEach(function (player) {
-            pings += "@".concat(player.discordUsername, "\n");
-          });
-          pings += "\n";
+        pings += "### ".concat(team.name, "\n");
+        team.players.forEach(function (player) {
+          pings += "@".concat(player.discordUsername, "\n");
         });
-      };
-      for (var i = 0; i < timeSlotTeams.length; i += 2) {
-        _loop(i);
-      }
+        pings += "\n";
+      });
+
+      // Add substitutes section with clear separation
       if (timeSlotSubstitutes.length > 0) {
         pings += "### Substitutes\n";
         timeSlotSubstitutes.forEach(function (sub) {
@@ -414,6 +495,10 @@ function createDiscordPings(teams, substitutes) {
       }
     }
   });
+
+  // Write pings to Discord Pings sheet
+  var discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
+  writeDiscordPingsToSheet(discordPingsSheet, pings);
   return pings;
 }
 function writeDiscordPingsToSheet(sheet, pings) {
@@ -461,6 +546,9 @@ function writeDiscordPingsToSheet(sheet, pings) {
   }
   sheet.autoResizeColumns(1, 1);
   sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
+
+  // Apply trimWhitespace to the entire range
+  range.trimWhitespace();
 }
 function setConditionalFormatting(range) {
   var rules = [{
@@ -754,4 +842,5 @@ global.onOpen = onOpen;
 global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.clearResponses = clearResponses;
+global.generateDiscordPings = generateDiscordPings;
 global.sum = sum;

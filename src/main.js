@@ -7,7 +7,7 @@ import {
   sortPlayersIntoBalancedTeams,
   getPlayersData,
   writeTeamsToSheet,
-  createDiscordPings,
+  generateDiscordPings,
   setTimeSlots,
   writeDiscordPingsToSheet,
   setConditionalFormatting,
@@ -34,4 +34,5 @@ global.onOpen = onOpen;
 global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.clearResponses = clearResponses;
+global.generateDiscordPings = generateDiscordPings;
 global.sum = sum;
