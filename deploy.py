@@ -15,13 +15,32 @@ YELLOW = "\033[33m"
 MAGENTA = "\033[35m"
 CYAN = "\033[36m"
 
+# Region-specific colors
+REGION_COLORS = {
+    # Production Environments
+    'prod-na': "\033[38;5;198m",  # Pink-red
+    'prod-eu': "\033[38;5;135m",  # Purple
+    'prod-ap': "\033[38;5;81m",   # Light blue
+    'prod-latam': "\033[38;5;214m",  # Orange
+    # Development Environments
+    'dev-na': "\033[38;5;205m",   # Lighter pink-red
+    'dev-eu': "\033[38;5;141m",   # Lighter purple
+    'dev-ap': "\033[38;5;117m",   # Lighter blue
+    'dev-latam': "\033[38;5;208m",  # Lighter orange
+}
+
 enableAPI_link = "https://script.google.com/home/usersettings"
 
 def color_text(text, color_code):
     return f"{color_code}{text}{RESET}"
 
-def print_section_header(title):
-    header = f"\n{BOLD}{CYAN}{'=' * 60}\n  {title}\n{'=' * 60}{RESET}\n"
+def get_region_color(mode):
+    """Get specific color for the environment-region combination."""
+    return REGION_COLORS.get(mode, CYAN)
+
+def print_section_header(title, mode=None):
+    color = get_region_color(mode) if mode else CYAN
+    header = f"\n{BOLD}{color}{'=' * 60}\n  {title}\n{'=' * 60}{RESET}\n"
     print(header)
 
 def make_clickable_link(url, text):
@@ -31,24 +50,6 @@ def run_command(command, clasp_config=None, interactive=False):
     """
     Core function that executes shell commands with flexible output handling.
     Handles both interactive and non-interactive command execution.
-
-    Parameters:
-    - command: List of command arguments to execute
-    - clasp_config: Optional clasp configuration for environment variables
-    - interactive: Boolean flag to determine if command needs user interaction
-
-    Returns:
-    - tuple(output, success, error):
-      - output: Command output string (empty for interactive mode)
-      - success: Boolean indicating command success
-      - error: Error message or type (e.g., "API_ERROR", "INTERRUPTED")
-
-    Features:
-    - Interactive mode: Shows real-time output, captures errors
-    - Non-interactive mode: Captures all output
-    - Special handling for API errors
-    - Keyboard interrupt handling
-    - Real-time stderr monitoring in interactive mode
     """
     shell = platform.system() == "Windows"
 
@@ -108,15 +109,6 @@ def build_package():
     """
     Executes the npm build process for the project.
     Runs 'npm run build' command with real-time output display.
-
-    Features:
-    - Shows build progress in real-time
-    - Captures and displays build errors immediately
-    - Handles interruptions gracefully
-    - Exits with appropriate status codes on failure
-    - Confirms successful builds
-
-    Returns: None (exits on failure)
     """
     print_section_header("Building Deploy Package")
     try:
@@ -151,20 +143,8 @@ def build_package():
 def copy_clasp_file(mode, clasp_files):
     """
     Copies the appropriate clasp configuration file for the selected deployment mode.
-
-    Parameters:
-    - mode: String identifying deployment environment
-    - clasp_files: Dictionary mapping modes to config file paths
-
-    Features:
-    - Validates mode and file existence
-    - Creates backup if needed
-    - Clear success/failure messages
-    - Error handling for file operations
-
-    Returns: None (exits on failure)
     """
-    print_section_header(f"Preparing Deployment for '{mode}' Environment")
+    print_section_header(f"Preparing Deployment for '{mode}' Environment", mode)
     dest_file = ".clasp.json"
 
     source_file = clasp_files.get(mode)
@@ -238,28 +218,33 @@ def get_available_modes():
         modes[mode] = filepath
     return modes
 
-def deploy_code(args):
+def get_modes_by_keyword(clasp_files, keyword):
+    """
+    Gets all modes that match or start with a given keyword.
+    Returns all prefix matches if a specific environment isn't specified.
+    """
+    # Check if a specific environment is specified (e.g., prod-na, dev-eu)
+    if '-' in keyword:
+        if keyword in clasp_files:
+            return [keyword], False
+        print(color_text(f"Environment '{keyword}' not found in clasp_configs directory.", RED))
+        sys.exit(1)
+    
+    # Get all modes that start with the keyword (e.g., prod-*, dev-*)
+    prefix_matches = [mode for mode in clasp_files.keys() if mode.startswith(f"{keyword}-")]
+    
+    if not prefix_matches:
+        print(color_text(f"No {keyword} environments ({keyword}-*) found in clasp_configs directory.", RED))
+        sys.exit(1)
+    
+    return prefix_matches, len(prefix_matches) > 1
+
+def deploy_code(args, mode):
     """
     Manages the clasp deployment process with manifest handling.
     Handles both forced and interactive deployments.
-
-    Parameters:
-    - args: ArgumentParser args containing:
-      - force: Boolean for forced deployment
-      - other deployment options
-
-    Features:
-    - Two-phase deployment:
-      1. Interactive manifest check (unless forced)
-      2. Final deployment push
-    - API error detection and custom handling
-    - Real-time output for manifest prompts
-    - Proper error propagation
-    - Success confirmation only on actual success
-
-    Returns: None (exits on failure)
     """
-    print_section_header("Deploying Code with Clasp")
+    print_section_header("Deploying Code with Clasp", mode)
     try:
         base_command = ['npx', 'clasp', 'push']
         
@@ -294,7 +279,8 @@ def deploy_code(args):
         
         # Only show success message if we actually succeeded
         if success:
-            print(color_text("\nCode deployed successfully!", GREEN))
+            color = get_region_color(mode)
+            print(f"{BOLD}{color}\nCode deployed successfully to {mode}!{RESET}")
 
     except KeyboardInterrupt:
         print(color_text("\nDeployment interrupted by user (CTRL+C).", BOLD + YELLOW))
@@ -302,6 +288,43 @@ def deploy_code(args):
     except Exception as e:
         print(color_text(f"\nDeployment failed: {e}", BOLD + RED))
         sys.exit(1)
+        
+def deploy_multiple_modes(modes, clasp_files, args):
+    """
+    Handles deployment to multiple environments with clear regional separation.
+    """
+    total_modes = len(modes)
+    print(color_text(f"\nFound {total_modes} environments:", BOLD))
+    
+    # Print each environment with its region-specific color
+    for mode in modes:
+        color = get_region_color(mode)
+        print(f"{color}{BOLD}  • {mode}{RESET}")
+    
+    print(color_text("\nProceeding with deployment to all environments...\n", BOLD))
+    
+    for index, mode in enumerate(modes, 1):
+        color = get_region_color(mode)
+        print(f"{BOLD}{color}Deployment {index}/{total_modes}: {mode}{RESET}")
+        temp_args = argparse.Namespace(**vars(args))
+        temp_args.mode = mode
+        deploy_to_mode(mode, clasp_files, temp_args)
+        
+        if index < total_modes:
+            print("")
+        
+def deploy_to_mode(mode, clasp_files, args):
+    """
+    Handles the deployment process for a single mode.
+    """
+    color = get_region_color(mode)
+    print(f"\n{BOLD}{color}Starting deployment to {mode}...{RESET}\n")
+
+    copy_clasp_file(mode, clasp_files)
+    check_clasp_login()
+    deploy_code(args, mode)
+
+    print(f"{BOLD}{color}Deployment to {mode} completed successfully!\n{RESET}")
 
 def handle_api_error():
     """
@@ -326,58 +349,40 @@ def handle_api_error():
 def main():
     """
     Main entry point for the deployment script.
-    Orchestrates the entire deployment process.
-
-    Features:
-    - Command line argument parsing
-    - Mode validation
-    - Build process management (optional)
-    - Deployment execution
-    - Global error handling
-    - Clean exit states
-
-    Returns: None (exits with appropriate status code)
     """
     try:
-        print(color_text("Starting deployment script...\n", BOLD + MAGENTA))
+        print(color_text("Starting deployment...", BOLD + MAGENTA))
 
         clasp_files = get_available_modes()
         if not clasp_files:
             print(color_text("No modes found. Please ensure configuration files exist in the 'clasp_configs' directory.", BOLD + RED))
             sys.exit(1)
 
+        # Build valid modes list
+        valid_modes = list(clasp_files.keys())
+        for keyword in ['dev', 'prod']:
+            if any(mode.startswith(f"{keyword}-") for mode in valid_modes):
+                valid_modes.append(keyword)
+
         parser = argparse.ArgumentParser(description="Build and deploy script.")
-        parser.add_argument(
-            '-m', '--mode',
-            choices=clasp_files.keys(),
-            required=True,
-            help='Deployment mode'
-        )
-        parser.add_argument(
-            '-n', '--nobuild',
-            action='store_true',
-            help='Skip the build step'
-        )
-        parser.add_argument(
-            '-f', '--force',
-            action='store_true',
-            help='Force push to overwrite manifest changes'
-        )
+        parser.add_argument('-m', '--mode', choices=valid_modes, required=True, help='Deployment mode')
+        parser.add_argument('-n', '--nobuild', action='store_true', help='Skip the build step')
+        parser.add_argument('-f', '--force', action='store_true', help='Force push to overwrite manifest changes')
 
         args = parser.parse_args()
 
-        print(color_text(f"Selected mode: {args.mode}", BOLD))
-        if args.nobuild:
-            print(color_text("Skipping build step as per argument.\n", YELLOW))
-
+        # Single build step at the start
         if not args.nobuild:
             build_package()
+        
+        # Determine deployment modes and execute
+        deployment_modes, is_multiple = get_modes_by_keyword(clasp_files, args.mode)
+        if is_multiple:
+            deploy_multiple_modes(deployment_modes, clasp_files, args)
+        else:
+            deploy_to_mode(deployment_modes[0], clasp_files, args)
 
-        copy_clasp_file(args.mode, clasp_files)
-        check_clasp_login()
-        deploy_code(args)
-
-        print(color_text("Deployment completed successfully!\n", BOLD + GREEN))
+        print(color_text("\nDeployment completed successfully!", BOLD + GREEN))
     except KeyboardInterrupt:
         print(color_text("\nScript execution interrupted by user (CTRL+C).", BOLD + YELLOW))
         sys.exit(1)
