@@ -21,14 +21,9 @@ def run_command(command):
             capture_output=False,
             encoding='utf-8'
         )
-        print(result.stdout)
         return result
     except subprocess.CalledProcessError as e:
         print(f"Command '{' '.join(command)}' failed with error code {e.returncode}")
-        if e.stdout:
-            print(f"Output:\n{e.stdout}")
-        if e.stderr:
-            print(f"Error Output:\n{e.stderr}")
         sys.exit(e.returncode)
 
 def build_package():
