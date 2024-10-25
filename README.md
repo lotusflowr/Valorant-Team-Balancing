@@ -20,7 +20,7 @@ This repository contains automation scripts for the Galorants discord server, pr
 1. Clone the repository:
    ```bash
    git clone https://github.com/lotusflowr/Galorants_scripts.git
-   cd galorants-scripts
+   cd Galorants_scripts
    ```
 
 2. Install Node dependencies:
