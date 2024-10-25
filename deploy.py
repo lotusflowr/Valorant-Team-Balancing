@@ -18,7 +18,7 @@ def run_command(command):
             check=True,
             shell=shell,
             text=True,
-            capture_output=True,
+            capture_output=False,
             encoding='utf-8'
         )
         print(result.stdout)
