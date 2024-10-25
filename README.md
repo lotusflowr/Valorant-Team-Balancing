@@ -1,60 +1,121 @@
-# Introduction
+﻿# Galorants Scripts
 
-This repo contains scripts for the Galorants discord server. Currently houses the functionality for balancing teams for custom server games.
+This repository contains automation scripts for the Galorants discord server, primarily focused on balancing teams for custom server games.
 
-## Installation
+# Features
+- Team balancing functionality for custom games
+- Automated deployment pipeline
+- Integration with Google Sheets
+- Comprehensive test coverage
 
-The following dependencies will be required to install & test scripts in this repo:
+# Getting Started
 
-- NodeJS (version 20 recommended)
+## Prerequisites
+
+- [NodeJS](https://nodejs.org/) (version 20 recommended)
+- [Python 3.x](https://www.python.org/downloads/)
+- [Git](https://git-scm.com/downloads)
 - Google account
-- Sample Google Sheets document with form responses (provided separately)
+- [Copy of Sample Google Sheets document with form responses](https://docs.google.com/spreadsheets/d/1H2QT8lmpOd0E2y_pQzhXBWM0EFAr6FdH3MKlGqagp5k/edit)
 
-To begin installation, clone this repo and run `npm i` to install all node dependencies. See the `package.json` file for a complete list of the current dependencies.
+## Step-by-Step Setup
 
-Make a copy of the provided Google Sheets document so you have your own development environment. The document should include a SCRIPTS dropdown menu created by the `onOpen` command in `src/Galorants_In-Houses_script.js` and you can find the deployed code by going to Extensions -> Apps Script (this is also how you will find your script ID later). When you want to update the code, you can replace what's in code.gs with what you copy/paste from the built document (see below), or automatically deploy via Clasp (see below). Whenever the code is updated (including through automated deployments), refresh the Google Sheet to see the changes.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/lotusflowr/Galorants_scripts.git
+   cd galorants-scripts
+   ```
+
+2. Install Node dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Make a copy of the provided Google Sheets template for your development environment
+
+4. Enable Google Apps Script API:
+   - Visit [Google Apps Script Settings](https://script.google.com/home/usersettings)
+
+5. Authenticate with Clasp:
+    - When authenticating with Clasp, grant the following permissions:
+        - Create and update Google Apps Script deployments
+        - Create and update Google Apps Script projects
+   ```bash
+   npx clasp login
+   ```
+   **Important**: The generated `.clasprc` file in your home directory contains sensitive access tokens. Do not share or commit this file.
+
+6. Create your deployment configuration:
+   - Navigate to `clasp_configs` directory
+   - Create a new file `.clasp-{environment}.json`
+        - The `{environment}` part will be what you'll use to for the `deploy.py` code.
+   
+   Example configuration:
+   ```json
+   {
+     "scriptId": "your_script_id_here",
+     "rootDir": "dist"
+   }
+   ```
+   Find your script ID in the Google Apps Script project settings under "Project Settings".
 
 ## Testing
 
-This project uses [Jest](https://jestjs.io/) for automated testing.
-
-Run `npm run test` to run the automated test suite.
-
-## Building
-
-When you make a change and want to copy it to your Google Apps Script version, you'll need to build the code to create a single file for use with Google Apps Scripts. This project uses [Rollup](https://rollupjs.org) for that.
-
-Run `npm run build` to create the updated `dist/code.js` file.
-
-## Deploy
-
-To automatically deploy with Clasp:
-
-1. Ensure you have enabled the Google Apps Script API in the Google account with which you will be using to deploy: https://script.google.com/home/usersettings and grant it at least the "Create and update Google Apps Script deployments" and "Create and update Google Apps Script projects" permissions.
-2. Run `npx clasp login` and follow the prompts to log in via Google. This will create a `.clasprc` file in your home directory. DO NOT SHARE OR COMMIT THIS FILE. It contains an access token for your Google account, so you'll want to keep it safe.
-3. Run the appropriate npm deploy script. This will, by default, automatically build & deploy the `dist/code.js` file to the Apps Script specified by the corresponding .clasp.json file. Once the deploy is done, refresh your Google Sheet instance to see the changes.
-
-Example: `npm run deploy_dev_kili` will build the code from `/src` and deploy to the Apps Script ID specified in .clasp-dev-kili.json.
-
-To deploy without building, call the npm deploy script with the `-n` flag to specify "nobuild"
-
-Example: `npm run deploy_dev_kili -- -n`
-
-Note the `--` before the `-n` flag; this is required to pass the parameter to the deploy script.
-
-### Create a deploy script
-
-To create a new deploy script, create a .clasp-somename.json file with the following attributes:
-
-``` JSON
-{
-  "scriptId":"<yourTargetScriptID>",
-  "rootDir":"dist"
-}
+Run the Jest test suite:
+```bash
+npm run test
 ```
 
-You can locate your script ID by viewing the Google Apps Script project in your browser and choosing "Project Settings."
+## Building and Deployment
 
-From there, update the `deploy.sh` file to include an "elif" block with your deploy mode, and have it copy your .clasp-somename.json file to .clasp.json. This will allow clasp to locate it & run it. Also, update the usage block to include the name for your mode.
+### Build Only
+To build the code without deploying:
+```bash
+npm run build
+```
 
-Finally, add a line in the `scripts` section of `package.json` with your new deploy script.
+### Deploy with Python Script
+
+The deployment script automatically scans the `clasp_configs` directory for available deployment modes. Any file matching the pattern `.clasp-*.json` will be recognized as a valid deployment configuration.
+
+View available commands and options:
+```bash
+python deploy.py --help
+```
+
+This will display:
+```
+usage: deploy.py [-h] -m {dev_kili,dev_lotus,{environment}} [-n] [-f]
+
+Build and deploy script.
+
+options:
+  -h, --help            show this help message and exit
+  -m {dev_kili,dev_lotus,{environment}}, --mode {dev_kili,dev_lotus,{environment}}
+                        Deployment mode
+  -n, --nobuild        Skip the build step
+  -f, --force          Force push to overwrite manifest changes
+```
+
+Available commands:
+
+1. Standard deployment (with build):
+   ```bash
+   python deploy.py -m {environment}
+   ```
+
+2. Deploy without building:
+   ```bash
+   python deploy.py -m {environment} -n
+   ```
+
+3. Force deployment (overwrites manifest changes):
+   ```bash
+   python deploy.py -m {environment} -f
+   ```
+
+Where `{environment}` is your deployment environment name matching your `.clasp-{environment}.json` configuration file.
+
+### After Deployment
+
+Refresh your Google Sheet to see the updated changes. The SCRIPTS menu will reflect any modifications to the codebase.
