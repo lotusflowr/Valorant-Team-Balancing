@@ -7,72 +7,44 @@ import argparse
 
 def run_command(command):
     try:
-        system = platform.system()
         # Determine if shell should be True based on the platform
-        shell = system == "Windows"
+        shellState = platform.system() == "Windows"
 
-        # Prepare the command
-        if shell:
-            # On Windows, commands are passed as strings with shell=True
-            if isinstance(command, list):
-                cmd = ' '.join(command)
-            else:
-                cmd = command
-            print(f"Running command: {cmd}")
-            result = subprocess.run(
-                cmd,
-                check=True,
-                shell=True,
-                capture_output=True,
-                text=True,
-                encoding='utf-8'
-            )
-        else:
-            # On Unix-like systems, commands are passed as lists with shell=False
-            if isinstance(command, str):
-                # Split the string into a list of arguments
-                command = command.split()
-            print(f"Running command: {' '.join(command)}")
-            result = subprocess.run(
-                command,
-                check=True,
-                shell=False,
-                capture_output=True,
-                text=True,
-                encoding='utf-8'
-            )
+        print(f"Running command: {' '.join(command)}")
+
+        result = subprocess.run(
+            command,
+            check=True,
+            shell=shellState,
+            text=True,
+            capture_output=True,
+            encoding='utf-8'
+        )
         print(result.stdout)
         return result
     except subprocess.CalledProcessError as e:
-        print(f"Command failed with error code {e.returncode}")
-        print(f"Error Output (stderr):\n{e.stderr}")
+        print(f"Command '{' '.join(command)}' failed with error code {e.returncode}")
+        if e.stdout:
+            print(f"Output:\n{e.stdout}")
+        if e.stderr:
+            print(f"Error Output:\n{e.stderr}")
         sys.exit(e.returncode)
 
 def build_package():
     print("Building deploy package")
-    system = platform.system()
-
-    if system == "Windows":
-        # On Windows, use npm run directly
-        run_command("npm run build")
-    else:
-        # On Linux/Mac, try the local rollup binary
-        if os.path.exists("node_modules/.bin/rollup"):
-            run_command(['node_modules/.bin/rollup', '--config'])
-        else:
-            # Fallback to globally installed rollup
-            run_command(['rollup', '--config'])
+    run_command(['npm', 'run', 'build'])
 
 def copy_clasp_file(mode):
-    source_file = None
     dest_file = ".clasp.json"
 
-    if mode == "dev-kili":
-        source_file = ".clasp-dev-kili.json"
-        print("Preparing to deploy code.js to Kili's dev environment")
-    elif mode == "dev-lotus":
-        source_file = ".clasp-dev-lotus.json"
-        print("Preparing to deploy code.js to Lotus's dev environment")
+    clasp_files = {
+        "dev-kili": ".clasp-dev-kili.json",
+        "dev-lotus": ".clasp-dev-lotus.json"
+    }
+
+    source_file = clasp_files.get(mode)
+    if source_file:
+        print(f"Preparing to deploy code.js to {mode.replace('-', ' ').title()}'s environment")
     else:
         print("Invalid mode specified.")
         sys.exit(1)
@@ -88,14 +60,10 @@ def copy_clasp_file(mode):
         print(f"Error copying file: {e}")
         sys.exit(1)
 
+
 def deploy_code():
     print("Deploying code with clasp")
-    system = platform.system()
-
-    if system == "Windows":
-        run_command("npx clasp push")
-    else:
-        run_command(['npx', 'clasp', 'push'])
+    run_command(['npx', 'clasp', 'push'])
 
 def main():
     parser = argparse.ArgumentParser(description="Build and deploy script.")
