@@ -12,21 +12,35 @@ def run_command(command):
         shell = system == "Windows"
 
         # Prepare the command
-        if isinstance(command, list):
-            cmd_str = ' '.join(command)
+        if shell:
+            # On Windows, commands are passed as strings with shell=True
+            if isinstance(command, list):
+                cmd = ' '.join(command)
+            else:
+                cmd = command
+            print(f"Running command: {cmd}")
+            result = subprocess.run(
+                cmd,
+                check=True,
+                shell=True,
+                capture_output=True,
+                text=True,
+                encoding='utf-8'
+            )
         else:
-            cmd_str = command
-
-        print(f"Running command: {cmd_str}")
-
-        result = subprocess.run(
-            cmd_str,
-            check=True,
-            shell=shell,
-            capture_output=True,
-            text=True,
-            encoding='utf-8'
-        )
+            # On Unix-like systems, commands are passed as lists with shell=False
+            if isinstance(command, str):
+                # Split the string into a list of arguments
+                command = command.split()
+            print(f"Running command: {' '.join(command)}")
+            result = subprocess.run(
+                command,
+                check=True,
+                shell=False,
+                capture_output=True,
+                text=True,
+                encoding='utf-8'
+            )
         print(result.stdout)
         return result
     except subprocess.CalledProcessError as e:
