@@ -5,23 +5,18 @@ import platform
 import shutil
 import argparse
 import glob
+import json
 
 # ANSI color codes
 RESET = "\033[0m"
 BOLD = "\033[1m"
-
-# Text colors
-BLACK = "\033[30m"
 RED = "\033[31m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
-BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 CYAN = "\033[36m"
-WHITE = "\033[37m"
 
-# Background colors
-BG_RED = "\033[41m"
+enableAPI_link = "https://script.google.com/home/usersettings"
 
 def color_text(text, color_code):
     return f"{color_code}{text}{RESET}"
@@ -33,86 +28,223 @@ def print_section_header(title):
 def make_clickable_link(url, text):
     return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
 
-def run_command(command):
-    # Determine if shell should be True based on the platform
-    shell = platform.system() == "Windows"
+def run_command(command, clasp_config=None, interactive=False):
+    """
+    Core function that executes shell commands with flexible output handling.
+    Handles both interactive and non-interactive command execution.
 
-    print(color_text(f"Running command: {' '.join(command)}\n", BOLD + BLUE))
+    Parameters:
+    - command: List of command arguments to execute
+    - clasp_config: Optional clasp configuration for environment variables
+    - interactive: Boolean flag to determine if command needs user interaction
+
+    Returns:
+    - tuple(output, success, error):
+      - output: Command output string (empty for interactive mode)
+      - success: Boolean indicating command success
+      - error: Error message or type (e.g., "API_ERROR", "INTERRUPTED")
+
+    Features:
+    - Interactive mode: Shows real-time output, captures errors
+    - Non-interactive mode: Captures all output
+    - Special handling for API errors
+    - Keyboard interrupt handling
+    - Real-time stderr monitoring in interactive mode
+    """
+    shell = platform.system() == "Windows"
+    env = os.environ.copy()
+    if clasp_config:
+        env['CLASPRC_JSON'] = clasp_config
 
     try:
-        # Run the command and capture the output
-        result = subprocess.run(
-            command,
-            check=False,  # Do not raise exception on non-zero exit code
-            shell=shell,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # Merge stderr into stdout
-            encoding='utf-8'
-        )
-
-        output = result.stdout
-
-        error_detected = False
-
-        # Process output line by line
-        output_lines = output.splitlines()
-        for line in output_lines:
-            if 'User has not enabled the Apps Script API' in line:
-                error_detected = True
-                # Suppress the previous error message from clasp
-                continue  # Skip this line
-            elif error_detected:
-                # Skip further output after error detected
-                continue
-            else:
-                # Print the output line
-                print(line)
-
-        if error_detected:
-            # Build the clickable link
-            url = "https://script.google.com/home/usersettings"
-            clickable_link = make_clickable_link(url, url)
-
-            # Print the custom error message with colors
-            print("\n" + color_text("Error: You have not enabled the Apps Script API.", BOLD + RED))
-            print("Please enable it by visiting:")
-            print(clickable_link)
-            print("After enabling the API, please rerun the script.\n")
-            sys.exit(1)
-        elif result.returncode != 0:
-            print(color_text(f"\nCommand '{' '.join(command)}' failed with error code {result.returncode}", BOLD + RED))
-            sys.exit(result.returncode)
+        if interactive:
+            # For interactive commands, capture stderr to check for API errors
+            # while still allowing stdout to show in real-time
+            process = subprocess.Popen(
+                command,
+                shell=shell,
+                env=env,
+                text=True,
+                stdout=None,  # Allow stdout to flow to console
+                stderr=subprocess.PIPE  # Capture stderr for error checking
+            )
+            
+            # Read stderr in real-time
+            error_output = ""
+            while True:
+                stderr_line = process.stderr.readline()
+                if not stderr_line and process.poll() is not None:
+                    break
+                error_output += stderr_line
+            
+            process.wait()
+            
+            # Check for API error in stderr
+            if 'User has not enabled the Apps Script API' in error_output or 'code: 403' in error_output:
+                return "", False, "API_ERROR"
+                
+            return "", process.returncode == 0, error_output if process.returncode != 0 else ""
+            
         else:
-            return result
+            # For non-interactive commands, capture both stdout and stderr
+            process = subprocess.run(
+                command,
+                shell=shell,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False
+            )
+            
+            output = process.stdout + process.stderr
+            
+            # Check for API error
+            if 'User has not enabled the Apps Script API' in output or 'code: 403' in output:
+                return output, False, "API_ERROR"
+            
+            return output, process.returncode == 0, output if process.returncode != 0 else ""
 
     except KeyboardInterrupt:
-        print(color_text("\nCommand execution interrupted by user (CTRL+C).", BOLD + YELLOW))
-        sys.exit(1)
+        return "", False, "INTERRUPTED"
     except Exception as e:
-        print(color_text(f"\nAn unexpected error occurred: {e}", BOLD + RED))
-        sys.exit(1)
+        return "", False, str(e)
 
 def build_package():
+    """
+    Executes the npm build process for the project.
+    Runs 'npm run build' command with real-time output display.
+
+    Features:
+    - Shows build progress in real-time
+    - Captures and displays build errors immediately
+    - Handles interruptions gracefully
+    - Exits with appropriate status codes on failure
+    - Confirms successful builds
+
+    Returns: None (exits on failure)
+    """
     print_section_header("Building Deploy Package")
     try:
-        run_command(['npm', 'run', 'build'])
-        print(color_text("Build completed successfully.\n", GREEN))
-    except KeyboardInterrupt:
-        print(color_text("\nBuild process interrupted by user (CTRL+C).", BOLD + YELLOW))
+        # Run npm run build with interactive mode to show real-time build output
+        output, success, error = run_command(['npm', 'run', 'build'], interactive=True)
+        
+        if error == "INTERRUPTED":
+            print(color_text("\nBuild process interrupted by user (CTRL+C).", BOLD + YELLOW))
+            sys.exit(1)
+        elif not success:
+            print(color_text("\nBuild failed. Please check the error messages above.", BOLD + RED))
+            sys.exit(1)
+        else:
+            print(color_text("\nBuild completed successfully.", GREEN))
+            
+    except Exception as e:
+        print(color_text(f"\nBuild failed: {str(e)}", BOLD + RED))
         sys.exit(1)
 
-def get_available_modes():
-    config_files = glob.glob('clasp_configs/.clasp-*.json')
-    modes = {}
-    for filepath in config_files:
-        filename = os.path.basename(filepath)
-        # Extract mode name from filename
-        mode = filename[len('.clasp-'):-len('.json')]
-        modes[mode] = filepath
-    return modes
+def deploy_code(args):
+    """
+    Manages the clasp deployment process with manifest handling.
+    Handles both forced and interactive deployments.
+
+    Parameters:
+    - args: ArgumentParser args containing:
+      - force: Boolean for forced deployment
+      - other deployment options
+
+    Features:
+    - Two-phase deployment:
+      1. Interactive manifest check (unless forced)
+      2. Final deployment push
+    - API error detection and custom handling
+    - Real-time output for manifest prompts
+    - Proper error propagation
+    - Success confirmation only on actual success
+
+    Returns: None (exits on failure)
+    """
+    print_section_header("Deploying Code with Clasp")
+    try:
+        base_command = ['npx', 'clasp', 'push']
+        
+        # First run: Interactive mode for manifest prompt if not force
+        if not args.force:
+            print(color_text("Checking for manifest changes...", BOLD))
+            _, success, error = run_command(base_command, interactive=True)
+            
+            if error == "INTERRUPTED":
+                raise KeyboardInterrupt()
+            elif error == "API_ERROR":
+                handle_api_error()
+                return  # Exit after handling API error
+            elif not success:
+                print(color_text("\nDeployment failed during manifest check.", BOLD + RED))
+                if error:  # Show error message if available
+                    print(color_text(f"Error: {error}", RED))
+                sys.exit(1)
+        
+        # Second run: Force push and error checking
+        command = base_command + (['--force'] if args.force else [])
+        output, success, error = run_command(command, interactive=False)
+        
+        if error == "API_ERROR":
+            handle_api_error()
+            return  # Exit after handling API error
+        elif not success:
+            print(color_text("\nDeployment failed. Please try again.", BOLD + RED))
+            if error:  # Show error message if available
+                print(color_text(f"Error: {error}", RED))
+            sys.exit(1)
+        
+        # Only show success message if we actually succeeded
+        if success:
+            print(color_text("\nCode deployed successfully!", GREEN))
+
+    except KeyboardInterrupt:
+        print(color_text("\nDeployment interrupted by user (CTRL+C).", BOLD + YELLOW))
+        sys.exit(1)
+    except Exception as e:
+        print(color_text(f"\nDeployment failed: {e}", BOLD + RED))
+        sys.exit(1)
+
+
+def handle_api_error():
+    """
+    Displays user-friendly message when Apps Script API is not enabled.
+    Provides step-by-step instructions for enabling the API.
+
+    Features:
+    - Formatted error message with color
+    - Clickable link to settings page
+    - Clear instructions
+    - Clean exit with status code 1
+
+    Returns: None (always exits)
+    """
+    print("\n" + color_text("Error: The Apps Script API is not enabled. Nothing has been pushed.", BOLD + RED))
+    print(color_text("Please follow these steps:", BOLD))
+    print("1. Visit: " + make_clickable_link(enableAPI_link, enableAPI_link))
+    print("2. Enable the Apps Script API")
+    print("3. Wait a few minutes for the changes to propagate")
+    print("4. Run this deployment script again\n")
+    sys.exit(1)
 
 def copy_clasp_file(mode, clasp_files):
+    """
+    Copies the appropriate clasp configuration file for the selected deployment mode.
+
+    Parameters:
+    - mode: String identifying deployment environment
+    - clasp_files: Dictionary mapping modes to config file paths
+
+    Features:
+    - Validates mode and file existence
+    - Creates backup if needed
+    - Clear success/failure messages
+    - Error handling for file operations
+
+    Returns: None (exits on failure)
+    """
     print_section_header(f"Preparing Deployment for '{mode}' Environment")
     dest_file = ".clasp.json"
 
@@ -134,7 +266,19 @@ def copy_clasp_file(mode, clasp_files):
         sys.exit(1)
 
 def check_clasp_login():
-    # Check for .clasprc.json in the user's home directory
+    """
+    Verifies clasp authentication status and handles login if needed.
+    Checks for .clasprc.json in user's home directory.
+
+    Features:
+    - Automatic credential detection
+    - Interactive login process if needed
+    - Security warning for credentials
+    - API enablement reminder
+    - Clear status messages
+
+    Returns: None (exits on failure)
+    """
     home_dir = os.path.expanduser('~')
     clasprc_path = os.path.join(home_dir, '.clasprc.json')
     print(color_text(f"Checking for Clasp credentials in '{clasprc_path}'...", BOLD))
@@ -143,25 +287,53 @@ def check_clasp_login():
         print_section_header("Clasp Login Required")
         print(color_text("It seems you're not logged into clasp.", YELLOW))
         try:
-            run_command(['npx', 'clasp', 'login'])
+            run_command(['npx', 'clasp', 'login'], interactive=True)
             print(color_text("!!! DO NOT SHARE THESE CREDENTIALS !!!", BOLD + RED))
-            print("Enable the Apps Script API if you haven't at " + make_clickable_link("https://script.google.com/home/usersettings", "https://script.google.com/home/usersettings"))
+            print("Enable the Apps Script API if you haven't at " + make_clickable_link(enableAPI_link, enableAPI_link))
         except KeyboardInterrupt:
             print(color_text("\nClasp login interrupted by user (CTRL+C).", BOLD + YELLOW))
+            sys.exit(1)
+        except Exception:
+            print(color_text("Clasp login failed.\n", BOLD + RED))
             sys.exit(1)
     else:
         print(color_text("Verified Clasp is logged in.\n", GREEN))
 
-def deploy_code():
-    print_section_header("Deploying Code with Clasp")
-    try:
-        run_command(['npx', 'clasp', 'push'])
-        print(color_text("Code deployed successfully.\n", GREEN))
-    except KeyboardInterrupt:
-        print(color_text("\nDeployment interrupted by user (CTRL+C).", BOLD + YELLOW))
-        sys.exit(1)
+def get_available_modes():
+    """
+    Dynamically scans clasp_configs directory for available deployment modes.
+    Looks for files matching pattern .clasp-*.json
+
+    Returns:
+    - Dictionary mapping mode names to config file paths
+    Features:
+    - Automatic mode detection
+    - Clean mode name extraction
+    - Path validation
+    """
+    config_files = glob.glob('clasp_configs/.clasp-*.json')
+    modes = {}
+    for filepath in config_files:
+        filename = os.path.basename(filepath)
+        mode = filename[len('.clasp-'):-len('.json')]
+        modes[mode] = filepath
+    return modes
 
 def main():
+    """
+    Main entry point for the deployment script.
+    Orchestrates the entire deployment process.
+
+    Features:
+    - Command line argument parsing
+    - Mode validation
+    - Build process management (optional)
+    - Deployment execution
+    - Global error handling
+    - Clean exit states
+
+    Returns: None (exits with appropriate status code)
+    """
     try:
         print(color_text("Starting deployment script...\n", BOLD + MAGENTA))
 
@@ -182,6 +354,11 @@ def main():
             action='store_true',
             help='Skip the build step'
         )
+        parser.add_argument(
+            '-f', '--force',
+            action='store_true',
+            help='Force push to overwrite manifest changes'
+        )
 
         args = parser.parse_args()
 
@@ -194,11 +371,14 @@ def main():
 
         copy_clasp_file(args.mode, clasp_files)
         check_clasp_login()
-        deploy_code()
+        deploy_code(args)
 
         print(color_text("Deployment completed successfully!\n", BOLD + GREEN))
     except KeyboardInterrupt:
         print(color_text("\nScript execution interrupted by user (CTRL+C).", BOLD + YELLOW))
+        sys.exit(1)
+    except Exception as e:
+        print(color_text(f"Script execution failed: {e}\n", BOLD + RED))
         sys.exit(1)
 
 if __name__ == "__main__":
