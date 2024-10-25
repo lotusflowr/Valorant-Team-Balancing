@@ -36,7 +36,7 @@ This repository contains automation scripts for the Galorants discord server, pr
 4. Enable Google Apps Script API by visiting [Google Apps Script Settings](https://script.google.com/home/usersettings)
 
 5. Authenticate with Clasp:
-    - When authenticating with Clasp, grant the following permissions:
+    - When authenticating, grant the following permissions:
         - Create and update Google Apps Script deployments
         - Create and update Google Apps Script projects
    ```bash
