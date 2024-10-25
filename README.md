@@ -1,25 +1,22 @@
-﻿# Galorants Scripts
-
+# 🎮 Galorants Scripts
 This repository contains automation scripts for the Galorants discord server, primarily focused on balancing teams for custom server games.
 
-# Features
-- Team balancing functionality for custom games
-- Automated deployment pipeline
-- Integration with Google Sheets
-- Comprehensive test coverage
+# ✨ Features
+- 🎯 Team balancing functionality for custom games
+- 🚀 Automated deployment pipeline
+- 📊 Integration with Google Sheets
+- ✅ Comprehensive test coverage
 
-# Getting Started
+# 🚀 Getting Started
 
-## Prerequisites
+## 📋 Prerequisites
+- [NodeJS](https://nodejs.org/) (version 20 recommended) 📦
+- [Python 3.x](https://www.python.org/downloads/) 🐍
+- [Git](https://git-scm.com/downloads) 📥
+- Google account 📧
+- [Copy of Sample Google Sheets document with form responses](https://docs.google.com/spreadsheets/d/1H2QT8lmpOd0E2y_pQzhXBWM0EFAr6FdH3MKlGqagp5k/edit) 📑
 
-- [NodeJS](https://nodejs.org/) (version 20 recommended)
-- [Python 3.x](https://www.python.org/downloads/)
-- [Git](https://git-scm.com/downloads)
-- Google account
-- [Copy of Sample Google Sheets document with form responses](https://docs.google.com/spreadsheets/d/1H2QT8lmpOd0E2y_pQzhXBWM0EFAr6FdH3MKlGqagp5k/edit)
-
-## Step-by-Step Setup
-
+## 🛠️ Step-by-Step Setup
 1. Clone the repository:
    ```bash
    git clone https://github.com/lotusflowr/Galorants_scripts.git
@@ -33,16 +30,16 @@ This repository contains automation scripts for the Galorants discord server, pr
 
 3. Make a copy of the provided Google Sheets template for your development environment
 
-4. Enable Google Apps Script API by visiting [Google Apps Script Settings](https://script.google.com/home/usersettings)
+4. Enable Google Apps Script API by visiting [Google Apps Script Settings](https://script.google.com/home/usersettings) 🔑
 
 5. Authenticate with Clasp:
     - When authenticating, grant the following permissions:
-        - Create and update Google Apps Script deployments
-        - Create and update Google Apps Script projects
+        - ✅ Create and update Google Apps Script deployments
+        - ✅ Create and update Google Apps Script projects
    ```bash
    npx clasp login
    ```
-   **Important**: The generated `.clasprc` file in your home directory contains sensitive access tokens. Do not share or commit this file.
+   ⚠️ **Important**: The generated `.clasprc` file in your home directory contains sensitive access tokens. Do not share or commit this file.
 
 6. Create your deployment configuration:
    - Navigate to `clasp_configs` directory
@@ -52,29 +49,27 @@ This repository contains automation scripts for the Galorants discord server, pr
    Example configuration:
    ```json
    {
-     "scriptId": "your_script_id_here",
+     "scriptId": "Script ID",
      "rootDir": "dist"
    }
    ```
-   Find your script ID in the Google Apps Script project settings under "Project Settings".
+   Find your script ID in the Google Apps Script project settings under "Project Settings". You can access the Apps Script of the Spreadsheet through `Extensions/Apps Script`.
 
-## Testing
-
+## 🧪 Testing
 Run the Jest test suite:
 ```bash
 npm run test
 ```
 
-## Building and Deployment
+## 🔨 Building and Deployment
 
-### Build Only
+### 🏗️ Build Only
 To build the code without deploying:
 ```bash
 npm run build
 ```
 
-### Deploy with Python Script
-
+### 🚀 Deploy with Python Script
 The deployment script automatically scans the `clasp_configs` directory for available deployment modes. Any file matching the pattern `.clasp-*.json` will be recognized as a valid deployment configuration.
 
 View available commands and options:
@@ -115,6 +110,5 @@ Available commands:
 
 Where `{environment}` is your deployment environment name matching your `.clasp-{environment}.json` configuration file.
 
-### After Deployment
-
+### 🔄 After Deployment
 Refresh your Google Sheet to see the updated changes. The SCRIPTS menu will reflect any modifications to the codebase.
