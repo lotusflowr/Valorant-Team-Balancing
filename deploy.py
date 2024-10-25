@@ -5,7 +5,6 @@ import platform
 import shutil
 import argparse
 import glob
-import json
 
 # ANSI color codes
 RESET = "\033[0m"
@@ -52,9 +51,6 @@ def run_command(command, clasp_config=None, interactive=False):
     - Real-time stderr monitoring in interactive mode
     """
     shell = platform.system() == "Windows"
-    env = os.environ.copy()
-    if clasp_config:
-        env['CLASPRC_JSON'] = clasp_config
 
     try:
         if interactive:
@@ -63,7 +59,6 @@ def run_command(command, clasp_config=None, interactive=False):
             process = subprocess.Popen(
                 command,
                 shell=shell,
-                env=env,
                 text=True,
                 stdout=None,  # Allow stdout to flow to console
                 stderr=subprocess.PIPE  # Capture stderr for error checking
@@ -90,7 +85,6 @@ def run_command(command, clasp_config=None, interactive=False):
             process = subprocess.run(
                 command,
                 shell=shell,
-                env=env,
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -126,21 +120,33 @@ def build_package():
     """
     print_section_header("Building Deploy Package")
     try:
-        # Run npm run build with interactive mode to show real-time build output
-        output, success, error = run_command(['npm', 'run', 'build'], interactive=True)
+        # Variables
+        shell = platform.system() == "Windows"
+        cmd_str = ['npm', 'run', 'build']
         
-        if error == "INTERRUPTED":
-            print(color_text("\nBuild process interrupted by user (CTRL+C).", BOLD + YELLOW))
-            sys.exit(1)
-        elif not success:
+        # Run npm run build with real-time output display
+        process = subprocess.run(
+            cmd_str,
+            check=True,
+            text=True,
+            shell=shell,
+            capture_output=False,
+            encoding= "UTF-8",
+        )
+
+        if process.returncode != 0:
             print(color_text("\nBuild failed. Please check the error messages above.", BOLD + RED))
             sys.exit(1)
         else:
             print(color_text("\nBuild completed successfully.", GREEN))
-            
+
+    except KeyboardInterrupt:
+        print(color_text("\nBuild process interrupted by user (CTRL+C).", BOLD + YELLOW))
+        sys.exit(1)
     except Exception as e:
         print(color_text(f"\nBuild failed: {str(e)}", BOLD + RED))
         sys.exit(1)
+
 
 def copy_clasp_file(mode, clasp_files):
     """
@@ -314,8 +320,7 @@ def handle_api_error():
     print(color_text("Please follow these steps:", BOLD))
     print("1. Visit: " + make_clickable_link(enableAPI_link, enableAPI_link))
     print("2. Enable the Apps Script API")
-    print("3. Wait a few minutes for the changes to propagate")
-    print("4. Run this deployment script again\n")
+    print("3. Run this deployment script again\n")
     sys.exit(1)
 
 def main():
