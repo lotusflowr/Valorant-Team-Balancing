@@ -142,93 +142,6 @@ def build_package():
         print(color_text(f"\nBuild failed: {str(e)}", BOLD + RED))
         sys.exit(1)
 
-def deploy_code(args):
-    """
-    Manages the clasp deployment process with manifest handling.
-    Handles both forced and interactive deployments.
-
-    Parameters:
-    - args: ArgumentParser args containing:
-      - force: Boolean for forced deployment
-      - other deployment options
-
-    Features:
-    - Two-phase deployment:
-      1. Interactive manifest check (unless forced)
-      2. Final deployment push
-    - API error detection and custom handling
-    - Real-time output for manifest prompts
-    - Proper error propagation
-    - Success confirmation only on actual success
-
-    Returns: None (exits on failure)
-    """
-    print_section_header("Deploying Code with Clasp")
-    try:
-        base_command = ['npx', 'clasp', 'push']
-        
-        # First run: Interactive mode for manifest prompt if not force
-        if not args.force:
-            print(color_text("Checking for manifest changes...", BOLD))
-            _, success, error = run_command(base_command, interactive=True)
-            
-            if error == "INTERRUPTED":
-                raise KeyboardInterrupt()
-            elif error == "API_ERROR":
-                handle_api_error()
-                return  # Exit after handling API error
-            elif not success:
-                print(color_text("\nDeployment failed during manifest check.", BOLD + RED))
-                if error:  # Show error message if available
-                    print(color_text(f"Error: {error}", RED))
-                sys.exit(1)
-        
-        # Second run: Force push and error checking
-        command = base_command + (['--force'] if args.force else [])
-        output, success, error = run_command(command, interactive=False)
-        
-        if error == "API_ERROR":
-            handle_api_error()
-            return  # Exit after handling API error
-        elif not success:
-            print(color_text("\nDeployment failed. Please try again.", BOLD + RED))
-            if error:  # Show error message if available
-                print(color_text(f"Error: {error}", RED))
-            sys.exit(1)
-        
-        # Only show success message if we actually succeeded
-        if success:
-            print(color_text("\nCode deployed successfully!", GREEN))
-
-    except KeyboardInterrupt:
-        print(color_text("\nDeployment interrupted by user (CTRL+C).", BOLD + YELLOW))
-        sys.exit(1)
-    except Exception as e:
-        print(color_text(f"\nDeployment failed: {e}", BOLD + RED))
-        sys.exit(1)
-
-
-def handle_api_error():
-    """
-    Displays user-friendly message when Apps Script API is not enabled.
-    Provides step-by-step instructions for enabling the API.
-
-    Features:
-    - Formatted error message with color
-    - Clickable link to settings page
-    - Clear instructions
-    - Clean exit with status code 1
-
-    Returns: None (always exits)
-    """
-    print("\n" + color_text("Error: The Apps Script API is not enabled. Nothing has been pushed.", BOLD + RED))
-    print(color_text("Please follow these steps:", BOLD))
-    print("1. Visit: " + make_clickable_link(enableAPI_link, enableAPI_link))
-    print("2. Enable the Apps Script API")
-    print("3. Wait a few minutes for the changes to propagate")
-    print("4. Run this deployment script again\n")
-    sys.exit(1)
-
 def copy_clasp_file(mode, clasp_files):
     """
     Copies the appropriate clasp configuration file for the selected deployment mode.
@@ -318,6 +231,92 @@ def get_available_modes():
         mode = filename[len('.clasp-'):-len('.json')]
         modes[mode] = filepath
     return modes
+
+def deploy_code(args):
+    """
+    Manages the clasp deployment process with manifest handling.
+    Handles both forced and interactive deployments.
+
+    Parameters:
+    - args: ArgumentParser args containing:
+      - force: Boolean for forced deployment
+      - other deployment options
+
+    Features:
+    - Two-phase deployment:
+      1. Interactive manifest check (unless forced)
+      2. Final deployment push
+    - API error detection and custom handling
+    - Real-time output for manifest prompts
+    - Proper error propagation
+    - Success confirmation only on actual success
+
+    Returns: None (exits on failure)
+    """
+    print_section_header("Deploying Code with Clasp")
+    try:
+        base_command = ['npx', 'clasp', 'push']
+        
+        # First run: Interactive mode for manifest prompt if not force
+        if not args.force:
+            print(color_text("Checking for manifest changes...", BOLD))
+            _, success, error = run_command(base_command, interactive=True)
+            
+            if error == "INTERRUPTED":
+                raise KeyboardInterrupt()
+            elif error == "API_ERROR":
+                handle_api_error()
+                return  # Exit after handling API error
+            elif not success:
+                print(color_text("\nDeployment failed during manifest check.", BOLD + RED))
+                if error:  # Show error message if available
+                    print(color_text(f"Error: {error}", RED))
+                sys.exit(1)
+        
+        # Second run: Force push and error checking
+        command = base_command + (['--force'] if args.force else [])
+        output, success, error = run_command(command, interactive=False)
+        
+        if error == "API_ERROR":
+            handle_api_error()
+            return  # Exit after handling API error
+        elif not success:
+            print(color_text("\nDeployment failed. Please try again.", BOLD + RED))
+            if error:  # Show error message if available
+                print(color_text(f"Error: {error}", RED))
+            sys.exit(1)
+        
+        # Only show success message if we actually succeeded
+        if success:
+            print(color_text("\nCode deployed successfully!", GREEN))
+
+    except KeyboardInterrupt:
+        print(color_text("\nDeployment interrupted by user (CTRL+C).", BOLD + YELLOW))
+        sys.exit(1)
+    except Exception as e:
+        print(color_text(f"\nDeployment failed: {e}", BOLD + RED))
+        sys.exit(1)
+
+def handle_api_error():
+    """
+    Displays user-friendly message when Apps Script API is not enabled.
+    Provides step-by-step instructions for enabling the API.
+
+    Features:
+    - Formatted error message with color
+    - Clickable link to settings page
+    - Clear instructions
+    - Clean exit with status code 1
+
+    Returns: None (always exits)
+    """
+    print("\n" + color_text("Error: The Apps Script API is not enabled. Nothing has been pushed.", BOLD + RED))
+    print(color_text("Please follow these steps:", BOLD))
+    print("1. Visit: " + make_clickable_link(enableAPI_link, enableAPI_link))
+    print("2. Enable the Apps Script API")
+    print("3. Wait a few minutes for the changes to propagate")
+    print("4. Run this deployment script again\n")
+    sys.exit(1)
 
 def main():
     """
