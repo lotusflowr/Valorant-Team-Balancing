@@ -6,12 +6,17 @@ import shutil
 import argparse
 import glob
 
+def print_section_header(title):
+    print("\n" + "=" * 60)
+    print(f"  {title}")
+    print("=" * 60 + "\n")
+
 def run_command(command):
     try:
         # Determine if shell should be True based on the platform
         shell = platform.system() == "Windows"
 
-        print(f"Running command: {' '.join(command)}")
+        print(f"Running command: {' '.join(command)}\n")
 
         result = subprocess.run(
             command,
@@ -23,11 +28,11 @@ def run_command(command):
         )
         return result
     except subprocess.CalledProcessError as e:
-        print(f"Command '{' '.join(command)}' failed with error code {e.returncode}")
+        print(f"\nCommand '{' '.join(command)}' failed with error code {e.returncode}")
         sys.exit(e.returncode)
 
 def build_package():
-    print("Building deploy package")
+    print_section_header("Building Deploy Package")
     run_command(['npm', 'run', 'build'])
 
 def get_available_modes():
@@ -41,12 +46,11 @@ def get_available_modes():
     return modes
 
 def copy_clasp_file(mode, clasp_files):
+    print_section_header(f"Preparing Deployment for '{mode}' Environment")
     dest_file = ".clasp.json"
 
     source_file = clasp_files.get(mode)
-    if source_file:
-        print(f"Preparing to deploy code.js to '{mode}' environment")
-    else:
+    if source_file is None:
         print(f"Invalid mode specified: {mode}")
         sys.exit(1)
 
@@ -54,15 +58,16 @@ def copy_clasp_file(mode, clasp_files):
         print(f"Error: Source file '{source_file}' does not exist.")
         sys.exit(1)
 
+    print(f"Copying configuration file for '{mode}' environment...")
     try:
         shutil.copyfile(source_file, dest_file)
-        print(f"Copied '{source_file}' to '{dest_file}'")
+        print(f"Copied '{source_file}' to '{dest_file}'\n")
     except Exception as e:
         print(f"Error copying file: {e}")
         sys.exit(1)
 
 def deploy_code():
-    print("Deploying code with clasp")
+    print_section_header("Deploying Code with Clasp")
     run_command(['npx', 'clasp', 'push'])
 
 def main():
