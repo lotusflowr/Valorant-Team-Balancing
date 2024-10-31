@@ -1,4 +1,12 @@
-import { createOptimalTeamsForTimeSlot, trySwapPlayers } from '../src/Galorants_In-Houses_script';
+import {
+  sum,
+  createOptimalTeamsForTimeSlot,
+  trySwapPlayers
+} from '../src/TeamBalancer.js'
+
+test('adds 1 + 2 to equal 3', () => {
+  expect(sum(1,2)).toBe(3);
+});
 
 describe("Team Balancing Functions", () => {
     test("createOptimalTeamsForTimeSlot creates two balanced teams of 5 players each from 10 players", () => {
