@@ -20,7 +20,8 @@ export default {
   output: {
     file: 'dist/code.js',
     name: 'GalorantsInHouses',
-    format: 'esm'
+    format: 'esm',
+    banner: '/** @OnlyCurrentDoc */\n',
   },
   plugins: [
     preventTreeShakingPlugin(),

@@ -1,38 +1,58 @@
-import {
-  onOpen,
-  changeGameDay,
-  getTimeSlots,
-  manuallyInputTimeSlots,
-  setAutomaticTimeSlots,
-  sortPlayersIntoBalancedTeams,
-  getPlayersData,
-  writeTeamsToSheet,
-  generateDiscordPings,
-  setTimeSlots,
-  writeDiscordPingsToSheet,
-  setConditionalFormatting,
-  getContrastColor,
-  getGameDay,
-  getRankValue,
-  getRankName,
-  clearResponses,
-  createOptimalTeams,
-  createOptimalTeamsForTimeSlot,
-  trySwapPlayers,
-  getTeamSpread,
-  setGameDay,
-  manageTimeSlots,
-  manageTimeSlotsMenu
-} from './Galorants_In-Houses_script.js';
+// Import constants
+import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
 
+// Import UI functions
 import {
-  sum
-} from "./TeamBalance.js"
+    onOpen,
+    manageTimeSlots,
+    manageTimeSlotsMenu,
+    changeGameDay,
+    manuallyInputTimeSlots,
+    setAutomaticTimeSlots
+} from './uiFunctions.js';
 
-var global = {};
+// Import time slot manager functions
+import {
+    getTimeSlots,
+    setTimeSlots,
+    getGameDay,
+    setGameDay
+} from './timeSlotManager.js';
+
+// Import player data functions
+import {
+    getPlayersData,
+    writeTeamsToSheet
+} from './playerData.js';
+
+// Import team balancer functions
+import {
+    sortPlayersIntoBalancedTeams,
+    createOptimalTeams,
+    createOptimalTeamsForTimeSlot,
+    trySwapPlayers,
+    getTeamSpread
+} from './teamBalancer.js';
+
+// Import Discord pings functions
+import {
+    generateDiscordPings,
+    writeDiscordPingsToSheet
+} from './discordPings.js';
+
+// Import utilities
+import {
+    getRankValue,
+    getRankName,
+    setConditionalFormatting,
+    getContrastColor,
+    clearResponses
+} from './utilities.js';
+
+
+// Expose functions to the global scope for Google Apps Script
 global.onOpen = onOpen;
 global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
-global.clearResponses = clearResponses;
 global.generateDiscordPings = generateDiscordPings;
-global.sum = sum;
+global.clearResponses = clearResponses;
