@@ -1,3 +1,13 @@
+import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
+import {
+    getTimeSlots,
+} from './TimeSlotManager.js';
+import {
+  getRankValue,
+  getRankName,
+  setConditionalFormatting
+} from './Utilities.js';
+
 export function getPlayersData(sheet) {
     const TIME_SLOTS = getTimeSlots();
     const data = sheet.getDataRange().getValues();

@@ -1,56 +1,26 @@
-// Import constants
-import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
-
 // Import UI functions
 import {
     onOpen,
-    manageTimeSlots,
-    manageTimeSlotsMenu,
-    changeGameDay,
-    manuallyInputTimeSlots,
-    setAutomaticTimeSlots
-} from './uiFunctions.js';
-
-// Import time slot manager functions
-import {
-    getTimeSlots,
-    setTimeSlots,
-    getGameDay,
-    setGameDay
-} from './timeSlotManager.js';
-
-// Import player data functions
-import {
-    getPlayersData,
-    writeTeamsToSheet
-} from './playerData.js';
+    manageTimeSlots
+} from './UIFunctions.js';
 
 // Import team balancer functions
 import {
-    sortPlayersIntoBalancedTeams,
-    createOptimalTeams,
-    createOptimalTeamsForTimeSlot,
-    trySwapPlayers,
-    getTeamSpread
-} from './teamBalancer.js';
+    sortPlayersIntoBalancedTeams
+} from './TeamBalancer.js';
 
 // Import Discord pings functions
 import {
-    generateDiscordPings,
-    writeDiscordPingsToSheet
-} from './discordPings.js';
+    generateDiscordPings
+} from './DiscordPings.js';
 
 // Import utilities
 import {
-    getRankValue,
-    getRankName,
-    setConditionalFormatting,
-    getContrastColor,
     clearResponses
-} from './utilities.js';
-
+} from './Utilities.js';
 
 // Expose functions to the global scope for Google Apps Script
+var global = {};
 global.onOpen = onOpen;
 global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
