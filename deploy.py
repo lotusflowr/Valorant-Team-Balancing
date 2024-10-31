@@ -201,40 +201,34 @@ def check_clasp_login():
 def get_available_modes():
     """
     Dynamically scans clasp_configs directory for available deployment modes.
-    Looks for files matching pattern .clasp-*.json
-
-    Returns:
-    - Dictionary mapping mode names to config file paths
-    Features:
-    - Automatic mode detection
-    - Clean mode name extraction
-    - Path validation
+    Handles both simple dev/prod files and regional variants.
     """
     config_files = glob.glob('clasp_configs/.clasp-*.json')
     modes = {}
     for filepath in config_files:
         filename = os.path.basename(filepath)
+        # Extract mode name (removing .clasp- prefix and .json suffix)
         mode = filename[len('.clasp-'):-len('.json')]
         modes[mode] = filepath
     return modes
 
 def get_modes_by_keyword(clasp_files, keyword):
     """
-    Gets all modes that match or start with a given keyword.
-    Returns all prefix matches if a specific environment isn't specified.
+    Gets modes that match a given keyword (dev or prod).
+    Handles both simple mode files and regional variants.
     """
-    # Check if a specific environment is specified (e.g., prod-na, dev-eu)
-    if '-' in keyword:
-        if keyword in clasp_files:
-            return [keyword], False
-        print(color_text(f"Environment '{keyword}' not found in clasp_configs directory.", RED))
-        sys.exit(1)
-    
-    # Get all modes that start with the keyword (e.g., prod-*, dev-*)
+    # First check for exact match (e.g., just 'dev' or 'prod')
+    if keyword in clasp_files:
+        return [keyword], False
+        
+    # Then check for regional variants (e.g., dev-na, dev-eu)
     prefix_matches = [mode for mode in clasp_files.keys() if mode.startswith(f"{keyword}-")]
     
     if not prefix_matches:
-        print(color_text(f"No {keyword} environments ({keyword}-*) found in clasp_configs directory.", RED))
+        print(color_text(f"No {keyword} environments found in clasp_configs directory.", RED))
+        print(color_text("Available environments:", BOLD))
+        for mode in sorted(clasp_files.keys()):
+            print(f"  • {mode}")
         sys.exit(1)
     
     return prefix_matches, len(prefix_matches) > 1
