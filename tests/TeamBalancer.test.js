@@ -7,11 +7,18 @@ import {
   players as playersToBalance,
   teams as teamsToSwap
 } from './TeamBalancerCases.js';
+import {
+  getRankValue,
+} from '../src/Utilities.js';
 
 describe("createOptimalTeamsForTimeSlot", () => {
   test.each(playersToBalance)('$caseName', ({players, timeSlot, expectResults}) => {
-    const { teams, substitutes } = createOptimalTeamsForTimeSlot(players, timeSlot, new Set());
+    //process average ranks
+    players.forEach((player, i) => {
+        players[i].averageRank = (getRankValue(player.currentRank) + getRankValue(player.peakRank)) / 2;
+    });
 
+    const { teams, substitutes } = createOptimalTeamsForTimeSlot(players, timeSlot, new Set());
     const teamCount = teams.length;
 
     expect(teamCount).toBe(expectResults.teams.length); // Ensures the expected amount of teams were created
