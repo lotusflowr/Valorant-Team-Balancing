@@ -80,7 +80,7 @@ export function createOptimalTeams(players, TIME_SLOTS) {
             }
         });
 
-        // Finally, add any remaining available players
+        // Finally, add any remaining available players -- #TOFIX : DOESN'T CARE IF PLAYER SAID YES OR NOT FOR SUBSTITUTE
         players.forEach(player => {
             if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
                 timeSlotPlayers.push(player);

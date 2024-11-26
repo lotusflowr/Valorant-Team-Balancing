@@ -78,6 +78,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
 
         timeSlotTeams.forEach((team, teamIndex) => {
             const teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
+            const sortedPlayers = team.players.sort((a, b) => b.averageRank - a.averageRank); // Sort players by AVG Rank
 
             // Write team header
             sheet.getRange(rowIndex + 1, 1, 1, 5).merge()
@@ -114,7 +115,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
             rowIndex++;
 
             // Write player data
-            team.players.forEach(player => {
+            sortedPlayers.forEach(player => {
                 const playerRow = [
                     player.discordUsername,
                     player.riotID,
