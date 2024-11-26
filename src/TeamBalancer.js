@@ -10,15 +10,6 @@ import {
   writeTeamsToSheet
 } from './PlayerData.js';
 
-//here for testing jest, remove when first real jest test is done
-export function sum(a, b) {
-  if (typeof SpreadsheetApp != 'undefined') {
-    var ui = SpreadsheetApp.getUi();
-    ui.alert('sum works!', 'sum works!', ui.ButtonSet.OK);
-  }
-  return a + b;
-}
-
 export function sortPlayersIntoBalancedTeams() {
     Logger.log("sortPlayersIntoBalancedTeams function started");
 
@@ -89,7 +80,7 @@ export function createOptimalTeams(players, TIME_SLOTS) {
             }
         });
 
-        // Finally, add any remaining available players
+        // Finally, add any remaining available players -- #TOFIX : DOESN'T CARE IF PLAYER SAID YES OR NOT FOR SUBSTITUTE
         players.forEach(player => {
             if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
                 timeSlotPlayers.push(player);

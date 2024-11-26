@@ -216,6 +216,9 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
     });
     timeSlotTeams.forEach(function (team, teamIndex) {
       var teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
+      var sortedPlayers = team.players.sort(function (a, b) {
+        return b.averageRank - a.averageRank;
+      }); // Sort players by AVG Rank
 
       // Write team header
       sheet.getRange(rowIndex + 1, 1, 1, 5).merge().setValue(team.name).setFontWeight("bold").setBackground(teamColor).setFontColor("#000000").setFontSize(12).setHorizontalAlignment("center");
@@ -237,7 +240,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
       rowIndex++;
 
       // Write player data
-      team.players.forEach(function (player) {
+      sortedPlayers.forEach(function (player) {
         var playerRow = [player.discordUsername, player.riotID, getRankName(player.currentRank), getRankName(player.peakRank), player.lobbyHost, player.averageRank.toFixed(2)];
         var range = sheet.getRange(rowIndex + 1, 1, 1, playerRow.length);
         range.setValues([playerRow]).setBackground(teamColor);
