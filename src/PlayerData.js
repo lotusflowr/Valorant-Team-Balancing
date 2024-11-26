@@ -194,5 +194,4 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
     sheet.setColumnWidth(1, 150); // Set Discord column width
     sheet.setColumnWidth(2, 150); // Set Riot ID column width
     sheet.setColumnWidth(6, 100); // Set Avg Rank column width
-    sheet.setFrozenRows(1);
 }
