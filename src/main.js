@@ -1,37 +1,28 @@
+// Import UI functions
 import {
-  onOpen,
-  changeGameDay,
-  getTimeSlots,
-  manuallyInputTimeSlots,
-  setAutomaticTimeSlots,
-  sortPlayersIntoBalancedTeams,
-  getPlayersData,
-  writeTeamsToSheet,
-  createDiscordPings,
-  setTimeSlots,
-  writeDiscordPingsToSheet,
-  setConditionalFormatting,
-  getContrastColor,
-  getGameDay,
-  getRankValue,
-  getRankName,
-  clearResponses,
-  createOptimalTeams,
-  createOptimalTeamsForTimeSlot,
-  trySwapPlayers,
-  getTeamSpread,
-  setGameDay,
-  manageTimeSlots,
-  manageTimeSlotsMenu
-} from './Galorants_In-Houses_script.js';
+    onOpen,
+    manageTimeSlots
+} from './UIFunctions.js';
 
+// Import team balancer functions
 import {
-  sum
-} from "./TeamBalance.js"
+    sortPlayersIntoBalancedTeams
+} from './TeamBalancer.js';
 
+// Import Discord pings functions
+import {
+    generateDiscordPings
+} from './DiscordPings.js';
+
+// Import utilities
+import {
+    clearResponses
+} from './Utilities.js';
+
+// Expose functions to the global scope for Google Apps Script
 var global = {};
 global.onOpen = onOpen;
 global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
+global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
-global.sum = sum;

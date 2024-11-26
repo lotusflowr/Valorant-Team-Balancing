@@ -1,0 +1,27 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "sheets": {
+    "macros": [
+        {
+            "menuName": "Manage Time Slots",
+            "functionName": "manageTimeSlots"
+        },
+        {
+            "menuName": "Sort and Balance Players",
+            "functionName": "sortPlayersIntoBalancedTeams"
+        },
+        {
+            "menuName": "Generate Discord Pings",
+            "functionName": "generateDiscordPings"
+        },
+        {
+            "menuName": "Clear Responses",
+            "functionName": "clearResponses"
+        }
+    ]
+  }
+}

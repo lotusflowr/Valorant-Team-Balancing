@@ -1,2 +1,4 @@
 node_modules/
 .vs/
+.clasp.json
+clasp_configs/
