@@ -7,14 +7,16 @@ import {
 
 import {
   getPlayersData,
-  writeTeamsToSheet
+  writeTeamsToSheet,
+  processDuos
 } from './PlayerData.js';
+
+import TimeSlot from './classes/TimeSlot.js';
 
 export function sortPlayersIntoBalancedTeams() {
     Logger.log("sortPlayersIntoBalancedTeams function started");
 
     // Update Time and Day variables
-    const TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
     const GAME_DAY = getGameDay(); // Refresh GAME_DAY at the start of the function
 
     try {
@@ -31,10 +33,12 @@ export function sortPlayersIntoBalancedTeams() {
             throw new Error("No valid players found. Please check the player data.");
         }
 
-        const teamsAndSubs = createOptimalTeams(allPlayers, TIME_SLOTS);
+        processDuos(allPlayers);
+
+        const teamsAndSubs = createOptimalTeams(allPlayers);
         Logger.log("Teams and substitutes created: " + JSON.stringify(teamsAndSubs));
 
-        writeTeamsToSheet(teamsSheet, teamsAndSubs, TIME_SLOTS);
+        writeTeamsToSheet(teamsSheet, teamsAndSubs);
         Logger.log("Teams written to sheet");
 
     } catch (e) {
@@ -46,12 +50,14 @@ export function sortPlayersIntoBalancedTeams() {
 }
 
 /***** TEAM BALANCING LOGIC FUNCTIONS *****/
-export function createOptimalTeams(players, TIME_SLOTS) {
+export function createOptimalTeams(players) {
     let result = {
         teams: [],
         substitutes: {}
     };
     let assignedPlayers = new Set();
+
+    const TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
 
     // Ensure TIME_SLOTS is defined and not empty
     if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
@@ -59,34 +65,22 @@ export function createOptimalTeams(players, TIME_SLOTS) {
         return result;
     }
 
-    // Sort players based on the number of available time slots (ascending)
-    players.sort((a, b) => a.timeSlots.length - b.timeSlots.length);
+    let TimeSlots = [];
+    TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+        let Slot = new TimeSlot(timeSlot);
+
+        Slot.processPlayersToTimeSlot(players);
+        Slot.createLobbiesForSlot();
+        Slot.createOptimalTeams(true);
+        //TODO:
+        //validate optimal teams
+        //run Slot.createOptimalTeams(false) to try again without duos if needed
+
+        TimeSlots.push(Slot);
+    }
 
     // Process each time slot
     TIME_SLOTS.forEach((timeSlot, slotIndex) => {
-        let timeSlotPlayers = [];
-
-        // First, add players who can only play in this time slot
-        players.forEach(player => {
-            if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
-                timeSlotPlayers.push(player);
-            }
-        });
-
-        // Then, add players who haven't played yet and can play in this slot
-        players.forEach(player => {
-            if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
-                timeSlotPlayers.push(player);
-            }
-        });
-
-        // Finally, add any remaining available players -- #TOFIX : DOESN'T CARE IF PLAYER SAID YES OR NOT FOR SUBSTITUTE
-        players.forEach(player => {
-            if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
-                timeSlotPlayers.push(player);
-            }
-        });
-
         // Create teams for this time slot
         let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
 

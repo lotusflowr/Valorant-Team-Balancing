@@ -1,4 +1,7 @@
-import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
+import {
+    getScriptPropByName
+} from './config.js'
+
 import {
     getTimeSlots,
 } from './TimeSlotManager.js';
@@ -7,6 +10,7 @@ import {
   getRankName,
   setConditionalFormatting
 } from './Utilities.js';
+import Player from './classes/Player.js';
 
 export function getPlayersData(sheet) {
     const TIME_SLOTS = getTimeSlots();
@@ -18,45 +22,92 @@ export function getPlayersData(sheet) {
         return [];
     }
 
-    const players = data.slice(1).map((row, index) => {
-        const player = {
-            timestamp: row[0],
-            discordUsername: row[1],
-            riotID: row[2],
-            pronouns: row[3],
-            timeSlots: row[TIME_SLOTS_COLUMN - 1] ? row[TIME_SLOTS_COLUMN - 1].toString().split(',').map(s => s.trim()) : TIME_SLOTS,
-            multipleGames: row[5],
-            substitute: row[6].toString().toLowerCase() === 'yes',
-            lobbyHost: row[7],
-            duo: row[8],
-            currentRank: getRankValue(row[9]),
-            peakRank: getRankValue(row[10]),
-        };
-        player.averageRank = (player.currentRank + player.peakRank) / 2;
+    let playerNames = [];
 
-        Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},
-        Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),
-        Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
+    try {
+        const players = data.slice(1).map((row, index) => {
+            const player = new Player(
+                row[getScriptPropByName(COLUMN_TIMESTAMP)],
+                row[getScriptPropByName(COLUMN_DISCORDNAME)],
+                row[getScriptPropByName(COLUMN_RIOTID)],
+                row[getScriptPropByName(COLUMN_PRONOUNS)],
+                row[getScriptPropByName(COLUMN_TIMESLOTS)] ? row[getScriptPropByName(COLUMN_TIMESLOTS)].toString().split(',').map(s => s.trim()) : getScriptPropByName(TIME_SLOTS),
+                row[getScriptPropByName(COLUMN_MULTIPLEGAMES)].toString().toLowerCase() === 'yes',
+                row[getScriptPropByName(COLUMN_WILLSUB)].toString().toLowerCase() === 'yes',
+                row[getScriptPropByName(COLUMN_WILLHOST)].toString().toLowerCase() === 'yes',
+                row[getScriptPropByName(COLUMN_DUOREQUEST)],
+                getRankValue(row[getScriptPropByName(COLUMN_CURRENTRANK)]),
+                getRankValue(row[getScriptPropByName(COLUMN_PEAKRANK)])
+            );
 
-        return player;
-    });
+            Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},
+            Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),
+            Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
 
-    const validPlayers = players.filter(player => {
-        const isValid = player.currentRank > 0 || player.peakRank > 0;
-        if (!isValid) {
-            Logger.log(`Filtered out player: ${player.discordUsername} (Current Rank: ${player.currentRank}, Peak Rank: ${player.peakRank})`);
+            const discordName = player.getDiscordName();
+            if (playerNames.includes(discordName)) {
+                //player has already been processed once -- needs review & possible removal for double-submission!
+                throw Error(`Double-submission detected, please review: ${discordName}`);
+            }
+            playerNames.push(discordName);
+            return player;
+        });
+    } catch ({errorType, message}) {
+        const ui = SpreadsheetApp.getUi();
+        ui.alert('Double-Submission', message, ui.ButtonSet.OK);
+        return [];
+    }
+
+    let validPlayers = [];
+    players.forEach(Player => {
+        if (Player.getIsValidPlayer()) {
+            validPlayers.push(Player);
+        } else {
+            const currentRank = Player.getCurrentRank();
+            const peakRank = Player.getPeakRank();
+            Logger.log(`Filtered out player: ${discordName} (Current Rank: ${currentRank}, Peak Rank: ${peakRank})`);
         }
-        return isValid;
     });
 
     Logger.log(`Number of players before filtering: ${players.length}`);
     Logger.log(`Number of players after filtering: ${validPlayers.length}`);
     Logger.log(`Sample player data: ${JSON.stringify(validPlayers[0])}`);
 
-    return validPlayers;
+    return players;
 }
 
-export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
+/**
+ * Try to match players with their duo requests & update the corresponding player objects
+ *
+ * @param players = array of player objects
+ */
+export function processDuos(players) {
+    const playerCount = players.length;
+
+    //TODO: optimize, with <50 players expected it probably isn't much of a performance hit but it's not great
+    for (let i = 0; i < playerCount; i++) {
+        for (let j = 1; j < playerCount; j++) {
+            //duo hasn't already been set for these players & they submitted a duo request
+            if (players[i].getDuoPlayer() == null &&
+                players[j].getDuoPlayer() == null &&
+                players[i].getDuoRequest() != '' &&
+                players[j].getDuoRequest() != ''
+            ) {
+                //the players both submitted the other's discord name as their duo request
+                if (players[i].getDuoRequest() == players[j].getDiscordName() &&
+                    players[j].getDuoRequest() == players[i].getDiscordName()
+                ) {
+                    players[i].setDuo(players[j]);
+                    players[j].setDuo(players[i]);
+                }
+            }
+        }
+    }
+}
+
+export function writeTeamsToSheet(sheet, teamsAndSubs) {
+    const TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
+
     sheet.clear();
     let rowIndex = 0;
     const teamColors = ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"];

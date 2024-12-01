@@ -134,3 +134,42 @@ export function clearResponses() {
     ui.alert('No Responses', 'There are no responses to clear.', ui.ButtonSet.OK);
   }
 }
+
+/**
+ * sorts players in descending rank order
+ *
+ * @param {array} playerList - array of Player objects to sort
+ *
+ * @returns {array} the sorted version of the provided playerList
+ */
+export function sortPlayersByRank(playerList) {
+    playerList.sort((a, b) => {
+        return b.getAvgRank() - a.getAvgRank();
+    });
+
+    return playerList;
+}
+
+/**
+ * finds the median player (by rank) in a given list of players
+ *
+ * @param {array} playerList - array of Player objects to sort
+ *
+ * @returns {Player|null} the Player object determined to be the median in the list, or null if the list is empty
+ */
+export function findMedianPlayer(playerList) {
+    playerCount = playerList.length;
+
+    if (playerCount == 0) {
+        return null;
+    }
+
+    let medianIndex = 0;
+    if (playerCount % 2 == 0) { //even amount of players
+        medianIndex = playerCount / 2;
+    } else { //odd amount of players
+        medianIndex = Math.floor(playerCount / 2);
+    }
+
+    return playerList[medianIndex];
+}
