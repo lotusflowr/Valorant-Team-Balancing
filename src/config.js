@@ -1,8 +1,9 @@
 //DEFAULT APP SETTINGS
-const DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
-const GAME_DAY = "Saturday";
-const TEAM_SIZE = 5;
-const SPLIT_LOBBIES_BY_RANK=false;
+export const DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
+export const GAME_DAY = "Saturday";
+export const TEAM_SIZE = 5;
+export const SPLIT_LOBBIES_BY_RANK = false;
+export const MINIMUM_SUB_COUNT = 2; //defines how many sub players must be available for each lobby before a new lobby can be made
 
 //SPREADHSHEET COLUMNS
 const COLUMN_TIMESTAMP = 0;
@@ -82,6 +83,10 @@ export function getScriptPropByName(name) {
             scriptCol = scriptProperties.getProperty('GAME_DAY')
             defaultCol = GAME_DAY;
             break;
+        case 'minimum_sub_count':
+            scriptCol = scriptProperties.getProperty('MINIMUM_SUB_COUNT')
+            defaultCol = MINIMUM_SUB_COUNT;
+            break;
         default:
             throw new Error("Could not find the requested config variable");
     }
@@ -136,6 +141,9 @@ export function setScriptPropByName(name, value) {
             break;
         case 'game_day':
             scriptProperties.setProperty('GAME_DAY', value);
+            break;
+        case 'minimum_sub_count':
+            scriptProperties.setProperty('MINIMUM_SUB_COUNT', value);
             break;
         default:
             throw new Error("Could not find the requested config variable");

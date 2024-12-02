@@ -31,15 +31,16 @@ export function getPlayersData(sheet) {
                 row[getScriptPropByName(COLUMN_DISCORDNAME)],
                 row[getScriptPropByName(COLUMN_RIOTID)],
                 row[getScriptPropByName(COLUMN_PRONOUNS)],
-                row[getScriptPropByName(COLUMN_TIMESLOTS)] ? row[getScriptPropByName(COLUMN_TIMESLOTS)].toString().split(',').map(s => s.trim()) : getScriptPropByName(TIME_SLOTS),
-                row[getScriptPropByName(COLUMN_MULTIPLEGAMES)].toString().toLowerCase() === 'yes',
-                row[getScriptPropByName(COLUMN_WILLSUB)].toString().toLowerCase() === 'yes',
-                row[getScriptPropByName(COLUMN_WILLHOST)].toString().toLowerCase() === 'yes',
+                row[getScriptPropByName(COLUMN_TIMESLOTS)] ? row[getScriptPropByName(COLUMN_TIMESLOTS)] : getScriptPropByName(TIME_SLOTS),
+                row[getScriptPropByName(COLUMN_MULTIPLEGAMES)],
+                row[getScriptPropByName(COLUMN_WILLSUB)],
+                row[getScriptPropByName(COLUMN_WILLHOST)],
                 row[getScriptPropByName(COLUMN_DUOREQUEST)],
                 getRankValue(row[getScriptPropByName(COLUMN_CURRENTRANK)]),
                 getRankValue(row[getScriptPropByName(COLUMN_PEAKRANK)])
             );
 
+            //TODO: adjust so it doesn't access row index by number
             Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},
             Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),
             Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
@@ -87,20 +88,7 @@ export function processDuos(players) {
     //TODO: optimize, with <50 players expected it probably isn't much of a performance hit but it's not great
     for (let i = 0; i < playerCount; i++) {
         for (let j = 1; j < playerCount; j++) {
-            //duo hasn't already been set for these players & they submitted a duo request
-            if (players[i].getDuoPlayer() == null &&
-                players[j].getDuoPlayer() == null &&
-                players[i].getDuoRequest() != '' &&
-                players[j].getDuoRequest() != ''
-            ) {
-                //the players both submitted the other's discord name as their duo request
-                if (players[i].getDuoRequest() == players[j].getDiscordName() &&
-                    players[j].getDuoRequest() == players[i].getDiscordName()
-                ) {
-                    players[i].setDuo(players[j]);
-                    players[j].setDuo(players[i]);
-                }
-            }
+            players[i].validateDuo(players[j]);
         }
     }
 }

@@ -11,13 +11,18 @@
         "@babel/cli": "^7.25.7",
         "@babel/core": "^7.25.8",
         "@babel/preset-env": "^7.25.8",
+        "@eslint/js": "^9.16.0",
         "@google/clasp": "^2.4.2",
         "@rollup/plugin-babel": "^6.0.4",
         "@rollup/plugin-node-resolve": "^15.3.0",
+        "eslint": "^9.16.0",
+        "globals": "^15.13.0",
         "jest": "^29.7.0",
         "rollup": "^4.24.0"
     },
     "jest": {
-        "setupFilesAfterEnv": [ "./tests/setupJest.js" ]
+        "setupFilesAfterEnv": [
+            "./tests/setupJest.js"
+        ]
     }
 }

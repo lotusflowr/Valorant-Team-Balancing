@@ -1,6 +1,6 @@
 import { TEAM_SIZE } from '../config.js';
 
-export default const Team = class {
+export default class Team {
     constructor(teamName = '') {
         this.TeamName = teamName;
         this.Players = [];
@@ -95,7 +95,7 @@ export default const Team = class {
         let total = 0;
         let minRank, maxRank = null;
 
-        Players.forEach(Player => {
+        this.Players.forEach(Player => {
             let playerRank = Player.getAvgRank();
 
             if (maxRank === null || maxRank < playerRank) {

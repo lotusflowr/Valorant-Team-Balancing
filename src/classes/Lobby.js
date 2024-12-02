@@ -1,6 +1,6 @@
 import Team from './classes/Team.js';
 
-export default const Lobby = class {
+export default class Lobby {
     constructor() {
         this.Team1 = new Team('Team 1');
         this.Team2 = new Team('Team 2');

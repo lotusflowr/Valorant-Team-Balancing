@@ -11,7 +11,7 @@ import Lobby from './classes/Lobby.js';
 
 import { TEAM_SIZE } from './config.js';
 
-export default const TimeSlot = class {
+export default class TimeSlot {
     constructor(timeSlot) {
         this.TimeSlot = timeSlot;
         this.Lobbies = [];
@@ -60,16 +60,14 @@ export default const TimeSlot = class {
             timeSlots.forEach(tSlot => {
                 //if the player has a time slot that matches this one, add them as a possible player
                 if (tSlot == this.TimeSlot) {
-                    if (!Player.getCanPlayMultiple() && Player.getHasBeenAssigned()) {
-                        //player can only play 1 game and has already been assigned, so don't add them as a possible player
-                        continue;
-                    }
+                    //player can play multiple games, or has not already been assigned, so add them as a possible player
+                    if (Player.getCanPlayMultiple() || !Player.getHasBeenAssigned()) {
+                        this.PossiblePlayers.push(Player);
 
-                    this.PossiblePlayers.push(Player);
-
-                    //if the amount of time slots the player is available for is less than the total (they're limited), flag them as a higher priority
-                    if (timeSlots.length < totalTimeSlotCount) {
-                        this.PriorityPlayers.push(Player);
+                        //if the amount of time slots the player is available for is less than the total (they're limited), flag them as a higher priority
+                        if (timeSlots.length < totalTimeSlotCount) {
+                            this.PriorityPlayers.push(Player);
+                        }
                     }
                 }
             });

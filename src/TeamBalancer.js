@@ -77,7 +77,7 @@ export function createOptimalTeams(players) {
         //run Slot.createOptimalTeams(false) to try again without duos if needed
 
         TimeSlots.push(Slot);
-    }
+    });
 
     // Process each time slot
     TIME_SLOTS.forEach((timeSlot, slotIndex) => {

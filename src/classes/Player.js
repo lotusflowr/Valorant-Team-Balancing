@@ -1,4 +1,8 @@
-export default const Player = class {
+import {
+  getRankValue,
+} from '../Utilities.js';
+
+export default class Player {
     constructor(
         timestamp,
         discordName,
@@ -13,19 +17,61 @@ export default const Player = class {
         peakRank
     ) {
         this.TimeStamp = timestamp;
-        this.DiscordUsername = discordname;
+        this.DiscordUsername = discordName;
         this.RiotID = riotID;
         this.Pronouns = pronouns;
-        this.TimeSlots = timeSlots;
-        this.MultipleGames = multipleGames;
-        this.CanSub = substitute;
-        this.CanHost = LobbyHost;
         this.DuoRequest = duoRequest;
-        this.CurrentRank = currentRank;
-        this.PeakRank = peakRank;
+
+        if (typeof currentRank == 'string') {
+            this.CurrentRank = getRankValue(currentRank);
+        } else if (typeof currentRank == 'number') {
+            this.CurrentRank = currentRank;
+        }
+
+        if (typeof peakRank == 'string') {
+            this.PeakRank = getRankValue(peakRank);
+        } else if (typeof peakRank == 'number') {
+            this.PeakRank = peakRank;
+        }
+
+        if (typeof timeSlots == 'string') {
+            if (timeSlots.trim().length > 0) {
+                this.TimeSlots = timeSlots.trim().split(',').map(s => s.trim());
+            } else {
+                this.TimeSlots = [];
+            }
+        } else if (Array.isArray(timeSlots)) {
+            this.TimeSlots = timeSlots;
+        } else {
+            this.TimeSlots = [];
+        }
+
+        if (typeof multipleGames == 'boolean') {
+            this.MultipleGames = multipleGames;
+        } else if (typeof multipleGames == 'string') {
+            this.MultipleGames = multipleGames.toLowerCase() === 'yes';
+        } else {
+            throw new Error('The "multiple games" option provided is invalid');
+        }
+
+        if (typeof substitute == 'boolean') {
+            this.CanSub = substitute;
+        } else if (typeof multipleGames == 'string') {
+            this.CanSub = substitute.toLowerCase() === 'yes';
+        } else {
+            throw new Error('The "substitute" option provided is invalid');
+        }
+
+        if (typeof lobbyHost == 'boolean') {
+            this.CanHost = lobbyHost;
+        } else if (typeof multipleGames == 'string') {
+            this.CanHost = lobbyHost.toLowerCase() === 'yes';
+        } else {
+            throw new Error('The "lobby host" option provided is invalid');
+        }
+
         this.AverageRank = (this.CurrentRank + this.PeakRank) / 2;
         this.Duo = null;
-        this.isValid = this.CurrentRank > 0 || this.PeakRank > 0;
         this.hasBeenAssigned = false;
         this.onTentativeTeam = false;
         this.TentativeTeam = null;
@@ -38,6 +84,26 @@ export default const Player = class {
      */
     setDuo = (duo) => {
         this.Duo = duo;
+    }
+
+    /**
+     * @param {Player} duo - Player object of the matched duo
+     */
+    validateDuo = (duo) => {
+        //this player hasn't already had a duo set, and their duo request isn't empty
+        if (this.getDuoPlayer() == null &&
+            duo.getDuoPlayer() == null &&
+            this.getDuoRequest() != '' &&
+            duo.getDuoRequest() != ''
+        ) {
+            //the players both submitted the other's discord name as their duo request
+            if (this.getDuoRequest() == duo.getDiscordName() &&
+                duo.getDuoRequest() == this.getDiscordName()
+            ) {
+                this.setDuo(duo);
+                duo.setDuo(this);
+            }
+        }
     }
 
     /**
@@ -59,14 +125,37 @@ export default const Player = class {
      *
      * @param {Team} [Team=null] - Team object that the player will be tentatively assigned to--if not provided, will be set to null
      */
-    this.setTentativeTeam = (Team = null) => {
+    setTentativeTeam = (Team = null) => {
         this.TentativeTeam = Team;
     }
 
     //////// GETTERS FOR PLAYER ATTRIBUTES ////////
 
     getIsValidPlayer = () => {
-        return this.Valid;
+        if (this.CurrentRank <= 0) {
+            return false;
+        }
+
+        if (this.PeakRank <= 0) {
+            return false;
+        }
+
+        //make sure discord name generally matches discord requirements
+        if (this.DiscordUsername.length < 2 || this.DiscordUsername.length > 32) {
+            return false;
+        }
+
+        //make sure riot ID generally matches name/tagline requirements from riot
+        let riotIdSplit = this.RiotID.split('#'); 
+        if (riotIdSplit.length != 2 || riotIdSplit[0].length < 3 || riotIdSplit[0].length > 16 || riotIdSplit[1].length < 2 || riotIdSplit[1].length > 5) { 
+            return false;
+        }
+
+        if (this.TimeSlots.length == 0) {
+            return false;
+        }
+
+        return true;
     }
 
     getDiscordName = () => {
@@ -91,6 +180,14 @@ export default const Player = class {
 
     getCanHost = () => {
         return this.CanHost;
+    }
+
+    getPeakRank = () => {
+        return this.PeakRank;
+    }
+
+    getCurrentRank = () => {
+        return this.CurrentRank;
     }
 
     getAvgRank = () => {
