@@ -1,9 +1,9 @@
 //DEFAULT APP SETTINGS
-export const DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
-export const GAME_DAY = "Saturday";
-export const TEAM_SIZE = 5;
-export const SPLIT_LOBBIES_BY_RANK = false;
-export const MINIMUM_SUB_COUNT = 2; //defines how many sub players must be available for each lobby before a new lobby can be made
+const DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
+const GAME_DAY = "Saturday";
+const TEAM_SIZE = 5;
+const SPLIT_LOBBIES_BY_RANK = false;
+const MINIMUM_SUB_COUNT = 2; //defines how many sub players must be available for each lobby before a new lobby can be made
 
 //SPREADHSHEET COLUMNS
 const COLUMN_TIMESTAMP = 0;
@@ -19,6 +19,11 @@ const COLUMN_CURRENTRANK = 9;
 const COLUMN_PEAKRANK = 10;
 
 //GETTERS/SETTERS
+/**
+ * Gets the stored script property if it exists. If it doesn't, gets the default config value for the given prop name
+ *
+ * @param {string} name - the name of the value to fetch
+ */
 export function getScriptPropByName(name) {
     const scriptProperties = PropertiesService.getScriptProperties();
     let scriptCol, defaultCol = '';
@@ -93,41 +98,46 @@ export function getScriptPropByName(name) {
     return scriptCol ? scriptCol : defaultCol;
 }
 
+/**
+ * Sets a script property's value for the given prop name
+ *
+ * @param {string} name - the name of config/prop
+ */
 export function setScriptPropByName(name, value) {
     const scriptProperties = PropertiesService.getScriptProperties();
     let scriptCol, defaultCol = '';
     switch (name.toLowerCase()) {
-        case 'timestamp':
+        case 'column_timestamp':
             scriptProperties.setProperty('COLUMN_TIMESTAMP', value);
             break;
-        case 'discordname':
+        case 'column_discordname':
             scriptProperties.setProperty('COLUMN_DISCORDNAME', value);
             break;
-        case 'riotid':
+        case 'column_riotid':
             scriptProperties.setProperty('COLUMN_RIOTID', value);
             break;
-        case 'pronouns':
+        case 'column_pronouns':
             scriptProperties.setProperty('COLUMN_PRONOUNS', value);
             break;
-        case 'timeslots':
+        case 'column_timeslots':
             scriptProperties.setProperty('COLUMN_TIMESLOTS', value);
             break;
-        case 'multiplegames':
+        case 'column_multiplegames':
             scriptProperties.setProperty('COLUMN_MULTIPLEGAMES', value);
             break;
-        case 'willsub':
+        case 'column_willsub':
             scriptProperties.setProperty('COLUMN_WILLSUB', value);
             break;
-        case 'willhost':
+        case 'column_willhost':
             scriptProperties.setProperty('COLUMN_WILLHOST', value);
             break;
-        case 'duorequest':
+        case 'column_duorequest':
             scriptProperties.setProperty('COLUMN_DUOREQUEST', value);
             break;
-        case 'currentrank':
+        case 'column_currentrank':
             scriptProperties.setProperty('COLUMN_CURRENTRANK', value);
             break;
-        case 'peakrank':
+        case 'column_peakrank':
             scriptProperties.setProperty('COLUMN_PEAKRANK', value);
             break;
         case 'time_slots':

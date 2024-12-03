@@ -70,7 +70,11 @@ export function createOptimalTeams(players) {
         let Slot = new TimeSlot(timeSlot);
 
         Slot.processPlayersToTimeSlot(players);
-        Slot.createLobbiesForSlot();
+        try {
+            Slot.createLobbiesForSlot();
+        } catch (e) {
+            throw e;
+        }
         Slot.createOptimalTeams(true);
         //TODO:
         //validate optimal teams

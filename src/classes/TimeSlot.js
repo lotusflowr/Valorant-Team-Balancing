@@ -1,15 +1,16 @@
 import {
     getTimeSlots,
-} from './TimeSlotManager.js';
+} from '../TimeSlotManager.js';
 
 import {
+    getRankValue,
     sortPlayersByRank,
     findMedianPlayer
 } from '../Utilities.js';
 
-import Lobby from './classes/Lobby.js';
+import Lobby from './Lobby.js';
 
-import { TEAM_SIZE } from './config.js';
+import { getScriptPropByName } from '../config.js';
 
 export default class TimeSlot {
     constructor(timeSlot) {
@@ -42,6 +43,13 @@ export default class TimeSlot {
         return this.Lobbies;
     }
 
+    /**
+     * gets the string value of the time slot, example: "7pm CEST/8pm WEST"
+     */
+    getTimeSlotName = () => {
+        return this.TimeSlot;
+    }
+
     //////// SETTERS FOR TIME SLOT ////////
 
     /**
@@ -50,12 +58,12 @@ export default class TimeSlot {
      * @param {array} Players - array of Player objects
      */
     processPlayersToTimeSlot = (Players) => {
-        totalTimeSlotCount = getTimeSlots().length;
+        let totalTimeSlotCount = getTimeSlots().length;
 
         //loop through the players
         Players.forEach(Player => {
             //check each player's available time slots
-            timeSlots = Player.getAvailableTimeSlots();
+            let timeSlots = Player.getAvailableTimeSlots();
 
             timeSlots.forEach(tSlot => {
                 //if the player has a time slot that matches this one, add them as a possible player
@@ -71,19 +79,32 @@ export default class TimeSlot {
                     }
                 }
             });
-        }
+        });
 
-        this.PossiblePlayers = this.sortPlayersByRank(this.PossiblePlayers);
-        this.PriorityPlayers = this.sortPlayersByRank(this.PriorityPlayers);
+        this.PossiblePlayers = sortPlayersByRank(this.PossiblePlayers);
+        this.PriorityPlayers = sortPlayersByRank(this.PriorityPlayers);
     }
 
     /**
-     * Initializes the appropriate amount of lobbies for this time slot
+     * Initializes the appropriate amount of lobbies (2 teams) for this time slot given the amount of possible players and the configured team size. If more than 1 lobby could be created, the minimum sub amount will be added to the required player count before forming a second lobby
+     *
+     * @throws Will throw an error if there aren't enough players to form 1 lobby based on team size
      */
     createLobbiesForSlot = () => {
-        //determine the amount of lobbies we can form:
         const playerCount = this.getPossiblePlayers().length;
-        const lobbyCount = Math.floor(playerCount / (TEAM_SIZE * 2));
+
+        //ensure we have at least enough players to form 1 lobby (10 players minimum by default)
+        if (playerCount < getScriptPropByName('TEAM_SIZE') * 2) {
+            throw new Error('Too few players to form a lobby');
+        }
+
+        //at this point we'll make at least 1 lobby, so check what the minimum player count would be to form more
+        //TODO: factor in the amount of people volunteering to be substitutes
+        let minimumPlayerCountPerLobby = (getScriptPropByName('TEAM_SIZE') * 2) + getScriptPropByName('MINIMUM_SUB_COUNT');
+        let lobbyCount = Math.floor(playerCount / minimumPlayerCountPerLobby);
+
+        //make at least 1 lobby
+        lobbyCount = lobbyCount == 0 ? 1 : lobbyCount;
 
         //initialize that many lobbies
         for (let i = 0; i < lobbyCount; i++) {
@@ -105,7 +126,7 @@ export default class TimeSlot {
         PossiblePlayers.forEach(Player => {
             if (Player.getDiscordName() == discordName) {
                 PlayerObj = Player;
-                break;
+                return;
             }
         });
 

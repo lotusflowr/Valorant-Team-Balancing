@@ -1,4 +1,4 @@
-import Team from './classes/Team.js';
+import Team from './Team.js';
 
 export default class Lobby {
     constructor() {
