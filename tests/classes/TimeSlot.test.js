@@ -55,3 +55,67 @@ describe("Test TimeSlot Player processing & getters", () => {
         });
     });
 });
+
+describe("Test TimeSlot Lobby creation", () => {
+    test.each(players)('$caseName', ({playerData, timeSlot, expectedData}) => {
+        let playerObjs = [];
+
+        playerData.forEach(player => {
+            playerObjs.push(new Player(
+                player.timestamp,
+                player.discordUsername,
+                player.riotId,
+                player.pronouns,
+                player.timeSlots,
+                player.multipleGames,
+                player.willSub,
+                player.willHost,
+                player.duoRequest,
+                player.currentRank,
+                player.peakRank
+            )); 
+        });
+
+        let Slot = new TimeSlot(timeSlot);
+
+        expect(Slot.getTimeSlotName()).toBe(timeSlot);
+
+        Slot.processPlayersToTimeSlot(playerObjs);
+        Slot.createLobbiesForSlot();
+
+        expect(Slot.getLobbies()).toHaveLength(expectedData.lobbyCount);
+    });
+});
+
+describe("Test TimeSlot findPossiblePlayerByDiscordName", () => {
+    test.each(players)('$caseName', ({playerData, timeSlot, expectedData}) => {
+        let playerObjs = [];
+
+        playerData.forEach(player => {
+            playerObjs.push(new Player(
+                player.timestamp,
+                player.discordUsername,
+                player.riotId,
+                player.pronouns,
+                player.timeSlots,
+                player.multipleGames,
+                player.willSub,
+                player.willHost,
+                player.duoRequest,
+                player.currentRank,
+                player.peakRank
+            )); 
+        });
+
+        let Slot = new TimeSlot(timeSlot);
+        expect(Slot.getTimeSlotName()).toBe(timeSlot);
+        Slot.processPlayersToTimeSlot(playerObjs);
+        let possiblePlayers = Slot.getPossiblePlayers();
+
+        //loop through each of the players in the expected array and make sure they can be found 
+        expectedData.possiblePlayers.forEach(playerName => {
+            let Player = Slot.findPossiblePlayerByDiscordName(playerName);
+            expect(Player).not.toBeNull();
+        });
+    });
+});
