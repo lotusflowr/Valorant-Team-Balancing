@@ -116,6 +116,7 @@ describe("Test TimeSlot findPossiblePlayerByDiscordName", () => {
         expectedData.possiblePlayers.forEach(playerName => {
             let Player = Slot.findPossiblePlayerByDiscordName(playerName);
             expect(Player).not.toBeNull();
+            expect(Player.getDiscordName()).toBe(playerName);
         });
     });
 });
