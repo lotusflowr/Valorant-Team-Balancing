@@ -158,12 +158,20 @@ export default class Player {
         return true;
     }
 
+    getTimeStamp = () => {
+        return this.TimeStamp;
+    }
+
     getDiscordName = () => {
         return this.DiscordUsername;
     }
 
     getRiotID = () => {
         return this.RiotID;
+    }
+
+    getPronouns = () => {
+        return this.Pronouns;
     }
 
     getAvailableTimeSlots = () => {

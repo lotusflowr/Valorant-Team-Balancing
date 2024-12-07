@@ -4,7 +4,7 @@ import {
     players,
 } from './TimeSlotCases.js';
 
-describe("Test Player processing & getters", () => {
+describe("Test TimeSlot Player processing & getters", () => {
     test.each(players)('$caseName', ({playerData, timeSlot, expectedData}) => {
         let playerObjs = [];
 

@@ -4,12 +4,16 @@ import {
     getGameDay,
     setGameDay,
 } from './TimeSlotManager.js';
-
+import {
+    getPlayersData
+} from './PlayerData.js';
 import { sortPlayersIntoBalancedTeams } from './TeamBalancer.js';
 import { generateDiscordPings } from './DiscordPings.js';
-import { clearResponses } from './Utilities.js';
-
-import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
+import {
+    clearResponses,
+    getRankName
+} from './Utilities.js';
+import { getScriptPropByName } from './config.js';
 
 /***** UI FUNCTIONS *****/
 
@@ -24,6 +28,8 @@ export function onOpen() {
         .addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
         .addItem('Generate Discord Pings', 'generateDiscordPings')
         .addItem('Clear Responses', 'clearResponses')
+        .addSubMenu(ui.createMenu('Debug')
+            .addItem('List Players For Test Cases', 'printPlayersAsTestCases'))
         .addToUi();
 }
 
@@ -168,7 +174,7 @@ export function setAutomaticTimeSlots() {
     const sheet = ss.getSheets()[0]; // Get the first sheet
 
     // Get time slots from the 5th column
-    const timeSlotsRange = sheet.getRange(2, TIME_SLOTS_COLUMN, sheet.getLastRow() - 1, 1);
+    const timeSlotsRange = sheet.getRange(2, getScriptPropByName('COLUMN_TIMESLOTS'), sheet.getLastRow() - 1, 1);
     const timeSlotValues = timeSlotsRange.getValues().flat().filter(Boolean);
 
     // Split any combined time slots
@@ -183,4 +189,36 @@ export function setAutomaticTimeSlots() {
     } else {
         ui.alert('No Time Slots Found', 'No time slots were found in the "Time Slots" column. Using current time slots.', ui.ButtonSet.OK);
     }
+}
+
+/**
+ * prints the players formatted as JSON so if we encounter something weird we
+ * can output the players and copy/paste them into our test cases for debugging
+ */
+export function printPlayersAsTestCases() {
+    var ui = SpreadsheetApp.getUi();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const playersSheet = ss.getSheets()[0];
+
+    //false so no players get filtered out
+    const allPlayers = getPlayersData(playersSheet, false);
+
+    let playersToPrint = [];
+    allPlayers.forEach(Player => {
+        playersToPrint.push({
+            timestamp: Player.getTimeStamp(),
+            discordUsername: Player.getDiscordName(),
+            riotId: Player.getRiotID(),
+            pronouns: Player.getPronouns(),
+            currentRank: getRankName(Player.getCurrentRank()),
+            peakRank: getRankName(Player.getPeakRank()),
+            timeSlots: Player.getAvailableTimeSlots(),
+            multipleGames: Player.getCanPlayMultiple() ? 'yes' : 'no',
+            willSub: Player.getCanSub() ? 'yes' : 'no',
+            willHost: Player.getCanHost() ? 'yes' : 'no',
+            duoRequest: Player.getDuoRequest()
+        });
+    });
+
+    ui.alert('Formatted Players', JSON.stringify(playersToPrint, null, 4), ui.ButtonSet.OK);
 }

@@ -74,6 +74,9 @@ export function getScriptPropByName(name) {
             break;
         case 'time_slots':
             scriptCol = scriptProperties.getProperty('TIME_SLOTS')
+            if (scriptCol) {
+                scriptCol = JSON.parse(scriptCol);
+            }
             defaultCol = DEFAULT_TIME_SLOTS;
             break;
         case 'team_size':
@@ -141,19 +144,25 @@ export function setScriptPropByName(name, value) {
             scriptProperties.setProperty('COLUMN_PEAKRANK', value);
             break;
         case 'time_slots':
-            scriptProperties.setProperty('TIME_SLOTS', value);
+            scriptProperties.setProperty('TIME_SLOTS', JSON.stringify(value));
             break;
         case 'team_size':
-            scriptProperties.setProperty('TEAM_SIZE', value);
+            scriptProperties.setProperty('TEAM_SIZE', Number(value));
             break;
         case 'split_lobbies_by_rank':
+            //TODO: there may be a better way to do this once we make it configurable
+            if (value == 'yes') {
+                value = true;
+            } else if (value == 'no') {
+                value = false;
+            }
             scriptProperties.setProperty('SPLIT_LOBBIES_BY_RANK', value);
             break;
         case 'game_day':
             scriptProperties.setProperty('GAME_DAY', value);
             break;
         case 'minimum_sub_count':
-            scriptProperties.setProperty('MINIMUM_SUB_COUNT', value);
+            scriptProperties.setProperty('MINIMUM_SUB_COUNT', Number(value));
             break;
         default:
             throw new Error("Could not find the requested config variable");

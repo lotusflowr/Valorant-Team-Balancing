@@ -1,4 +1,4 @@
-import { TEAM_SIZE } from '../config.js';
+import { getScriptPropByName } from '../config.js';
 
 export default class Team {
     constructor(teamName = '') {
@@ -41,7 +41,7 @@ export default class Team {
      * @throws Will throw an error if the team is already full per TEAM_SIZE config or if player is already tentatively on a team
      */
     addPlayerToTeam = (Player) => {
-        if (this.Players.length == TEAM_SIZE) {
+        if (this.Players.length == getScriptPropByName('TEAM_SIZE')) {
             throw Error('Team is full');
         }
 

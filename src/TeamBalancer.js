@@ -1,4 +1,4 @@
-import { TEAM_SIZE } from './config.js';
+import { getScriptPropByName } from './config.js';
 
 import {
   getTimeSlots,
@@ -101,7 +101,7 @@ export function createOptimalTeams(players) {
 
 export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     const numPlayers = players.length;
-    const maxTeams = Math.floor(numPlayers / TEAM_SIZE);
+    const maxTeams = Math.floor(numPlayers / getScriptPropByName('TEAM_SIZE'));
 
     // Ensure even number of teams and all teams have exactly TEAM_SIZE players
     const adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
@@ -130,7 +130,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
     });
 
     // Distribute players evenly across teams
-    const teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
+    const teamPlayers = players.slice(0, adjustedNumTeams * getScriptPropByName('TEAM_SIZE'));
     for (let i = 0; i < teamPlayers.length; i++) {
         const teamIndex = i % adjustedNumTeams;
         teams[teamIndex].players.push(teamPlayers[i]);
@@ -138,7 +138,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
     }
 
     // Remaining players become substitutes
-    const substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
+    const substitutes = players.slice(adjustedNumTeams * getScriptPropByName('TEAM_SIZE'));
 
     // Optimize team balance
     for (let iteration = 0; iteration < 100; iteration++) {

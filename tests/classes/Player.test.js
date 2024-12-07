@@ -21,6 +21,8 @@ describe("Test Player constructor/getters", () => {
             playerData.peakRank
         ); 
 
+        expect(player.getTimeStamp()).toBe(playerData.timestamp);
+        expect(player.getPronouns()).toBe(playerData.pronouns);
         expect(player.getDiscordName()).toBe(playerData.discordUsername);
         expect(player.getRiotID()).toBe(playerData.riotId);
 

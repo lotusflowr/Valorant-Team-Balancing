@@ -12,7 +12,7 @@ import {
 } from './Utilities.js';
 import Player from './classes/Player.js';
 
-export function getPlayersData(sheet) {
+export function getPlayersData(sheet, validatePlayers = true) {
     const TIME_SLOTS = getTimeSlots();
     const data = sheet.getDataRange().getValues();
     Logger.log(`Raw data: ${JSON.stringify(data.slice(0, 2))}`);
@@ -25,19 +25,19 @@ export function getPlayersData(sheet) {
     let playerNames = [];
 
     try {
-        const players = data.slice(1).map((row, index) => {
+        var players = data.slice(1).map((row, index) => {
             const player = new Player(
-                row[getScriptPropByName(COLUMN_TIMESTAMP)],
-                row[getScriptPropByName(COLUMN_DISCORDNAME)],
-                row[getScriptPropByName(COLUMN_RIOTID)],
-                row[getScriptPropByName(COLUMN_PRONOUNS)],
-                row[getScriptPropByName(COLUMN_TIMESLOTS)] ? row[getScriptPropByName(COLUMN_TIMESLOTS)] : getScriptPropByName(TIME_SLOTS),
-                row[getScriptPropByName(COLUMN_MULTIPLEGAMES)],
-                row[getScriptPropByName(COLUMN_WILLSUB)],
-                row[getScriptPropByName(COLUMN_WILLHOST)],
-                row[getScriptPropByName(COLUMN_DUOREQUEST)],
-                getRankValue(row[getScriptPropByName(COLUMN_CURRENTRANK)]),
-                getRankValue(row[getScriptPropByName(COLUMN_PEAKRANK)])
+                row[getScriptPropByName('COLUMN_TIMESTAMP')],
+                row[getScriptPropByName('COLUMN_DISCORDNAME')],
+                row[getScriptPropByName('COLUMN_RIOTID')],
+                row[getScriptPropByName('COLUMN_PRONOUNS')],
+                row[getScriptPropByName('COLUMN_TIMESLOTS')] ? row[getScriptPropByName('COLUMN_TIMESLOTS')] : getScriptPropByName('TIME_SLOTS'),
+                row[getScriptPropByName('COLUMN_MULTIPLEGAMES')],
+                row[getScriptPropByName('COLUMN_WILLSUB')],
+                row[getScriptPropByName('COLUMN_WILLHOST')],
+                row[getScriptPropByName('COLUMN_DUOREQUEST')],
+                getRankValue(row[getScriptPropByName('COLUMN_CURRENTRANK')]),
+                getRankValue(row[getScriptPropByName('COLUMN_PEAKRANK')])
             );
 
             //TODO: adjust so it doesn't access row index by number
@@ -46,7 +46,7 @@ export function getPlayersData(sheet) {
             Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
 
             const discordName = player.getDiscordName();
-            if (playerNames.includes(discordName)) {
+            if (validatePlayers && playerNames.includes(discordName)) {
                 //player has already been processed once -- needs review & possible removal for double-submission!
                 throw Error(`Double-submission detected, please review: ${discordName}`);
             }
@@ -61,7 +61,7 @@ export function getPlayersData(sheet) {
 
     let validPlayers = [];
     players.forEach(Player => {
-        if (Player.getIsValidPlayer()) {
+        if (!validatePlayers || Player.getIsValidPlayer()) {
             validPlayers.push(Player);
         } else {
             const currentRank = Player.getCurrentRank();
@@ -74,7 +74,7 @@ export function getPlayersData(sheet) {
     Logger.log(`Number of players after filtering: ${validPlayers.length}`);
     Logger.log(`Sample player data: ${JSON.stringify(validPlayers[0])}`);
 
-    return players;
+    return validPlayers;
 }
 
 /**

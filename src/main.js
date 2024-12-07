@@ -1,7 +1,8 @@
 // Import UI functions
 import {
     onOpen,
-    manageTimeSlots
+    manageTimeSlots,
+    printPlayersAsTestCases
 } from './UIFunctions.js';
 
 // Import team balancer functions
@@ -26,3 +27,5 @@ global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
+global.printPlayersAsTestCases = printPlayersAsTestCases;
+    
