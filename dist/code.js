@@ -506,7 +506,7 @@ function generateDiscordPings() {
     Logger.log("Processing row ".concat(i + 1, ": \"").concat(firstCell, "\""));
 
     // Detect Time Slot
-    if (row.length === 6 && (firstCell.includes("CEST") || firstCell.includes("WEST"))) {
+    if (row.length === 6 && (firstCell.includes("EST") || firstCell.includes("PST") || firstCell.includes("CEST") || firstCell.includes("WEST"))) {
       currentTimeSlot = firstCell;
       currentSection = "timeSlot";
       if (!substitutes[currentTimeSlot]) {
