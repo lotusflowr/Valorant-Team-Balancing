@@ -15,7 +15,7 @@ export function generateDiscordPings() {
     let currentTimeSlot = null;
     let currentTeam = null;
     let teams = [];
-    let substitutes = {};
+    let substitutes = [];
     let currentSection = null; // Possible values: null, "team", "players", "substitutes", "substitutesPlayers"
 
     // Process each row in the Teams sheet
