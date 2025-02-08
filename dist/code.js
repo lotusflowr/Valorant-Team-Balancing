@@ -290,7 +290,6 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
   sheet.setColumnWidth(1, 150); // Set Discord column width
   sheet.setColumnWidth(2, 150); // Set Riot ID column width
   sheet.setColumnWidth(6, 100); // Set Avg Rank column width
-  sheet.setFrozenRows(1);
 }
 
 function _toConsumableArray$2(r) { return _arrayWithoutHoles$2(r) || _iterableToArray$2(r) || _unsupportedIterableToArray$2(r) || _nonIterableSpread$2(); }
@@ -364,7 +363,7 @@ function createOptimalTeams(players, TIME_SLOTS) {
       }
     });
 
-    // Finally, add any remaining available players
+    // Finally, add any remaining available players -- #TOFIX : DOESN'T CARE IF PLAYER SAID YES OR NOT FOR SUBSTITUTE
     players.forEach(function (player) {
       if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
         timeSlotPlayers.push(player);
@@ -497,7 +496,7 @@ function generateDiscordPings() {
   var currentTimeSlot = null;
   var currentTeam = null;
   var teams = [];
-  var substitutes = {};
+  var substitutes = [];
   var currentSection = null; // Possible values: null, "team", "players", "substitutes", "substitutesPlayers"
 
   // Process each row in the Teams sheet
