@@ -173,3 +173,20 @@ export function findMedianPlayer(playerList) {
 
     return playerList[medianIndex];
 }
+
+/**
+ * gets the player Discord names from an array of Player objects
+ *
+ * @param {array} playerList - array of Player objects
+ *
+ * @returns {array} an array of strings corresponding to the Discord names of the players provided
+ */
+export function getPlayerNames(playerList) {
+    let playerNames = [];
+
+    playerList.forEach(Player => {
+        playerNames.push(Player.getDiscordName());
+    });
+
+    return playerNames;
+}

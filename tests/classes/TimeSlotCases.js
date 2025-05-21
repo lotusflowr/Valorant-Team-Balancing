@@ -824,3 +824,372 @@ export const players = [
     }
   } //end test case
 ];
+
+const genericPlayerList = {
+    timeSlot: "7pm CEST/8pm WEST",
+    playerData: [
+        {
+            "timestamp": "",
+            "discordUsername": "mysticwolf",
+            "riotId": "mystic#001",
+            "pronouns": "She/Her",
+            "currentRank": "Platinum 1",
+            "peakRank": "Diamond 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": "crimsonblade"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "nightfalcon",
+            "riotId": "falcon#003",
+            "pronouns": "They/Them",
+            "currentRank": "Bronze 3",
+            "peakRank": "Silver 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "stardust",
+            "riotId": "starry#004",
+            "pronouns": "She/They",
+            "currentRank": "Gold 3",
+            "peakRank": "Platinum 3",
+            "timeSlots": [
+                "7pm CEST/8pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "quicksilver",
+            "riotId": "silver#005",
+            "pronouns": "Any",
+            "currentRank": "Diamond 2",
+            "peakRank": "Ascendant 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "crimsonblade",
+            "riotId": "crimson#006",
+            "pronouns": "She/Her",
+            "currentRank": "Silver 1",
+            "peakRank": "Gold 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "no",
+            "willSub": "no",
+            "willHost": "no",
+            "duoRequest": "mysticwolf"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "shadowwalker",
+            "riotId": "shadow#007",
+            "pronouns": "She/Her",
+            "currentRank": "Platinum 2",
+            "peakRank": "Diamond 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "radiantphoenix",
+            "riotId": "phoenix#008",
+            "pronouns": "She/They",
+            "currentRank": "Gold 2",
+            "peakRank": "Platinum 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "darkknight",
+            "riotId": "knight#009",
+            "pronouns": "He/Him",
+            "currentRank": "Bronze 1",
+            "peakRank": "Silver 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "lunarflare",
+            "riotId": "lunar#010",
+            "pronouns": "She/Her",
+            "currentRank": "Ascendant 2",
+            "peakRank": "Ascendant 3",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "aurorasky",
+            "riotId": "aurora#011",
+            "pronouns": "She/They",
+            "currentRank": "Diamond 1",
+            "peakRank": "Diamond 3",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "starfighter",
+            "riotId": "star#013",
+            "pronouns": "She/Her",
+            "currentRank": "Platinum 3",
+            "peakRank": "Diamond 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": "moonshadow"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "moonshadow",
+            "riotId": "moon#014",
+            "pronouns": "They/Them",
+            "currentRank": "Ascendant 1",
+            "peakRank": "Ascendant 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": "starfighter"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "firestorm",
+            "riotId": "fire#015",
+            "pronouns": "He/Him",
+            "currentRank": "Ascendant 1",
+            "peakRank": "Immortal 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "silentshadow",
+            "riotId": "silent#016",
+            "pronouns": "He/Him",
+            "currentRank": "Bronze 2",
+            "peakRank": "Silver 3",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "echohawk",
+            "riotId": "echo#018",
+            "pronouns": "They/Them",
+            "currentRank": "Silver 2",
+            "peakRank": "Gold 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": "shadowphoenix"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "radiantstorm",
+            "riotId": "storm#019",
+            "pronouns": "She/They",
+            "currentRank": "Diamond 3",
+            "peakRank": "Ascendant 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "ghostblade",
+            "riotId": "ghost#020",
+            "pronouns": "He/Him",
+            "currentRank": "Gold 3",
+            "peakRank": "Platinum 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": "firestorm"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "starshatter",
+            "riotId": "star#021",
+            "pronouns": "She/Her",
+            "currentRank": "Ascendant 1",
+            "peakRank": "Ascendant 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": ""
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "frostfang",
+            "riotId": "frost#022",
+            "pronouns": "Any",
+            "currentRank": "Platinum 1",
+            "peakRank": "Diamond 2",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "no",
+            "duoRequest": "radiantstorm"
+        },
+        {
+            "timestamp": "",
+            "discordUsername": "mysticdragon",
+            "riotId": "mystic#024",
+            "pronouns": "He/Him",
+            "currentRank": "Bronze 3",
+            "peakRank": "Silver 1",
+            "timeSlots": [
+                "7pm CEST/8pm WEST",
+                "8pm CEST/9pm WEST"
+            ],
+            "multipleGames": "yes",
+            "willSub": "yes",
+            "willHost": "yes",
+            "duoRequest": "lunarflare"
+        }
+    ]
+};
+
+export const findUnassignedPlayers = [
+    { //start test case
+        caseName: "ensure priority player gets prioritized--1 player",
+        timeSlot: genericPlayerList.timeSlot,
+        playerData: genericPlayerList.playerData,
+        setOnTentativeTeam: [], //index of player(s) to set as on a tentative team
+        setAssigned: [], //index of player(s) to set as previously assigned
+        rankLower: 45,
+        rankUpper: 50,
+        playerCount: 1,
+        expectedData: {
+            players: ['shadowwalker'],
+            error: null
+        }
+    }, //end test case
+    { //start test case
+        caseName: "get multiple + get priority & normal players--2 players (1 prio + 1 normal)",
+        timeSlot: genericPlayerList.timeSlot,
+        playerData: genericPlayerList.playerData,
+        setOnTentativeTeam: [], //index of player(s) to set as on a tentative team
+        setAssigned: [], //index of player(s) to set as previously assigned
+        rankLower: 45,
+        rankUpper: 50,
+        playerCount: 2,
+        expectedData: {
+            players: ['shadowwalker', 'starfighter'],
+            error: null
+        }
+    }, //end test case
+/* TODO: not being caught & I'm not sure why?
+    { //start test case
+        caseName: "should error: asked for no players",
+        timeSlot: genericPlayerList.timeSlot,
+        playerData: genericPlayerList.playerData,
+        setOnTentativeTeam: [], //index of player(s) to set as on a tentative team
+        setAssigned: [], //index of player(s) to set as previously assigned
+        rankLower: 45,
+        rankUpper: 50,
+        playerCount: 0,
+        expectedData: {
+            players: [],
+            error: "The requested amount of players to find must be at least 1"
+        }
+    }, //end test case
+*/
+];

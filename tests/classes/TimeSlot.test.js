@@ -2,7 +2,11 @@ import TimeSlot from '../../src/classes/TimeSlot.js';
 import Player from '../../src/classes/Player.js';
 import {
     players,
+    findUnassignedPlayers
 } from './TimeSlotCases.js';
+import {
+    getPlayerNames
+} from '../../src/Utilities.js';
 
 describe("Test TimeSlot Player processing & getters", () => {
     test.each(players)('$caseName', ({playerData, timeSlot, expectedData}) => {
@@ -21,7 +25,7 @@ describe("Test TimeSlot Player processing & getters", () => {
                 player.duoRequest,
                 player.currentRank,
                 player.peakRank
-            )); 
+            ));
         });
 
         let Slot = new TimeSlot(timeSlot);
@@ -73,7 +77,7 @@ describe("Test TimeSlot Lobby creation", () => {
                 player.duoRequest,
                 player.currentRank,
                 player.peakRank
-            )); 
+            ));
         });
 
         let Slot = new TimeSlot(timeSlot);
@@ -104,7 +108,7 @@ describe("Test TimeSlot findPossiblePlayerByDiscordName", () => {
                 player.duoRequest,
                 player.currentRank,
                 player.peakRank
-            )); 
+            ));
         });
 
         let Slot = new TimeSlot(timeSlot);
@@ -112,11 +116,69 @@ describe("Test TimeSlot findPossiblePlayerByDiscordName", () => {
         Slot.processPlayersToTimeSlot(playerObjs);
         let possiblePlayers = Slot.getPossiblePlayers();
 
-        //loop through each of the players in the expected array and make sure they can be found 
+        //loop through each of the players in the expected array and make sure they can be found
         expectedData.possiblePlayers.forEach(playerName => {
             let Player = Slot.findPossiblePlayerByDiscordName(playerName);
             expect(Player).not.toBeNull();
             expect(Player.getDiscordName()).toBe(playerName);
+        });
+    });
+});
+
+describe("Test TimeSlot findUnassignedPlayersByRankRange", () => {
+    test.each(findUnassignedPlayers)('$caseName', ({
+        playerData, timeSlot, expectedData, setOnTentativeTeam, setAssigned, rankLower, rankUpper, playerCount
+    }) => {
+        let playerObjs = [];
+
+        playerData.forEach(player => {
+            playerObjs.push(new Player(
+                player.timestamp,
+                player.discordUsername,
+                player.riotId,
+                player.pronouns,
+                player.timeSlots,
+                player.multipleGames,
+                player.willSub,
+                player.willHost,
+                player.duoRequest,
+                player.currentRank,
+                player.peakRank
+            ));
+        });
+
+        let Slot = new TimeSlot(timeSlot);
+        Slot.processPlayersToTimeSlot(playerObjs);
+/*
+        let possiblePlayers = Slot.getPossiblePlayers();
+        let priorityPlayers = Slot.getPriorityPlayers();
+*/
+
+/* TODO: not being caught and I'm not sure why?
+        if (expectedData.error !== null) {
+            expect(Slot.findUnassignedPlayersByRankRange(rankLower, rankUpper, playerCount)).toThrow(new Error(expectedData.error));
+            return;
+        }
+*/
+
+        let chosenPlayers = Slot.findUnassignedPlayersByRankRange(rankLower, rankUpper, playerCount);
+
+        //ensure we got the amount of players we wanted
+        expect(chosenPlayers.length).toBe(playerCount);
+
+        //ensure we found the specific players we expected
+        let chosenPlayerNames = getPlayerNames(chosenPlayers)
+
+        expectedData.players.forEach(playerName => {
+            let nameFound = false;
+
+            chosenPlayerNames.forEach(chosenName => {
+                if (chosenName == playerName) {
+                    nameFound = true;
+                }
+            });
+
+            expect(nameFound).toBe(true);
         });
     });
 });

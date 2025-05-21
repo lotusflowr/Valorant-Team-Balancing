@@ -117,7 +117,7 @@ export default class TimeSlot {
      *
      * @param {string} discordName - the name of the player to find
      *
-     * @return {Player|null}
+     * @returns {Player|null}
      */
     findPossiblePlayerByDiscordName = (discordName) => {
         let PlayerObj = null;
@@ -140,6 +140,8 @@ export default class TimeSlot {
      * @param {integer} rankUpper - the maximum player average rank to find (player avg rank will be less than or equal to this)
      * @param {integer} [playerCount=1] - the amount of players to try to find. Must be greater than 0
      *
+     * @returns {array} array of player(s) found matching the criteria provided
+     *
      * @throws Will throw an error if the provided playerCount is less than 1
      */
     findUnassignedPlayersByRankRange = (rankLower, rankUpper, playerCount = 1) => {
@@ -151,9 +153,12 @@ export default class TimeSlot {
         let chosenPlayers = [];
 
         const PriorityPlayers = this.getPriorityPlayers();
+        const prioPlayerCount = PriorityPlayers.length;
+
         //check priority first
-        PriorityPlayers.forEach(Player => {
-            const avgRank = Player.getAvgRank();
+        for (let i = 0; i < prioPlayerCount; i++) {
+            let Player = PriorityPlayers[i];
+            let avgRank = Player.getAvgRank();
 
             //player is not already tentatively on a team & matches the rank specifications
             if (!Player.getOnTentativeTeam() && avgRank >= rankLower && avgRank <= rankUpper) {
@@ -164,13 +169,16 @@ export default class TimeSlot {
                     return chosenPlayers;
                 }
             }
-        });
+        }
 
         const PossiblePlayers = this.getPossiblePlayers();
+        const possiblePlayerCount = PossiblePlayers.length;
+
         //check everyone else who hasn't played in another time slot yet
-        PossiblePlayers.forEach(Player => {
-            const avgRank = Player.getAvgRank();
-            const discordName = Player.getDiscordName();
+        for (let i = 0; i < possiblePlayerCount; i++) {
+            let Player = PossiblePlayers[i];
+            let avgRank = Player.getAvgRank(),
+                discordName = Player.getDiscordName();
 
             //player is not already tentatively on a team, hasn't already been chosen earlier, isn't already playing another game, & matches the rank specifications
             if (!Player.getOnTentativeTeam() &&
@@ -185,12 +193,13 @@ export default class TimeSlot {
                     return chosenPlayers;
                 }
             }
-        });
+        }
 
         //check everyone else
-        PossiblePlayers.forEach(Player => {
-            const avgRank = Player.getAvgRank();
-            const discordName = Player.getDiscordName();
+        for (let i = 0; i < possiblePlayerCount; i++) {
+            let Player = PossiblePlayers[i];
+            let avgRank = Player.getAvgRank(),
+                discordName = Player.getDiscordName();
 
             //player is not already tentatively on a team, hasn't already been chosen earlier, & matches the rank specifications
             if (!Player.getOnTentativeTeam() &&
@@ -204,7 +213,7 @@ export default class TimeSlot {
                     return chosenPlayers;
                 }
             }
-        });
+        }
 
         //didn't meet the minimum player count, so just return what we were able to find
         return chosenPlayers;
