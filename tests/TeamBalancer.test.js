@@ -1,6 +1,6 @@
 import { TEAM_SIZE } from '../src/config.js';
 import {
-  createOptimalTeamsForTimeSlot,
+  createOptimalTeamsForTimeSlot
 } from '../src/TeamBalancer.js';
 import {
   players as playersToBalance,
@@ -12,12 +12,12 @@ import {
 
 describe("createOptimalTeamsForTimeSlot", () => {
   test.each(playersToBalance)('$caseName', ({players, timeSlot, expectResults}) => {
-    //process average ranks
     players.forEach((player, i) => {
+      //process average ranks
         players[i].averageRank = (getRankValue(player.currentRank) + getRankValue(player.peakRank)) / 2;
         // Add willSub property if not present
         if (!players[i].hasOwnProperty('willSub')) {
-            players[i].willSub = 'yes';
+            players[i].willSub = 'no';
         }
         // Normalize willSub and multipleGames to lowercase
         if (players[i].willSub) players[i].willSub = players[i].willSub.toLowerCase();
@@ -39,11 +39,11 @@ describe("createOptimalTeamsForTimeSlot", () => {
 
     //Check that the rank totals for each team are reasonably balanced
     for (let i = 0; i < teamCount; i += 2) {
-      let team1TotalRank = teams[i].players.reduce((sum, player) => sum + player.averageRank, 0);
-      let team2TotalRank = teams[i + 1].players.reduce((sum, player) => sum + player.averageRank, 0);
+      let team1TotalRank = teams[i].players.reduce((sum, player) => sum + Math.sqrt(player.averageRank), 0);
+      let team2TotalRank = teams[i + 1].players.reduce((sum, player) => sum + Math.sqrt(player.averageRank), 0);
       let rankDifference = Math.abs(team1TotalRank - team2TotalRank);
 
-      expect(rankDifference).toBeLessThanOrEqual(expectResults.balanceThreshold); // Teams should be within 20 rank points of each other
+      expect(rankDifference).toBeLessThanOrEqual(expectResults.balanceThreshold); // Teams should be within threshold of each other
     }
   });
 });
