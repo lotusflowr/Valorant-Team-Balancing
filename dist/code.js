@@ -351,41 +351,25 @@ function createOptimalTeams(players, TIME_SLOTS) {
       return !globalAssignedPlayers.has(p.discordUsername) && p.timeSlots.includes(timeSlot);
     });
 
-    // Shuffle unassigned players for fairness
-    var shuffledUnassigned = unassignedPlayers.sort(function () {
-      return Math.random() - 0.5;
-    });
-
     // Add unassigned players first
-    shuffledUnassigned.forEach(function (player) {
+    unassignedPlayers.forEach(function (player) {
       timeSlotPlayers.push(player);
       Logger.log("Added unassigned player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
     });
 
-    // Then, add players who have already played but can play multiple games
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && globalAssignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player) && player.multipleGames === 'yes') {
-        timeSlotPlayers.push(player);
-        Logger.log("Added multi-game player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
-      }
-    });
-
-    // Finally, add any remaining available players who are willing to sub
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player) && !globalAssignedPlayers.has(player.discordUsername) && player.willSub === 'yes') {
-        timeSlotPlayers.push(player);
-        Logger.log("Added substitute player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
-      }
-    });
-    Logger.log("\nTotal players available for ".concat(timeSlot, ": ").concat(timeSlotPlayers.length));
-    Logger.log("Players for ".concat(timeSlot, ": ").concat(timeSlotPlayers.map(function (p) {
-      return p.discordUsername;
-    }).join(', ')));
+    // Only if we don't have enough players for teams, add players who have already played
+    if (timeSlotPlayers.length < TEAM_SIZE * 2) {
+      // Add players who have already played but can play multiple games
+      players.forEach(function (player) {
+        if (player.timeSlots.includes(timeSlot) && globalAssignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player) && player.multipleGames === 'yes') {
+          timeSlotPlayers.push(player);
+          Logger.log("Added multi-game player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
+        }
+      });
+    }
 
     // Create teams for this time slot
     var slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, tempAssignedPlayers);
-    result.teams = result.teams.concat(slotResult.teams);
-    result.substitutes[timeSlot] = slotResult.substitutes;
 
     // Update global assignments
     slotResult.teams.forEach(function (team) {
@@ -394,8 +378,14 @@ function createOptimalTeams(players, TIME_SLOTS) {
         tempAssignedPlayers.add(player.discordUsername);
       });
     });
+
+    // Add players as substitutes if they've already played in a team OR are willing to sub
+    result.substitutes[timeSlot] = slotResult.substitutes.filter(function (sub) {
+      return globalAssignedPlayers.has(sub.discordUsername) || sub.willSub === 'yes';
+    });
+    result.teams = result.teams.concat(slotResult.teams);
     Logger.log("\nCreated ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
-    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(slotResult.substitutes.length));
+    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(result.substitutes[timeSlot].length));
     Logger.log("Current global assigned players: ".concat(Array.from(globalAssignedPlayers).join(', ')));
   });
 
@@ -444,30 +434,22 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     });
   }
 
-  // Separate players into priority and non-priority groups
-  var priorityPlayers = players.filter(function (p) {
-    return p.timeSlots.length === 1 && p.timeSlots[0] === timeSlot;
+  // Separate players into unassigned and previously assigned groups
+  var unassignedPlayers = players.filter(function (p) {
+    return !assignedPlayers.has(p.discordUsername);
   });
-  var nonPriorityPlayers = players.filter(function (p) {
-    return !priorityPlayers.includes(p);
+  var previouslyAssignedPlayers = players.filter(function (p) {
+    return assignedPlayers.has(p.discordUsername);
   });
-  Logger.log("\nPriority players: ".concat(priorityPlayers.map(function (p) {
+  Logger.log("\nUnassigned players: ".concat(unassignedPlayers.map(function (p) {
     return p.discordUsername;
   }).join(', ')));
-  Logger.log("Non-priority players: ".concat(nonPriorityPlayers.map(function (p) {
+  Logger.log("Previously assigned players: ".concat(previouslyAssignedPlayers.map(function (p) {
     return p.discordUsername;
   }).join(', ')));
 
-  // Sort both groups by average rank (descending)
-  priorityPlayers.sort(function (a, b) {
-    return b.averageRank - a.averageRank;
-  });
-  nonPriorityPlayers.sort(function (a, b) {
-    return b.averageRank - a.averageRank;
-  });
-
-  // Distribute players to teams using snake draft
-  var allTeamPlayers = [].concat(_toConsumableArray$2(priorityPlayers), _toConsumableArray$2(nonPriorityPlayers)).slice(0, numTeams * TEAM_SIZE);
+  // First, distribute unassigned players to ensure everyone plays
+  var allTeamPlayers = [].concat(_toConsumableArray$2(unassignedPlayers), _toConsumableArray$2(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
   Logger.log("\nDistributing ".concat(allTeamPlayers.length, " players to teams"));
   for (var _i = 0; _i < allTeamPlayers.length; _i++) {
     var round = Math.floor(_i / numTeams);
@@ -497,7 +479,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   }
 
   // Remaining players become substitutes only if they marked willSub as 'yes'
-  var substitutes = [].concat(_toConsumableArray$2(priorityPlayers), _toConsumableArray$2(nonPriorityPlayers)).slice(numTeams * TEAM_SIZE).filter(function (p) {
+  var substitutes = [].concat(_toConsumableArray$2(unassignedPlayers), _toConsumableArray$2(previouslyAssignedPlayers)).slice(numTeams * TEAM_SIZE).filter(function (p) {
     return p.willSub === 'yes';
   });
   Logger.log("\nSubstitutes: ".concat(substitutes.map(function (p) {
@@ -521,10 +503,6 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
           for (var p2 = 0; p2 < teams[j].players.length; p2++) {
             var player1 = teams[_i2].players[p1];
             var player2 = teams[j].players[p2];
-            // Skip if either player is a priority player
-            if (player1.timeSlots && player1.timeSlots.length === 1 || player2.timeSlots && player2.timeSlots.length === 1) {
-              continue;
-            }
             // Skip if either player doesn't want to play multiple games
             if (player1.multipleGames && player1.multipleGames !== 'yes') {
               continue;
