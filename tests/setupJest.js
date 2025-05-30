@@ -5,7 +5,7 @@ global.PropertiesService = {
     getScriptProperties: jest.fn().mockReturnValue({
         getProperty: jest.fn((key) => {
             if (key === 'TIME_SLOTS') {
-                return JSON.stringify(["7pm CEST/8pm WEST", "8pm CEST/9pm WEST"]); // Default or test time slots
+                return JSON.stringify(["6pm PST/9pm EST", "7pm PST/10pm EST"]); // Default or test time slots
             }
             if (key === 'GAME_DAY') {
                 return "Saturday"; // Default game day
