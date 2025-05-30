@@ -91,25 +91,8 @@ export function createOptimalTeams(players, TIME_SLOTS) {
             });
         }
 
-        // Finally, add any remaining available players who are willing to sub
-        players.forEach(player => {
-            if (player.timeSlots.includes(timeSlot) && 
-                !timeSlotPlayers.includes(player) && 
-                !globalAssignedPlayers.has(player.discordUsername) && 
-                player.willSub === 'yes') {
-                timeSlotPlayers.push(player);
-                Logger.log(`Added substitute player: ${player.discordUsername} (Rank: ${player.currentRank})`);
-            }
-        });
-
-        Logger.log(`\nTotal players available for ${timeSlot}: ${timeSlotPlayers.length}`);
-        Logger.log(`Players for ${timeSlot}: ${timeSlotPlayers.map(p => p.discordUsername).join(', ')}`);
-
         // Create teams for this time slot
         let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, tempAssignedPlayers);
-
-        result.teams = result.teams.concat(slotResult.teams);
-        result.substitutes[timeSlot] = slotResult.substitutes;
 
         // Update global assignments
         slotResult.teams.forEach(team => {
@@ -119,8 +102,15 @@ export function createOptimalTeams(players, TIME_SLOTS) {
             });
         });
 
+        // Add players as substitutes if they've already played in a team OR are willing to sub
+        result.substitutes[timeSlot] = slotResult.substitutes.filter(sub => 
+            globalAssignedPlayers.has(sub.discordUsername) || sub.willSub === 'yes'
+        );
+
+        result.teams = result.teams.concat(slotResult.teams);
+
         Logger.log(`\nCreated ${slotResult.teams.length} teams for time slot: ${timeSlot}`);
-        Logger.log(`Substitutes for time slot ${timeSlot}: ${slotResult.substitutes.length}`);
+        Logger.log(`Substitutes for time slot ${timeSlot}: ${result.substitutes[timeSlot].length}`);
         Logger.log(`Current global assigned players: ${Array.from(globalAssignedPlayers).join(', ')}`);
     });
 
@@ -171,18 +161,14 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         });
     }
 
-    // Separate players into priority and non-priority groups
-    const priorityPlayers = players.filter(p => p.timeSlots.length === 1 && p.timeSlots[0] === timeSlot);
-    const nonPriorityPlayers = players.filter(p => !priorityPlayers.includes(p));
-    Logger.log(`\nPriority players: ${priorityPlayers.map(p => p.discordUsername).join(', ')}`);
-    Logger.log(`Non-priority players: ${nonPriorityPlayers.map(p => p.discordUsername).join(', ')}`);
+    // Separate players into unassigned and previously assigned groups
+    const unassignedPlayers = players.filter(p => !assignedPlayers.has(p.discordUsername));
+    const previouslyAssignedPlayers = players.filter(p => assignedPlayers.has(p.discordUsername));
+    Logger.log(`\nUnassigned players: ${unassignedPlayers.map(p => p.discordUsername).join(', ')}`);
+    Logger.log(`Previously assigned players: ${previouslyAssignedPlayers.map(p => p.discordUsername).join(', ')}`);
 
-    // Sort both groups by average rank (descending)
-    priorityPlayers.sort((a, b) => b.averageRank - a.averageRank);
-    nonPriorityPlayers.sort((a, b) => b.averageRank - a.averageRank);
-
-    // Distribute players to teams using snake draft
-    const allTeamPlayers = [...priorityPlayers, ...nonPriorityPlayers].slice(0, numTeams * TEAM_SIZE);
+    // First, distribute unassigned players to ensure everyone plays
+    const allTeamPlayers = [...unassignedPlayers, ...previouslyAssignedPlayers].slice(0, numTeams * TEAM_SIZE);
     Logger.log(`\nDistributing ${allTeamPlayers.length} players to teams`);
     for (let i = 0; i < allTeamPlayers.length; i++) {
         const round = Math.floor(i / numTeams);
@@ -208,7 +194,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
     }
 
     // Remaining players become substitutes only if they marked willSub as 'yes'
-    const substitutes = [...priorityPlayers, ...nonPriorityPlayers].slice(numTeams * TEAM_SIZE).filter(p => p.willSub === 'yes');
+    const substitutes = [...unassignedPlayers, ...previouslyAssignedPlayers].slice(numTeams * TEAM_SIZE).filter(p => p.willSub === 'yes');
     Logger.log(`\nSubstitutes: ${substitutes.map(p => p.discordUsername).join(', ')}`);
 
     // Optimize team balance
@@ -226,10 +212,6 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
                     for (let p2 = 0; p2 < teams[j].players.length; p2++) {
                         const player1 = teams[i].players[p1];
                         const player2 = teams[j].players[p2];
-                        // Skip if either player is a priority player
-                        if (player1.timeSlots && player1.timeSlots.length === 1 || player2.timeSlots && player2.timeSlots.length === 1) {
-                            continue;
-                        }
                         // Skip if either player doesn't want to play multiple games
                         if (player1.multipleGames && player1.multipleGames !== 'yes') {
                             continue;
