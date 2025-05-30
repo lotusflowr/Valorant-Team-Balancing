@@ -186,9 +186,14 @@ def check_clasp_login():
         print_section_header("Clasp Login Required")
         print(color_text("It seems you're not logged into clasp.", YELLOW))
         try:
-            run_command(['npx', 'clasp', 'login'], interactive=True)
-            print(color_text("!!! DO NOT SHARE THESE CREDENTIALS !!!", BOLD + RED))
-            print("Enable the Apps Script API if you haven't at " + make_clickable_link(enableAPI_link, enableAPI_link))
+            output, success, error = run_command(['npx', 'clasp', 'login'], interactive=True)
+            if error == "INTERRUPTED":
+                print(color_text("\nClasp login interrupted by user (CTRL+C).", BOLD + YELLOW))
+                sys.exit(1)
+            elif error == "API_ERROR" or not success:
+                print(color_text("Clasp login failed. Please ensure you're authenticated and try again.\n", BOLD + RED))
+                print("Enable the Apps Script API if needed: " + make_clickable_link(enableAPI_link, enableAPI_link))
+                sys.exit(1)
         except KeyboardInterrupt:
             print(color_text("\nClasp login interrupted by user (CTRL+C).", BOLD + YELLOW))
             sys.exit(1)
