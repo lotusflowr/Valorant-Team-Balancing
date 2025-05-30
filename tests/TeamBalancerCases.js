@@ -22,7 +22,7 @@ export const players = [
     expectResults: {
       subs: [], // No substitutes since exactly 10 players
       teams: [{},{}],
-      balanceThreshold: 20
+      balanceThreshold: 5
     }
   }, //end test case
   { //start test case
@@ -49,23 +49,23 @@ export const players = [
       { discordUsername: "echohawk", duo: "shadowphoenix", currentRank: 'Silver 2', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"] },
       { discordUsername: "radiantstorm", duo: "", currentRank: 'Diamond 3', peakRank: 'Ascendant 1', timeSlots: ["7pm PST/10pm EST"] },
       { discordUsername: "ghostblade", duo: "", currentRank: 'Gold 3', peakRank: 'Platinum 2', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "starshatter", duo: "firestorm", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "frostfang", duo: "radiantstorm", currentRank: 'Platinum 1', peakRank: 'Diamond 2', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "crimsonhunter", duo: "", currentRank: 'Silver 2', peakRank: 'Gold 1', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "mysticdragon", duo: "lunarflare", currentRank: 'Bronze 3', peakRank: 'Silver 1', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "lunarshadow", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "shadowphoenix", duo: "echohawk", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "blazingmoon", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"] },
-      { discordUsername: "stormfury", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "starshatter", duo: "firestorm", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "frostfang", duo: "radiantstorm", currentRank: 'Platinum 1', peakRank: 'Diamond 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "crimsonhunter", duo: "", currentRank: 'Silver 2', peakRank: 'Gold 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "mysticdragon", duo: "lunarflare", currentRank: 'Bronze 3', peakRank: 'Silver 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "lunarshadow", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "shadowphoenix", duo: "echohawk", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "blazingmoon", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "stormfury", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' }
     ],
     expectResults: {
-      subs: [{},{},{},{},{},{},{},{}], //8
+      subs: [{},{}], //2
       teams: [{},{},{},{}], //4
-      balanceThreshold: 20
+      balanceThreshold: 5
     }
   }, //end test case
   { //start test case
-    caseName: "Multiple time slots with mixed availability",
+    caseName: "4 teams out of 17 players with timeslots variability",
     timeSlot: "6pm PST/9pm EST",
     players: [
       { discordUsername: "Player1", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'yes' },
@@ -89,7 +89,7 @@ export const players = [
     expectResults: {
       subs: [{},{},{},{},{},{},{}], // Expected number of substitutes (7 players marked as willSub: 'yes' who aren't in teams)
       teams: [{},{}], // Expected number of teams
-      balanceThreshold: 20
+      balanceThreshold: 5
     }
   }
 ];

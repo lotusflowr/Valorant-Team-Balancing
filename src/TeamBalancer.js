@@ -51,7 +51,8 @@ export function createOptimalTeams(players, TIME_SLOTS) {
         teams: [],
         substitutes: {}
     };
-    let assignedPlayers = new Set();
+    let globalAssignedPlayers = new Set(); // Track players assigned across all time slots
+    let tempAssignedPlayers = new Set(); // Track temporary assignments for current slot
 
     // Ensure TIME_SLOTS is defined and not empty
     if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
@@ -60,55 +61,77 @@ export function createOptimalTeams(players, TIME_SLOTS) {
     }
 
     // Process each time slot
-    TIME_SLOTS.forEach((timeSlot, slotIndex) => {
+    TIME_SLOTS.forEach((timeSlot) => {
+        Logger.log(`\nProcessing time slot: ${timeSlot}`);
         let timeSlotPlayers = [];
 
-        // First, add players who can only play in this time slot
-        players.forEach(player => {
-            if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
-                timeSlotPlayers.push(player);
-            }
+        // First, add unassigned players who can play in this time slot
+        const unassignedPlayers = players.filter(p => 
+            !globalAssignedPlayers.has(p.discordUsername) && 
+            p.timeSlots.includes(timeSlot)
+        );
+        
+        // Add unassigned players first
+        unassignedPlayers.forEach(player => {
+            timeSlotPlayers.push(player);
+            Logger.log(`Added unassigned player: ${player.discordUsername} (Rank: ${player.currentRank})`);
         });
 
-        // Then, add players who haven't played yet and can play in this slot
-        // Only add players who want to play multiple games if they haven't played yet
-        players.forEach(player => {
-            if (player.timeSlots.includes(timeSlot) && 
-                !assignedPlayers.has(player.discordUsername) && 
-                !timeSlotPlayers.includes(player) &&
-                (player.timeSlots.length === 1 || player.multipleGames === 'yes')) {
-                timeSlotPlayers.push(player);
-            }
-        });
+        // Only if we don't have enough players for teams, add players who have already played
+        if (timeSlotPlayers.length < TEAM_SIZE * 2) {
+            // Add players who have already played but can play multiple games
+            players.forEach(player => {
+                if (player.timeSlots.includes(timeSlot) && 
+                    globalAssignedPlayers.has(player.discordUsername) && 
+                    !timeSlotPlayers.includes(player) &&
+                    player.multipleGames === 'yes') {
+                    timeSlotPlayers.push(player);
+                    Logger.log(`Added multi-game player: ${player.discordUsername} (Rank: ${player.currentRank})`);
+                }
+            });
+        }
 
         // Finally, add any remaining available players who are willing to sub
         players.forEach(player => {
             if (player.timeSlots.includes(timeSlot) && 
                 !timeSlotPlayers.includes(player) && 
-                !assignedPlayers.has(player.discordUsername) && 
+                !globalAssignedPlayers.has(player.discordUsername) && 
                 player.willSub === 'yes') {
                 timeSlotPlayers.push(player);
+                Logger.log(`Added substitute player: ${player.discordUsername} (Rank: ${player.currentRank})`);
             }
         });
 
+        Logger.log(`\nTotal players available for ${timeSlot}: ${timeSlotPlayers.length}`);
+        Logger.log(`Players for ${timeSlot}: ${timeSlotPlayers.map(p => p.discordUsername).join(', ')}`);
+
         // Create teams for this time slot
-        let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
+        let slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, tempAssignedPlayers);
 
         result.teams = result.teams.concat(slotResult.teams);
         result.substitutes[timeSlot] = slotResult.substitutes;
 
-        // Only add players to assignedPlayers if they were actually assigned to a team
-        // and they don't want to play multiple games
+        // Update global assignments
         slotResult.teams.forEach(team => {
             team.players.forEach(player => {
-                if (player.multipleGames !== 'yes') {
-                    assignedPlayers.add(player.discordUsername);
-                }
+                globalAssignedPlayers.add(player.discordUsername);
+                tempAssignedPlayers.add(player.discordUsername);
             });
         });
 
-        Logger.log(`Created ${slotResult.teams.length} teams for time slot: ${timeSlot}`);
+        Logger.log(`\nCreated ${slotResult.teams.length} teams for time slot: ${timeSlot}`);
         Logger.log(`Substitutes for time slot ${timeSlot}: ${slotResult.substitutes.length}`);
+        Logger.log(`Current global assigned players: ${Array.from(globalAssignedPlayers).join(', ')}`);
+    });
+
+    // After processing all time slots, mark players as permanently assigned if they don't want to play multiple games
+    result.teams.forEach(team => {
+        team.players.forEach(player => {
+            if (player.multipleGames !== 'yes') {
+                globalAssignedPlayers.add(player.discordUsername);
+                Logger.log(`Marked as permanently assigned (no multiple games): ${player.discordUsername}`);
+            }
+        });
     });
 
     return result;
@@ -116,13 +139,16 @@ export function createOptimalTeams(players, TIME_SLOTS) {
 
 export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     const numPlayers = players.length;
-    const maxTeams = Math.floor(numPlayers / TEAM_SIZE);
-
-    // Ensure even number of teams and all teams have exactly TEAM_SIZE players
-    const adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
+    // Calculate the max number of full teams (must be even, each with TEAM_SIZE players)
+    let maxFullTeams = Math.floor(numPlayers / TEAM_SIZE);
+    if (maxFullTeams % 2 !== 0) maxFullTeams -= 1; // ensure even
+    Logger.log(`\nCreating teams for ${timeSlot}:`);
+    Logger.log(`Total players: ${numPlayers}`);
+    Logger.log(`Maximum possible full teams: ${maxFullTeams}`);
 
     // If we don't have enough players for at least 2 teams of TEAM_SIZE, return empty result
-    if (adjustedNumTeams < 2) {
+    if (maxFullTeams < 2) {
+        Logger.log(`Not enough players for 2 teams (need ${TEAM_SIZE * 2} players, have ${numPlayers})`);
         return {
             teams: [],
             substitutes: players.filter(p => p.willSub === 'yes'),
@@ -130,10 +156,13 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         };
     }
 
+    const numTeams = maxFullTeams;
+    Logger.log(`Creating ${numTeams} teams`);
+
     let teams = [];
 
     // Initialize empty teams
-    for (let i = 0; i < adjustedNumTeams; i++) {
+    for (let i = 0; i < numTeams; i++) {
         teams.push({
             name: `Team ${i + 1}`,
             timeSlot: timeSlot,
@@ -145,52 +174,46 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
     // Separate players into priority and non-priority groups
     const priorityPlayers = players.filter(p => p.timeSlots.length === 1 && p.timeSlots[0] === timeSlot);
     const nonPriorityPlayers = players.filter(p => !priorityPlayers.includes(p));
+    Logger.log(`\nPriority players: ${priorityPlayers.map(p => p.discordUsername).join(', ')}`);
+    Logger.log(`Non-priority players: ${nonPriorityPlayers.map(p => p.discordUsername).join(', ')}`);
 
     // Sort both groups by average rank (descending)
     priorityPlayers.sort((a, b) => b.averageRank - a.averageRank);
     nonPriorityPlayers.sort((a, b) => b.averageRank - a.averageRank);
 
-    // First, distribute priority players using snake draft
-    const priorityTeamPlayers = priorityPlayers.slice(0, adjustedNumTeams * TEAM_SIZE);
-    for (let i = 0; i < priorityTeamPlayers.length; i++) {
-        const round = Math.floor(i / adjustedNumTeams);
-        const position = i % adjustedNumTeams;
-        const teamIndex = round % 2 === 0 ? position : adjustedNumTeams - 1 - position;
-        
-        teams[teamIndex].players.push(priorityTeamPlayers[i]);
-        teams[teamIndex].total += priorityTeamPlayers[i].averageRank;
-    }
-
-    // Then, distribute remaining players to fill teams
-    const remainingSlots = adjustedNumTeams * TEAM_SIZE - priorityTeamPlayers.length;
-    const remainingPlayers = nonPriorityPlayers.slice(0, remainingSlots);
-    
-    for (let i = 0; i < remainingPlayers.length; i++) {
-        const round = Math.floor(i / adjustedNumTeams);
-        const position = i % adjustedNumTeams;
-        const teamIndex = round % 2 === 0 ? position : adjustedNumTeams - 1 - position;
-        
-        teams[teamIndex].players.push(remainingPlayers[i]);
-        teams[teamIndex].total += remainingPlayers[i].averageRank;
+    // Distribute players to teams using snake draft
+    const allTeamPlayers = [...priorityPlayers, ...nonPriorityPlayers].slice(0, numTeams * TEAM_SIZE);
+    Logger.log(`\nDistributing ${allTeamPlayers.length} players to teams`);
+    for (let i = 0; i < allTeamPlayers.length; i++) {
+        const round = Math.floor(i / numTeams);
+        const position = i % numTeams;
+        const teamIndex = round % 2 === 0 ? position : numTeams - 1 - position;
+        teams[teamIndex].players.push(allTeamPlayers[i]);
+        teams[teamIndex].total += Math.sqrt(allTeamPlayers[i].averageRank); // Use square root for balancing
+        Logger.log(`Added ${allTeamPlayers[i].discordUsername} to Team ${teamIndex + 1}`);
     }
 
     // Verify all teams have exactly TEAM_SIZE players
     teams = teams.filter(team => team.players.length === TEAM_SIZE);
+    Logger.log(`\nTeams after filtering for complete teams: ${teams.length}`);
 
-    // If we lost teams due to filtering, recalculate adjustedNumTeams
-    const finalNumTeams = Math.floor(teams.length / 2) * 2;
-    if (finalNumTeams < teams.length) {
-        teams = teams.slice(0, finalNumTeams);
+    // If we don't have at least 2 teams after filtering, return empty result
+    if (teams.length < 2) {
+        Logger.log(`Not enough complete teams after filtering (need 2, have ${teams.length})`);
+        return {
+            teams: [],
+            substitutes: players.filter(p => p.willSub === 'yes'),
+            assignedPlayers: new Set()
+        };
     }
 
     // Remaining players become substitutes only if they marked willSub as 'yes'
-    const substitutes = [
-        ...priorityPlayers.slice(priorityTeamPlayers.length).filter(p => p.willSub === 'yes'),
-        ...nonPriorityPlayers.slice(remainingPlayers.length).filter(p => p.willSub === 'yes')
-    ];
+    const substitutes = [...priorityPlayers, ...nonPriorityPlayers].slice(numTeams * TEAM_SIZE).filter(p => p.willSub === 'yes');
+    Logger.log(`\nSubstitutes: ${substitutes.map(p => p.discordUsername).join(', ')}`);
 
     // Optimize team balance
     const targetTotal = teams.reduce((sum, team) => sum + team.total, 0) / teams.length;
+    Logger.log(`\nOptimizing team balance (target total: ${targetTotal.toFixed(2)})`);
     let improved;
     do {
         improved = false;
@@ -215,8 +238,8 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
                             continue;
                         }
                         // Calculate new totals if we swap these players
-                        const newTotal1 = teams[i].total - player1.averageRank + player2.averageRank;
-                        const newTotal2 = teams[j].total - player2.averageRank + player1.averageRank;
+                        const newTotal1 = teams[i].total - Math.sqrt(player1.averageRank) + Math.sqrt(player2.averageRank);
+                        const newTotal2 = teams[j].total - Math.sqrt(player2.averageRank) + Math.sqrt(player1.averageRank);
                         const currentDiff = Math.abs(teams[i].total - targetTotal) + Math.abs(teams[j].total - targetTotal);
                         const newDiff = Math.abs(newTotal1 - targetTotal) + Math.abs(newTotal2 - targetTotal);
                         const improvement = currentDiff - newDiff;
@@ -237,15 +260,17 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
             teams[i].total = newTotal1;
             teams[j].total = newTotal2;
             improved = true;
+            Logger.log(`Swapped ${teams[i].players[p1].discordUsername} and ${teams[j].players[p2].discordUsername} between teams ${i + 1} and ${j + 1}`);
         }
     } while (improved);
 
-    // Final verification that all teams have exactly TEAM_SIZE players
-    teams = teams.filter(team => team.players.length === TEAM_SIZE);
-
     // Calculate team spread for logging
     const teamSpread = getTeamSpread(teams);
-    Logger.log(`Team spread for ${timeSlot}: ${teamSpread.toFixed(2)}`);
+    Logger.log(`\nFinal team spread for ${timeSlot}: ${teamSpread.toFixed(2)}`);
+    teams.forEach((team, index) => {
+        Logger.log(`Team ${index + 1} total: ${team.total.toFixed(2)}`);
+        Logger.log(`Team ${index + 1} players: ${team.players.map(p => p.discordUsername).join(', ')}`);
+    });
 
     return {
         teams,
