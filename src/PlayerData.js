@@ -25,8 +25,8 @@ export function getPlayersData(sheet) {
             riotID: row[2],
             pronouns: row[3],
             timeSlots: row[TIME_SLOTS_COLUMN - 1] ? row[TIME_SLOTS_COLUMN - 1].toString().split(',').map(s => s.trim()) : TIME_SLOTS,
-            multipleGames: row[5],
-            substitute: row[6].toString().toLowerCase() === 'yes',
+            multipleGames: row[5] ? row[5].toString().toLowerCase() : '',
+            willSub: row[6] ? row[6].toString().toLowerCase() : '',
             lobbyHost: row[7],
             duo: row[8],
             currentRank: getRankValue(row[9]),
@@ -34,9 +34,7 @@ export function getPlayersData(sheet) {
         };
         player.averageRank = (player.currentRank + player.peakRank) / 2;
 
-        Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},
-        Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),
-        Substitute: ${player.substitute}, Time Slots: ${player.timeSlots}`);
+        Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},\n        Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),\n        WillSub: ${player.willSub}, MultipleGames: ${player.multipleGames}, Time Slots: ${player.timeSlots}`);
 
         return player;
     });
