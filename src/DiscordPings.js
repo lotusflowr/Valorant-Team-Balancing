@@ -25,7 +25,7 @@ export function generateDiscordPings() {
         Logger.log(`Processing row ${i + 1}: "${firstCell}"`);
 
         // Detect Time Slot
-        if (row.length === 6 && (firstCell.includes("EST") || firstCell.includes("PST") || firstCell.includes("CEST") || firstCell.includes("WEST"))) {
+        if (row.length === 6 && (firstCell.includes("/") || firstCell.includes("UTC") || firstCell.includes("GMT"))) {
             currentTimeSlot = firstCell;
             currentSection = "timeSlot";
             if (!substitutes[currentTimeSlot]) {
