@@ -99,7 +99,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
             const startRow = rowIndex + 3;
             const endRow = startRow + TEAM_SIZE - 1;
             const totalFormula = `SUM($F${startRow}:$F${endRow})`;
-            totalCell.setFormula(`"Total: " & TEXT(${totalFormula}, "0.0")`);
+            totalCell.setFormula(`="Total: " & TEXT(${totalFormula}, "0.0")`);
 
             rowIndex++;
 
