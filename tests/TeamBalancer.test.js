@@ -47,3 +47,34 @@ describe("createOptimalTeamsForTimeSlot", () => {
     }
   });
 });
+
+describe("createOptimalTeams", () => {
+  const TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
+  const { multiSlotCases } = require('./TeamBalancerCases.js');
+
+  test.each(multiSlotCases)('$caseName', ({players, expectResults}) => {
+    players.forEach((player) => {
+      player.averageRank = (getRankValue(player.currentRank) + getRankValue(player.peakRank)) / 2;
+      if (!player.hasOwnProperty('willSub')) player.willSub = 'no';
+      if (player.willSub) player.willSub = player.willSub.toLowerCase();
+      if (player.multipleGames) player.multipleGames = player.multipleGames.toLowerCase();
+    });
+
+    const { createOptimalTeams } = require('../src/TeamBalancer.js');
+    const result = createOptimalTeams(players, TIME_SLOTS);
+    const teamCount = result.teams.length;
+    expect(teamCount).toBe(expectResults.totalTeams);
+
+    const teamsBySlot = {};
+    result.teams.forEach(team => {
+      teamsBySlot[team.timeSlot] = (teamsBySlot[team.timeSlot] || 0) + 1;
+      expect(team.players.length).toBe(TEAM_SIZE);
+    });
+
+    expect(teamsBySlot['6pm PST/9pm EST'] || 0).toBe(expectResults.slot6Teams);
+    expect(teamsBySlot['7pm PST/10pm EST'] || 0).toBe(expectResults.slot7Teams);
+
+    expect((result.substitutes['6pm PST/9pm EST'] || []).length).toBe(expectResults.slot6Subs);
+    expect((result.substitutes['7pm PST/10pm EST'] || []).length).toBe(expectResults.slot7Subs);
+  });
+});

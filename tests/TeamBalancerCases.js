@@ -121,3 +121,49 @@ export const teams = [
     }
   }
 ];
+
+export const multiSlotCases = [
+  {
+    caseName: "balanced slots",
+    players: (() => {
+      const players = [];
+      const ranks = ['Bronze 1','Silver 1','Gold 1','Platinum 1','Diamond 1','Ascendant 1','Ascendant 2','Immortal 1','Immortal 2','Immortal 3'];
+      ranks.forEach((rank, i) => {
+        players.push({ discordUsername: `S${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['6pm PST/9pm EST'] });
+      });
+      ranks.forEach((rank, i) => {
+        players.push({ discordUsername: `T${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['7pm PST/10pm EST'] });
+      });
+      return players;
+    })(),
+    expectResults: {
+      totalTeams: 4,
+      slot6Teams: 2,
+      slot7Teams: 2,
+      slot6Subs: 0,
+      slot7Subs: 0
+    }
+  },
+  {
+    caseName: "insufficient players for one slot",
+    players: (() => {
+      const p = [];
+      const ranks6 = ['Bronze 1','Silver 1','Gold 1','Platinum 1','Diamond 1','Ascendant 1','Ascendant 2','Immortal 1'];
+      ranks6.forEach((rank, i) => {
+        p.push({ discordUsername: `U${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['6pm PST/9pm EST'], willSub: 'yes' });
+      });
+      const ranks7 = ['Bronze 2','Silver 2','Gold 2','Platinum 2','Diamond 2','Ascendant 3','Immortal 2','Immortal 3','Gold 3','Platinum 3'];
+      ranks7.forEach((rank, i) => {
+        p.push({ discordUsername: `V${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['7pm PST/10pm EST'] });
+      });
+      return p;
+    })(),
+    expectResults: {
+      totalTeams: 2,
+      slot6Teams: 0,
+      slot7Teams: 2,
+      slot6Subs: 8,
+      slot7Subs: 0
+    }
+  }
+];
