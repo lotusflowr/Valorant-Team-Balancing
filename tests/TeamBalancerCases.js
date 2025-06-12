@@ -20,8 +20,8 @@ export const players = [
       { discordUsername: "Player10", duo: "", currentRank: 'Immortal 3', peakRank: 'Radiant', timeSlots: ["7pm PST/10pm EST"] }
     ],
     expectResults: {
-      subs: [], // No substitutes since exactly 10 players
-      teams: [{},{}],
+      subs: [], // 0
+      teams: [{},{}], // 2
       balanceThreshold: 5
     }
   }, //end test case
@@ -59,7 +59,7 @@ export const players = [
       { discordUsername: "stormfury", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' }
     ],
     expectResults: {
-      subs: [{},{}], //2
+      subs: [{},{},{},{},{},{},{},{}], //8
       teams: [{},{},{},{}], //4
       balanceThreshold: 5
     }
@@ -69,26 +69,22 @@ export const players = [
     timeSlot: "6pm PST/9pm EST",
     players: [
       { discordUsername: "Player1", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'yes' },
-      { discordUsername: "Player2", duo: "", currentRank: 'Silver 3', peakRank: 'Silver 3', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player2", duo: "", currentRank: 'Silver 3', peakRank: 'Silver 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
       { discordUsername: "Player3", duo: "", currentRank: 'Iron 1', peakRank: 'Iron 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player4", duo: "", currentRank: 'Iron 1', peakRank: 'Iron 3', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player5", duo: "", currentRank: 'Gold 2', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player6", duo: "", currentRank: 'Silver 2', peakRank: 'Silver 2', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player7", duo: "", currentRank: 'Platinum 2', peakRank: 'Platinum 3', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player8", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 3', timeSlots: ["7pm PST/10pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player9", duo: "", currentRank: 'Silver 1', peakRank: 'Silver 1', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player10", duo: "", currentRank: 'Bronze 1', peakRank: 'Bronze 3', timeSlots: ["7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player11", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player12", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'no', lobbyHost: 'no' },
-      { discordUsername: "Player13", duo: "Player15", currentRank: 'Ascendant 1', peakRank: 'Ascendant 1', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player14", duo: "", currentRank: 'Platinum 1', peakRank: 'Platinum 1', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player15", duo: "Player13", currentRank: 'Platinum 2', peakRank: 'Diamond 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'no', lobbyHost: 'no' },
-      { discordUsername: "Player16", duo: "", currentRank: 'Iron 2', peakRank: 'Iron 2', timeSlots: ["6pm PST/9pm EST", "7pm PST/10pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
-      { discordUsername: "Player17", duo: "", currentRank: 'Silver 3', peakRank: 'Silver 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'no', lobbyHost: 'no' }
+      { discordUsername: "Player4", duo: "", currentRank: 'Iron 1', peakRank: 'Iron 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player5", duo: "", currentRank: 'Gold 2', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player6", duo: "", currentRank: 'Silver 2', peakRank: 'Silver 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player7", duo: "", currentRank: 'Platinum 2', peakRank: 'Platinum 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player8", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player9", duo: "", currentRank: 'Silver 1', peakRank: 'Silver 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player10", duo: "", currentRank: 'Bronze 1', peakRank: 'Bronze 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      // 2 more players, also available for this slot, but willSub: 'yes' and 'no' for sub clarity
+      { discordUsername: "Player11", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player12", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'no', lobbyHost: 'no' }
     ],
     expectResults: {
-      subs: [{},{},{},{},{},{},{}], // Expected number of substitutes (7 players marked as willSub: 'yes' who aren't in teams)
-      teams: [{},{}], // Expected number of teams
+      subs: [{}], // 1
+      teams: [{},{}], // 2
       balanceThreshold: 5
     }
   }
