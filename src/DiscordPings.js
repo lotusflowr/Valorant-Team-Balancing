@@ -146,10 +146,14 @@ export function generateDiscordPings() {
         
         Logger.log(`Processing row ${i + 1}: firstCell="${firstCell}", discordValue="${discordValue}", lobbyHostValue="${lobbyHostValue}"`);
         
-        // Check for time slot headers (merged cells)
+        // Check for time slot headers (these are typically merged cells spanning multiple columns)
+        // Time slot headers are usually in the format like "6pm PST/9pm EST" and are in merged cells
         if (firstCell && firstCell !== 'Discord' && !firstCell.startsWith('Team') && firstCell !== 'Substitutes' && !firstCell.startsWith('@')) {
-            // This might be a time slot header
-            if (!firstCell.includes('Total')) {
+            // Check if this looks like a time slot header (contains time patterns)
+            const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
+            const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
+            
+            if (hasTimePattern && !firstCell.includes('Total')) {
                 currentTimeSlot = firstCell;
                 contentArray.push(`## ${currentTimeSlot} Timeslot`);
                 timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
@@ -182,7 +186,7 @@ export function generateDiscordPings() {
             continue;
         }
         
-        // Add player mentions if we're in a team or substitutes section
+        // Add player mentions if we're in a team or substitutes section and have a Discord value
         if ((inTeam || inSubs) && discordValue && discordValue !== 'Discord') {
             const cleanDiscordValue = discordValue.toString().replace(/^@/, '').trim();
             if (cleanDiscordValue) {
@@ -195,21 +199,30 @@ export function generateDiscordPings() {
                     lobbyHosts.push(cleanDiscordValue);
                     timeSlotLobbyHosts.set(currentTimeSlot, lobbyHosts);
                     Logger.log(`Added lobby host: @${cleanDiscordValue} for time slot: ${currentTimeSlot}`);
+                } else {
+                    Logger.log(`Not a lobby host: lobbyHostValue="${lobbyHostValue}", currentTimeSlot="${currentTimeSlot}"`);
                 }
             }
         }
     }
     
     // Add lobby host sections for each time slot
+    Logger.log(`Time slot lobby hosts map: ${JSON.stringify(Array.from(timeSlotLobbyHosts.entries()))}`);
     timeSlotLobbyHosts.forEach((lobbyHosts, timeSlot) => {
+        Logger.log(`Processing lobby hosts for time slot "${timeSlot}": ${lobbyHosts.join(', ')}`);
         if (lobbyHosts.length > 0) {
             // Find the time slot section and add lobby host info after it
             const timeSlotIndex = contentArray.findIndex(line => line === `## ${timeSlot} Timeslot`);
+            Logger.log(`Found time slot "${timeSlot}" at index ${timeSlotIndex}`);
             if (timeSlotIndex !== -1) {
                 // Insert lobby host section after the time slot header
                 contentArray.splice(timeSlotIndex + 1, 0, `### Lobby Host: @${lobbyHosts[0]}`);
                 Logger.log(`Added lobby host section for ${timeSlot}: @${lobbyHosts[0]}`);
+            } else {
+                Logger.log(`Could not find time slot "${timeSlot}" in content array`);
             }
+        } else {
+            Logger.log(`No lobby hosts found for time slot "${timeSlot}"`);
         }
     });
     
