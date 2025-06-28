@@ -7,15 +7,7 @@
   "sheets": {
     "macros": [
         {
-            "menuName": "Manage Time Slots",
-            "functionName": "manageTimeSlots"
-        },
-        {
-            "menuName": "Manage Column Configuration",
-            "functionName": "manageColumnConfiguration"
-        },
-        {
-            "menuName": "Sort and Balance Players",
+            "menuName": "Balance Teams and Players",
             "functionName": "sortPlayersIntoBalancedTeams"
         },
         {
@@ -23,20 +15,28 @@
             "functionName": "generateDiscordPings"
         },
         {
-            "menuName": "Clear Responses",
-            "functionName": "clearResponses"
+            "menuName": "Open Column Configuration",
+            "functionName": "openColumnConfigurationSheet"
         },
         {
-            "menuName": "Save Column Configuration",
+            "menuName": "Save & Apply Column Config",
             "functionName": "saveColumnConfiguration"
         },
         {
-            "menuName": "Load Column Configuration",
-            "functionName": "loadColumnConfiguration"
+            "menuName": "Restore Default Config",
+            "functionName": "restoreDefaultConfiguration"
         },
         {
-            "menuName": "Reset Column Configuration",
-            "functionName": "resetColumnConfiguration"
+            "menuName": "Restore from Last Save",
+            "functionName": "restoreFromLastSave"
+        },
+        {
+            "menuName": "Manage Game Day",
+            "functionName": "manageGameDay"
+        },
+        {
+            "menuName": "Clear Responses",
+            "functionName": "clearResponses"
         }
     ]
   }

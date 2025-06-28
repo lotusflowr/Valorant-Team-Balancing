@@ -9,7 +9,8 @@ import { clearResponses } from './Utilities.js';
 import { 
     saveColumnConfiguration,
     loadColumnConfiguration,
-    resetColumnConfiguration,
+    restoreDefaultConfiguration,
+    restoreFromLastSave,
     openColumnConfigurationSheet,
     showFormResponseHeaders
 } from './ColumnConfigManager.js';
@@ -30,7 +31,8 @@ export function onOpen() {
         .addSeparator()
         .addItem('Open Column Configuration', 'openColumnConfigurationSheet')
         .addItem('Save & Apply Column Config', 'saveColumnConfiguration')
-        .addItem('Reset Column Config', 'resetColumnConfiguration')
+        .addItem('Restore Default Config', 'restoreDefaultConfiguration')
+        .addItem('Restore from Last Save', 'restoreFromLastSave')
         .addSeparator()
         .addItem('Manage Game Day', 'manageGameDay')
         .addItem('Clear Responses', 'clearResponses')
@@ -49,8 +51,9 @@ export function manageColumnConfiguration() {
         '[1]: Open Column Configuration Sheet\n' +
         '[2]: Save Current Configuration\n' +
         '[3]: Load Saved Configuration\n' +
-        '[4]: Reset to Defaults\n' +
-        '[5]: Cancel',
+        '[4]: Restore Default Configuration\n' +
+        '[5]: Restore from Last Save\n' +
+        '[6]: Cancel',
         ui.ButtonSet.OK_CANCEL
     );
 
@@ -68,13 +71,16 @@ export function manageColumnConfiguration() {
                 loadColumnConfiguration();
                 break;
             case '4':
-                resetColumnConfiguration();
+                restoreDefaultConfiguration();
                 break;
             case '5':
+                restoreFromLastSave();
+                break;
+            case '6':
                 ui.alert('Cancelled', 'Column configuration management was cancelled.', ui.ButtonSet.OK);
                 break;
             default:
-                ui.alert('Invalid Choice', 'Please enter 1, 2, 3, 4, or 5.', ui.ButtonSet.OK);
+                ui.alert('Invalid Choice', 'Please enter 1, 2, 3, 4, 5, or 6.', ui.ButtonSet.OK);
                 manageColumnConfiguration(); // Recursive call to try again
         }
     } else {
