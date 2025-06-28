@@ -1,5 +1,5 @@
 import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
-import {getTimeSlots} from './TimeSlotManager.js';
+import { getTimeSlots } from './TimeSlotManager.js';
 import {
   getRankValue,
   getRankName,
