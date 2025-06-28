@@ -2004,7 +2004,7 @@ function setupConfigSheet(sheet, configData) {
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('⚖️ Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('🔔 Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('⚙ Load Column Configuration', 'openColumnConfigurationSheet').addItem('💾 Save & Apply Config', 'saveColumnConfiguration').addItem('♻️ Restore from Last Save', 'restoreFromLastSave').addItem('🧹 Reset Config to Default', 'restoreDefaultConfiguration').addSeparator().addItem('📅 Change Game Day', 'changeGameDay').addItem('🧽 Clear Responses', 'clearResponses').addToUi();
+  ui.createMenu('SCRIPTS').addItem('⚖️ Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('🔔 Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('⚙️ Load Column Configuration', 'openColumnConfigurationSheet').addItem('💾 Save & Apply Config', 'saveColumnConfiguration').addItem('♻️ Restore from Last Save', 'restoreFromLastSave').addItem('🧹 Reset Config to Default', 'restoreDefaultConfiguration').addSeparator().addItem('📅 Change Game Day', 'changeGameDay').addItem('🧽 Clear Responses', 'clearResponses').addToUi();
 }
 
 // Import UI functions
