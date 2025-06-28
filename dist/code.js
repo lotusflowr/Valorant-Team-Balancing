@@ -813,12 +813,12 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
   writer.autoResizeRows();
 }
 
-function _toConsumableArray$2(r) { return _arrayWithoutHoles$2(r) || _iterableToArray$2(r) || _unsupportedIterableToArray$2(r) || _nonIterableSpread$2(); }
-function _nonIterableSpread$2() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray$2(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$2(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$2(r, a) : void 0; } }
-function _iterableToArray$2(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles$2(r) { if (Array.isArray(r)) return _arrayLikeToArray$2(r); }
-function _arrayLikeToArray$2(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toConsumableArray$1(r) { return _arrayWithoutHoles$1(r) || _iterableToArray$1(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread$1(); }
+function _nonIterableSpread$1() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
+function _iterableToArray$1(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles$1(r) { if (Array.isArray(r)) return _arrayLikeToArray$1(r); }
+function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function applyLatestColumnConfig() {
   var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
   if (configData) {
@@ -858,7 +858,7 @@ function getTimeSlotsFromConfig() {
             return s !== '';
           });
         });
-        var uniqueTimeSlots = _toConsumableArray$2(new Set(splitTimeSlots));
+        var uniqueTimeSlots = _toConsumableArray$1(new Set(splitTimeSlots));
         Logger.log("Extracted time slots from config: ".concat(uniqueTimeSlots.join(', ')));
         return uniqueTimeSlots;
       }
@@ -1055,7 +1055,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   }).join(', ')));
 
   // First, distribute unassigned players to ensure everyone plays
-  var allTeamPlayers = [].concat(_toConsumableArray$2(unassignedPlayers), _toConsumableArray$2(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
+  var allTeamPlayers = [].concat(_toConsumableArray$1(unassignedPlayers), _toConsumableArray$1(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
   Logger.log("\nDistributing ".concat(allTeamPlayers.length, " players to teams"));
   for (var _i = 0; _i < allTeamPlayers.length; _i++) {
     var round = Math.floor(_i / numTeams);
@@ -1123,7 +1123,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   return {
     teams: teams,
     substitutes: substitutes,
-    assignedPlayers: new Set([].concat(_toConsumableArray$2(assignedPlayers), _toConsumableArray$2(teams.flatMap(function (team) {
+    assignedPlayers: new Set([].concat(_toConsumableArray$1(assignedPlayers), _toConsumableArray$1(teams.flatMap(function (team) {
       return team.players.map(function (p) {
         return p.discordUsername;
       });
@@ -1169,15 +1169,15 @@ function getTeamSpread(teams) {
   var totals = teams.map(function (team) {
     return team.total;
   });
-  return Math.max.apply(Math, _toConsumableArray$2(totals)) - Math.min.apply(Math, _toConsumableArray$2(totals));
+  return Math.max.apply(Math, _toConsumableArray$1(totals)) - Math.min.apply(Math, _toConsumableArray$1(totals));
 }
 
-function _toConsumableArray$1(r) { return _arrayWithoutHoles$1(r) || _iterableToArray$1(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread$1(); }
-function _nonIterableSpread$1() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
-function _iterableToArray$1(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles$1(r) { if (Array.isArray(r)) return _arrayLikeToArray$1(r); }
-function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function getColumnConfig() {
   var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
   if (configData) {
@@ -1415,7 +1415,7 @@ function generateDiscordPings() {
   Logger.log("Added title to contentArray.");
 
   // Group teams by time slot
-  var timeSlots = _toConsumableArray$1(new Set(teams.map(function (team) {
+  var timeSlots = _toConsumableArray(new Set(teams.map(function (team) {
     return team.timeSlot;
   })));
   Logger.log("Unique Time Slots: ".concat(timeSlots.join(", ")));
@@ -1573,13 +1573,6 @@ function writeDiscordPingsToSheet(sheet, pings) {
   Logger.log("Auto-resized and set minimum column width.");
 }
 
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-
 /**
  * Column Configuration Manager
  * Allows users to configure column display order, titles, and types
@@ -1613,153 +1606,24 @@ function openColumnConfigurationSheet() {
   }
 
   // Create configuration table
-  var configData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column', 'Description']];
+  var configData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
 
-  // Add existing configuration
-  OUTPUT_SHEET_CONFIG.columns.forEach(function (col, index) {
-    var sourceCol = getSourceColumnForKey(col.key);
-    configData.push([col.key, col.title, col.width, col.type, 'TRUE',
-    // Default to display
-    sourceCol, getDescriptionForKey(col.key)]);
-  });
+  // Load saved configuration first
+  var savedConfigData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  var savedConfigs = [];
+  if (savedConfigData) {
+    savedConfigs = JSON.parse(savedConfigData);
+    Logger.log('Loaded saved config: ' + JSON.stringify(savedConfigs));
+  }
 
-  // Add all available keys (not just display columns)
-  var allKeys = [{
-    key: 'riotID',
-    title: 'Riot ID',
-    width: 'auto',
-    type: 'data',
-    display: 'TRUE',
-    source: 'C',
-    desc: 'Player\'s Riot ID (from Column C)'
-  }, {
-    key: 'discordUsername',
-    title: 'Discord',
-    width: 'auto',
-    type: 'data',
-    display: 'TRUE',
-    source: 'B',
-    desc: 'Player\'s Discord username (from Column B)'
-  }, {
-    key: 'currentRank',
-    title: 'Current Rank',
-    width: 'auto',
-    type: 'data',
-    display: 'TRUE',
-    source: 'J',
-    desc: 'Player\'s current rank (from Column J)'
-  }, {
-    key: 'peakRank',
-    title: 'Peak Rank',
-    width: 'auto',
-    type: 'data',
-    display: 'TRUE',
-    source: 'K',
-    desc: 'Player\'s peak rank (from Column K)'
-  }, {
-    key: 'lobbyHost',
-    title: 'Lobby Host',
-    width: 'auto',
-    type: 'data',
-    display: 'TRUE',
-    source: 'H',
-    desc: 'Whether player is lobby host (from Column H)'
-  }, {
-    key: 'averageRank',
-    title: 'Avg Rank',
-    width: 'auto',
-    type: 'calculated',
-    display: 'TRUE',
-    source: 'N/A',
-    desc: 'Calculated: (currentRank + peakRank) / 2 (requires currentRank and peakRank)'
-  }, {
-    key: 'timeSlots',
-    title: 'Time Slots',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'E',
-    desc: 'Player\'s preferred time slots (from Column E)'
-  }, {
-    key: 'pronouns',
-    title: 'Pronouns',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'D',
-    desc: 'Player\'s pronouns (from Column D)'
-  }, {
-    key: 'multipleGames',
-    title: 'Multiple Games',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'F',
-    desc: 'Whether player wants multiple games (from Column F)'
-  }, {
-    key: 'willSub',
-    title: 'Will Sub',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'G',
-    desc: 'Whether player is willing to sub (from Column G)'
-  }, {
-    key: 'duo',
-    title: 'Duo',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'I',
-    desc: 'Player\'s duo partner (from Column I)'
-  }, {
-    key: 'comments',
-    title: 'Comments',
-    width: 'auto',
-    type: 'data',
-    display: 'FALSE',
-    source: 'L',
-    desc: 'Player comments (from Column L)'
-  }, {
-    key: 'preferredAgents',
-    title: 'Preferred Agents',
-    width: 'auto',
-    type: 'display',
-    display: 'FALSE',
-    source: 'N/A',
-    desc: 'Display only - for manual input'
-  }, {
-    key: 'notes',
-    title: 'Notes',
-    width: 'auto',
-    type: 'display',
-    display: 'FALSE',
-    source: 'N/A',
-    desc: 'Display only - for manual input'
-  }, {
-    key: 'role',
-    title: 'Role',
-    width: 'auto',
-    type: 'display',
-    display: 'FALSE',
-    source: 'N/A',
-    desc: 'Display only - for manual input'
-  }, {
-    key: 'availability',
-    title: 'Availability',
-    width: 'auto',
-    type: 'display',
-    display: 'FALSE',
-    source: 'N/A',
-    desc: 'Display only - for manual input'
-  }];
-  // Only add keys not already in configData
-  allKeys.forEach(function (keyObj) {
-    if (!configData.some(function (row) {
-      return row[0] === keyObj.key;
-    })) {
-      configData.push([keyObj.key, keyObj.title, keyObj.width, keyObj.type, keyObj.display, keyObj.source, keyObj.desc]);
-    }
+  // If no saved config, use defaults
+  if (savedConfigs.length === 0) {
+    savedConfigs = getDefaultConfig();
+  }
+
+  // Add saved configuration to table
+  savedConfigs.forEach(function (config) {
+    configData.push([config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || '']);
   });
 
   // Write configuration table
@@ -1784,75 +1648,123 @@ function openColumnConfigurationSheet() {
   configSheet.autoResizeColumns(1, configData[0].length);
 
   // Write instructions well below the config table
-  var instructions = [['Instructions:'], [''], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output.'], ['• All variables are available for logic, but only those with Display=TRUE are shown in the output.'], ['• If timeSlots is not displayed or is blank for all players, all players are balanced as one group and no time slot headers are shown.'], ['• To use Discord Pings, you must have the discordUsername column present and displayed in the output sheet.'], ['COLUMN TYPES:'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE:'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Reset Column Config" to restore defaults'], [''], ['SIMPLE REORDERING:'], ['• To move a column: Cut the row and paste it in the desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['DATA SOURCES (Form Responses columns):'], ['• riotID → Column C (Riot ID)'], ['• discordUsername → Column B (Discord Username)'], ['• timeSlots → Column E (Time slots)'], ['• currentRank → Column J (Current Competitive Rank)'], ['• peakRank → Column K (Peak Competitive Rank)'], ['• lobbyHost → Column H (Lobby Host)'], ['• pronouns → Column D (Pronouns)'], ['• multipleGames → Column F (Multiple Games)'], ['• willSub → Column G (Substitute)'], ['• duo → Column I (Duo)'], ['• comments → Column L ((Optional) Comments)'], [''], ['CALCULATED COLUMNS:'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES:'], ['• To add "Preferred Agents" column:'], ['  - Insert new row, Key: preferredAgents, Type: display'], ['• To move Discord to first: Cut Discord row, paste at top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT:'], ['• timeSlots column is required for team balancing'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], ['• Save after making changes to apply them'], ['AVAILABLE KEYS (add as needed):'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo, comments, preferredAgents, notes, role, availability']];
+  var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
   var instructionStartRow = configData.length + 3;
   var instructionRange = configSheet.getRange(instructionStartRow, 1, instructions.length, 1);
   instructionRange.setValues(instructions);
 
-  // Freeze header row
-  configSheet.setFrozenRows(1);
+  // Style the instructions
+  var instructionHeaderRange = configSheet.getRange(instructionStartRow, 1, 1, 1);
+  instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
+
+  // Style section headers
+  var sectionHeaders = [instructionStartRow + 2,
+  // Quick Start
+  instructionStartRow + 9,
+  // Column Types
+  instructionStartRow + 13,
+  // How to Configure
+  instructionStartRow + 24,
+  // Simple Reordering
+  instructionStartRow + 30,
+  // Calculated Columns
+  instructionStartRow + 33,
+  // Examples
+  instructionStartRow + 39,
+  // Important Notes
+  instructionStartRow + 44,
+  // Available Keys
+  instructionStartRow + 47 // Key Requirements
+  ];
+  sectionHeaders.forEach(function (rowIndex) {
+    var sectionRange = configSheet.getRange(rowIndex, 1, 1, 1);
+    sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
+  });
   SpreadsheetApp.getUi().alert('Column Configuration sheet opened! Edit the table above, then use "Save & Apply Column Config" to apply changes.');
 }
 
 /**
- * Gets the source column information for a given key
+ * Gets the default configuration
  */
-function getSourceColumnForKey(key, sourceColumns) {
-  var keyToColumnMap = {
-    'riotID': 'C',
-    // Column C - Riot ID
-    'discordUsername': 'B',
-    // Column B - Discord Username  
-    'timeSlots': 'E',
-    // Column E - Time slots
-    'currentRank': 'J',
-    // Column J - Current Competitive Rank
-    'peakRank': 'K',
-    // Column K - Peak Competitive Rank
-    'lobbyHost': 'H',
-    // Column H - Lobby Host
-    'pronouns': 'D',
-    // Column D - Pronouns
-    'multipleGames': 'F',
-    // Column F - Multiple Games
-    'willSub': 'G',
-    // Column G - Substitute
-    'duo': 'I',
-    // Column I - Duo
-    'comments': 'L',
-    // Column L - (Optional) Comments
-    'averageRank': 'calculated' // This is calculated, not from source
-  };
-  var columnLetter = keyToColumnMap[key];
-  if (!columnLetter || columnLetter === 'calculated') {
-    return 'N/A';
-  }
-  return columnLetter; // Just return the letter
-}
-
-/**
- * Gets description for a column key
- */
-function getDescriptionForKey(key) {
-  var descriptions = {
-    'riotID': 'Player\'s Riot ID (from Column C)',
-    'discordUsername': 'Player\'s Discord username (from Column B)',
-    'timeSlots': 'Player\'s preferred time slots (from Column E)',
-    'currentRank': 'Player\'s current rank (from Column J)',
-    'peakRank': 'Player\'s peak rank (from Column K)',
-    'lobbyHost': 'Whether player is lobby host (from Column H)',
-    'pronouns': 'Player\'s pronouns (from Column D)',
-    'multipleGames': 'Whether player wants multiple games (from Column F)',
-    'willSub': 'Whether player is willing to sub (from Column G)',
-    'duo': 'Player\'s duo partner (from Column I)',
-    'comments': 'Player comments (from Column L)',
-    'averageRank': 'Calculated: (currentRank + peakRank) / 2 (requires currentRank and peakRank)',
-    'preferredAgents': 'Display only - for manual input',
-    'notes': 'Display only - for manual input',
-    'role': 'Display only - for manual input',
-    'availability': 'Display only - for manual input'
-  };
-  return descriptions[key] || 'Custom column';
+function getDefaultConfig() {
+  return [{
+    key: 'discordUsername',
+    title: 'Discord',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'B'
+  }, {
+    key: 'riotID',
+    title: 'Riot ID',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'C'
+  }, {
+    key: 'pronouns',
+    title: 'Pronouns',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'D'
+  }, {
+    key: 'timeSlots',
+    title: 'Time Slots',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'E'
+  }, {
+    key: 'multipleGames',
+    title: 'Multiple Games',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'F'
+  }, {
+    key: 'willSub',
+    title: 'Will Sub',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'G'
+  }, {
+    key: 'lobbyHost',
+    title: 'Lobby Host',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'H'
+  }, {
+    key: 'duo',
+    title: 'Duo',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'I'
+  }, {
+    key: 'currentRank',
+    title: 'Current Rank',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'J'
+  }, {
+    key: 'peakRank',
+    title: 'Peak Rank',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'K'
+  }, {
+    key: 'averageRank',
+    title: 'Avg Rank',
+    width: 'auto',
+    type: 'calculated',
+    display: true,
+    sourceColumn: ''
+  }];
 }
 
 /**
@@ -1868,15 +1780,12 @@ function saveColumnConfiguration() {
     }
 
     // Get data from the sheet (skip header rows)
-    var allData = sheet.getRange(3, 1, sheet.getLastRow() - 2, 6).getValues();
+    var allData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues();
     // Only process rows until the first empty row in Column A
     var data = [];
     for (var i = 0; i < allData.length; i++) {
       if (!allData[i][0] || allData[i][0].toString().trim() === '') break;
-      // Pad row to length 7
-      var row = _toConsumableArray(allData[i]);
-      while (row.length < 7) row.push('');
-      data.push(row);
+      data.push(allData[i]);
     }
     Logger.log('Saving config rows: ' + JSON.stringify(data));
 
@@ -1890,8 +1799,7 @@ function saveColumnConfiguration() {
         width: (row[2] || '').toString().trim() || 'auto',
         type: (row[3] || '').toString().trim() || 'data',
         display: (row[4] || '').toString().trim().toUpperCase() === 'TRUE',
-        sourceColumn: (row[5] || '').toString().trim(),
-        description: (row[6] || '').toString().trim()
+        sourceColumn: (row[5] || '').toString().trim()
       };
     });
     Logger.log('Parsed configs: ' + JSON.stringify(configs));
@@ -1918,7 +1826,7 @@ function loadColumnConfiguration() {
   try {
     var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
     if (!configData) {
-      SpreadsheetApp.getUi().alert('Info', 'No saved column configuration found. Use "Reset Column Config" to create defaults.', SpreadsheetApp.getUi().ButtonSet.OK);
+      SpreadsheetApp.getUi().alert('Info', 'No saved column configuration found. Use "Restore Default Config" to create defaults.', SpreadsheetApp.getUi().ButtonSet.OK);
       return;
     }
     var configs = JSON.parse(configData);
@@ -1931,9 +1839,9 @@ function loadColumnConfiguration() {
 }
 
 /**
- * Reset column configuration to defaults
+ * Restore column configuration to defaults
  */
-function resetColumnConfiguration() {
+function restoreDefaultConfiguration() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Column Configuration');
@@ -1945,37 +1853,178 @@ function resetColumnConfiguration() {
     sheet.clear();
 
     // Set up headers
-    var headers = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column', 'Description']];
-    var headerRange = sheet.getRange(1, 1, 1, 7);
+    var headers = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
+    var headerRange = sheet.getRange(1, 1, 1, 6);
     headerRange.setValues(headers);
     headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-    // Default configuration
-    var defaultConfigs = [['riotID', 'Riot ID', 'auto', 'data', 'TRUE', 'C', 'Player\'s Riot ID (from Column C)'], ['discordUsername', 'Discord', 'auto', 'data', 'TRUE', 'B', 'Player\'s Discord username (from Column B)'], ['currentRank', 'Current Rank', 'auto', 'data', 'TRUE', 'J', 'Player\'s current rank (from Column J)'], ['peakRank', 'Peak Rank', 'auto', 'data', 'TRUE', 'K', 'Player\'s peak rank (from Column K)'], ['lobbyHost', 'Lobby Host', 'auto', 'data', 'TRUE', 'H', 'Whether player is lobby host (from Column H)'], ['averageRank', 'Avg Rank', 'auto', 'calculated', 'TRUE', 'N/A', 'Calculated: (currentRank + peakRank) / 2 (requires currentRank and peakRank)']];
-    var dataRange = sheet.getRange(2, 1, defaultConfigs.length, 7);
-    dataRange.setValues(defaultConfigs);
+
+    // Convert default configs to table format
+    var configData = getDefaultConfig().map(function (config) {
+      return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
+    });
+
+    // Write configuration data
+    var dataRange = sheet.getRange(2, 1, configData.length, 6);
+    dataRange.setValues(configData);
+
     // Add data validation for Type column
-    var typeRange = sheet.getRange(2, 4, defaultConfigs.length, 1);
+    var typeRange = sheet.getRange(2, 4, configData.length, 1);
     var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
     typeRange.setDataValidation(typeRule);
+
     // Add data validation for Display column
-    var displayRange = sheet.getRange(2, 5, defaultConfigs.length, 1);
+    var displayRange = sheet.getRange(2, 5, configData.length, 1);
     var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
     displayRange.setDataValidation(displayRule);
+
     // Autofit config sheet after writing config table
-    sheet.autoResizeColumns(1, 7);
+    sheet.autoResizeColumns(1, 6);
+
     // Write instructions well below the config table
-    var instructions = [['Instructions:'], [''], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output.'], ['• All variables are available for logic, but only those with Display=TRUE are shown in the output.'], ['• If timeSlots is not displayed or is blank for all players, all players are balanced as one group and no time slot headers are shown.'], ['• To use Discord Pings, you must have the discordUsername column present and displayed in the output sheet.'], ['COLUMN TYPES:'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE:'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Reset Column Config" to restore defaults'], [''], ['SIMPLE REORDERING:'], ['• To move a column: Cut the row and paste it in the desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['DATA SOURCES (Form Responses columns):'], ['• riotID → Column C (Riot ID)'], ['• discordUsername → Column B (Discord Username)'], ['• timeSlots → Column E (Time slots)'], ['• currentRank → Column J (Current Competitive Rank)'], ['• peakRank → Column K (Peak Competitive Rank)'], ['• lobbyHost → Column H (Lobby Host)'], ['• pronouns → Column D (Pronouns)'], ['• multipleGames → Column F (Multiple Games)'], ['• willSub → Column G (Substitute)'], ['• duo → Column I (Duo)'], ['• comments → Column L ((Optional) Comments)'], [''], ['CALCULATED COLUMNS:'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES:'], ['• To add "Preferred Agents" column:'], ['  - Insert new row, Key: preferredAgents, Type: display'], ['• To move Discord to first: Cut Discord row, paste at top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT:'], ['• timeSlots column is required for team balancing'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], ['• Save after making changes to apply them'], ['AVAILABLE KEYS (add as needed):'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo, comments, preferredAgents, notes, role, availability']];
-    var instructionStartRow = defaultConfigs.length + 3;
+    var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
+    var instructionStartRow = configData.length + 3;
     var instructionRange = sheet.getRange(instructionStartRow, 1, instructions.length, 1);
     instructionRange.setValues(instructions);
+
+    // Style the instructions
+    var instructionHeaderRange = sheet.getRange(instructionStartRow, 1, 1, 1);
+    instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
+
+    // Style section headers
+    var sectionHeaders = [instructionStartRow + 2,
+    // Quick Start
+    instructionStartRow + 9,
+    // Column Types
+    instructionStartRow + 13,
+    // How to Configure
+    instructionStartRow + 24,
+    // Simple Reordering
+    instructionStartRow + 30,
+    // Calculated Columns
+    instructionStartRow + 33,
+    // Examples
+    instructionStartRow + 39,
+    // Important Notes
+    instructionStartRow + 44,
+    // Available Keys
+    instructionStartRow + 47 // Key Requirements
+    ];
+    sectionHeaders.forEach(function (rowIndex) {
+      var sectionRange = sheet.getRange(rowIndex, 1, 1, 1);
+      sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
+    });
+
     // Freeze header row
     sheet.setFrozenRows(1);
+
     // Apply the configuration immediately
     saveColumnConfiguration();
     SpreadsheetApp.getUi().alert('Success', 'Column configuration has been reset to defaults and applied successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (error) {
     Logger.log("Error resetting column configuration: ".concat(error.message));
     SpreadsheetApp.getUi().alert('Error', "Failed to reset column configuration: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Restore column configuration from last saved configuration
+ */
+function restoreFromLastSave() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Column Configuration');
+    if (!sheet) {
+      sheet = ss.insertSheet('Column Configuration');
+    }
+
+    // Get the last saved configuration
+    var savedConfigData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+    var savedConfigs = [];
+    if (savedConfigData) {
+      savedConfigs = JSON.parse(savedConfigData);
+      Logger.log('Restoring saved config: ' + JSON.stringify(savedConfigs));
+    }
+
+    // If no saved config exists, show error
+    if (savedConfigs.length === 0) {
+      SpreadsheetApp.getUi().alert('No Saved Configuration', 'No saved configuration found. Use "Save & Apply Column Config" first to save a configuration.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    // Clear existing content
+    sheet.clear();
+
+    // Set up headers
+    var headers = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
+    var headerRange = sheet.getRange(1, 1, 1, 6);
+    headerRange.setValues(headers);
+    headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
+
+    // Convert saved configs to table format
+    var configData = savedConfigs.map(function (config) {
+      return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
+    });
+
+    // Write configuration data
+    var dataRange = sheet.getRange(2, 1, configData.length, 6);
+    dataRange.setValues(configData);
+
+    // Add data validation for Type column
+    var typeRange = sheet.getRange(2, 4, configData.length, 1);
+    var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
+    typeRange.setDataValidation(typeRule);
+
+    // Add data validation for Display column
+    var displayRange = sheet.getRange(2, 5, configData.length, 1);
+    var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
+    displayRange.setDataValidation(displayRule);
+
+    // Autofit config sheet after writing config table
+    sheet.autoResizeColumns(1, 6);
+
+    // Write instructions well below the config table
+    var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
+    var instructionStartRow = configData.length + 3;
+    var instructionRange = sheet.getRange(instructionStartRow, 1, instructions.length, 1);
+    instructionRange.setValues(instructions);
+
+    // Style the instructions
+    var instructionHeaderRange = sheet.getRange(instructionStartRow, 1, 1, 1);
+    instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
+
+    // Style section headers
+    var sectionHeaders = [instructionStartRow + 2,
+    // Quick Start
+    instructionStartRow + 9,
+    // Column Types
+    instructionStartRow + 13,
+    // How to Configure
+    instructionStartRow + 24,
+    // Simple Reordering
+    instructionStartRow + 30,
+    // Calculated Columns
+    instructionStartRow + 33,
+    // Examples
+    instructionStartRow + 39,
+    // Important Notes
+    instructionStartRow + 44,
+    // Available Keys
+    instructionStartRow + 47 // Key Requirements
+    ];
+    sectionHeaders.forEach(function (rowIndex) {
+      var sectionRange = sheet.getRange(rowIndex, 1, 1, 1);
+      sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
+    });
+
+    // Freeze header row
+    sheet.setFrozenRows(1);
+
+    // Apply the configuration immediately
+    saveColumnConfiguration();
+    SpreadsheetApp.getUi().alert('Success', 'Column configuration has been restored from last save and applied successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (error) {
+    Logger.log("Error restoring from last save: ".concat(error.message));
+    SpreadsheetApp.getUi().alert('Error', "Failed to restore from last save: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
   }
 }
 
@@ -2014,23 +2063,7 @@ function showFormResponseHeaders() {
     var columnLetter = String.fromCharCode(65 + index);
     headerInfo += "".concat(columnLetter, ": ").concat(header || 'Empty', "\n");
   });
-  headerInfo += '\nCURRENT MAPPING:\n';
-  headerInfo += '• riotID → Column C (Riot ID)\n';
-  headerInfo += '• discordUsername → Column B (Discord Username)\n';
-  headerInfo += '• timeSlots → Column E (Time slots)\n';
-  headerInfo += '• currentRank → Column J (Current Competitive Rank)\n';
-  headerInfo += '• peakRank → Column K (Peak Competitive Rank)\n';
-  headerInfo += '• lobbyHost → Column H (Lobby Host)\n';
-  headerInfo += '• pronouns → Column D (Pronouns)\n';
-  headerInfo += '• multipleGames → Column F (Multiple Games)\n';
-  headerInfo += '• willSub → Column G (Substitute)\n';
-  headerInfo += '• duo → Column I (Duo)\n';
-  headerInfo += '• comments → Column L ((Optional) Comments)\n';
-  headerInfo += '\nIMPORTANT NOTES:\n';
-  headerInfo += '• timeSlots column is required for team balancing\n';
-  headerInfo += '• averageRank is calculated from currentRank + peakRank\n';
-  headerInfo += '• Use "auto" width in column config for automatic sizing\n';
-  SpreadsheetApp.getUi().alert(headerInfo);
+  SpreadsheetApp.getUi().alert('Form Response Headers', headerInfo, SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
 /***** UI FUNCTIONS *****/
@@ -2041,7 +2074,7 @@ function showFormResponseHeaders() {
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('Open Column Configuration', 'openColumnConfigurationSheet').addItem('Save & Apply Column Config', 'saveColumnConfiguration').addItem('Reset Column Config', 'resetColumnConfiguration').addSeparator().addItem('Manage Game Day', 'manageGameDay').addItem('Clear Responses', 'clearResponses').addToUi();
+  ui.createMenu('SCRIPTS').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('Open Column Configuration', 'openColumnConfigurationSheet').addItem('Save & Apply Column Config', 'saveColumnConfiguration').addItem('Restore Default Config', 'restoreDefaultConfiguration').addItem('Restore from Last Save', 'restoreFromLastSave').addSeparator().addItem('Manage Game Day', 'manageGameDay').addItem('Clear Responses', 'clearResponses').addToUi();
 }
 
 /**
@@ -2049,7 +2082,7 @@ function onOpen() {
  */
 function manageColumnConfiguration() {
   var ui = SpreadsheetApp.getUi();
-  var result = ui.prompt('Manage Column Configuration', "Column Configuration Management\n\n" + 'Choose an option:\n' + '[1]: Open Column Configuration Sheet\n' + '[2]: Save Current Configuration\n' + '[3]: Load Saved Configuration\n' + '[4]: Reset to Defaults\n' + '[5]: Cancel', ui.ButtonSet.OK_CANCEL);
+  var result = ui.prompt('Manage Column Configuration', "Column Configuration Management\n\n" + 'Choose an option:\n' + '[1]: Open Column Configuration Sheet\n' + '[2]: Save Current Configuration\n' + '[3]: Load Saved Configuration\n' + '[4]: Restore Default Configuration\n' + '[5]: Restore from Last Save\n' + '[6]: Cancel', ui.ButtonSet.OK_CANCEL);
   if (result.getSelectedButton() == ui.Button.OK) {
     var choice = result.getResponseText().trim().toUpperCase();
     switch (choice) {
@@ -2063,13 +2096,16 @@ function manageColumnConfiguration() {
         loadColumnConfiguration();
         break;
       case '4':
-        resetColumnConfiguration();
+        restoreDefaultConfiguration();
         break;
       case '5':
+        restoreFromLastSave();
+        break;
+      case '6':
         ui.alert('Cancelled', 'Column configuration management was cancelled.', ui.ButtonSet.OK);
         break;
       default:
-        ui.alert('Invalid Choice', 'Please enter 1, 2, 3, 4, or 5.', ui.ButtonSet.OK);
+        ui.alert('Invalid Choice', 'Please enter 1, 2, 3, 4, 5, or 6.', ui.ButtonSet.OK);
         manageColumnConfiguration();
       // Recursive call to try again
     }
@@ -2089,6 +2125,7 @@ global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
 global.saveColumnConfiguration = saveColumnConfiguration;
 global.loadColumnConfiguration = loadColumnConfiguration;
-global.resetColumnConfiguration = resetColumnConfiguration;
+global.restoreDefaultConfiguration = restoreDefaultConfiguration;
+global.restoreFromLastSave = restoreFromLastSave;
 global.openColumnConfigurationSheet = openColumnConfigurationSheet;
 global.showFormResponseHeaders = showFormResponseHeaders;

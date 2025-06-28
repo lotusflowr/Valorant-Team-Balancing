@@ -23,7 +23,8 @@ import {
 import {
     saveColumnConfiguration,
     loadColumnConfiguration,
-    resetColumnConfiguration,
+    restoreDefaultConfiguration,
+    restoreFromLastSave,
     openColumnConfigurationSheet,
     showFormResponseHeaders
 } from './ColumnConfigManager.js';
@@ -37,6 +38,7 @@ global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
 global.saveColumnConfiguration = saveColumnConfiguration;
 global.loadColumnConfiguration = loadColumnConfiguration;
-global.resetColumnConfiguration = resetColumnConfiguration;
+global.restoreDefaultConfiguration = restoreDefaultConfiguration;
+global.restoreFromLastSave = restoreFromLastSave;
 global.openColumnConfigurationSheet = openColumnConfigurationSheet;
 global.showFormResponseHeaders = showFormResponseHeaders;
