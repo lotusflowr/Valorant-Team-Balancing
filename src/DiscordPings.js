@@ -117,11 +117,19 @@ export function generateDiscordPings() {
         const firstCell = row[0] ? row[0].toString().trim() : '';
         Logger.log(`Processing row ${i + 1}: "${firstCell}"`);
         
-        // Detect Time Slot (look for time patterns)
+        // Detect Time Slot (look for time patterns and specific formats)
         const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
         const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
         
-        if (hasTimePattern && !firstCell.includes('Total')) {
+        // Time slots should contain time patterns AND be in a specific format (like "6pm PST/9pm EST")
+        // Also check that it's not a team name or other content
+        if (hasTimePattern && 
+            !firstCell.includes('Total') && 
+            !firstCell.startsWith('Team') && 
+            !firstCell.startsWith('Discord') && 
+            !firstCell.startsWith('Substitutes') &&
+            (firstCell.includes('/') || firstCell.includes(' ')) &&
+            firstCell.length > 5) { // Time slots are typically longer than team names
             currentTimeSlot = firstCell;
             currentSection = "timeSlot";
             if (!substitutes[currentTimeSlot]) {
@@ -168,7 +176,8 @@ export function generateDiscordPings() {
         
         // Process Player Rows for Teams
         if (currentSection === "players" && firstCell !== "") {
-            const discordValue = row[discordColIndex];
+            // Since Discord column is at index 0, the first cell contains the Discord username
+            const discordValue = firstCell;
             const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
             
             if (discordValue && discordValue !== 'Discord') {
@@ -185,7 +194,8 @@ export function generateDiscordPings() {
         
         // Process Player Rows for Substitutes
         if (currentSection === "substitutesPlayers" && firstCell !== "") {
-            const discordValue = row[discordColIndex];
+            // Since Discord column is at index 0, the first cell contains the Discord username
+            const discordValue = firstCell;
             const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
             
             if (discordValue && discordValue !== 'Discord') {
@@ -194,8 +204,13 @@ export function generateDiscordPings() {
                     riotID: row[1] ? row[1].toString().trim() : "",
                     lobbyHost: lobbyHostValue ? lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
                 };
-                substitutes[currentTimeSlot].push(substitute);
-                Logger.log(`Added Substitute to Time Slot "${currentTimeSlot}": "@${substitute.discordUsername}" (Lobby Host: ${substitute.lobbyHost})`);
+                // Handle no timeslot scenario by using a default key
+                const timeSlotKey = currentTimeSlot || "";
+                if (!substitutes[timeSlotKey]) {
+                    substitutes[timeSlotKey] = [];
+                }
+                substitutes[timeSlotKey].push(substitute);
+                Logger.log(`Added Substitute to Time Slot "${timeSlotKey}": "@${substitute.discordUsername}" (Lobby Host: ${substitute.lobbyHost})`);
             }
             continue;
         }
@@ -239,9 +254,11 @@ export function generateDiscordPings() {
         const timeSlotSubstitutes = substitutes[timeSlot] || [];
         
         if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-            // Add time slot header with "Timeslot"
-            contentArray.push(`## ${timeSlot} Timeslot`);
-            Logger.log(`Added Time Slot Header: "${timeSlot} Timeslot"`);
+            // Only add time slot header if it's not empty
+            if (timeSlot && timeSlot !== "") {
+                contentArray.push(`## ${timeSlot} Timeslot`);
+                Logger.log(`Added Time Slot Header: "${timeSlot} Timeslot"`);
+            }
             
             // Group teams into pairs (e.g., Team 1 & Team 2)
             for (let i = 0; i < timeSlotTeams.length; i += 2) {
@@ -274,26 +291,26 @@ export function generateDiscordPings() {
                         contentArray.push(`@${player.discordUsername}`);
                         Logger.log(`Added Player Mention: "@${player.discordUsername}"`);
                     });
-                    contentArray.push(''); // Blank line after each team
-                    Logger.log(`Added blank line after Team: "${team.name}"`);
+                    // Remove blank line after each team
+                    Logger.log(`Added team "${team.name}" without blank line`);
                 });
             }
             
             // Add substitutes section if there are any
             if (timeSlotSubstitutes.length > 0) {
                 contentArray.push("### Substitutes");
-                Logger.log(`Added Substitutes Header for Time Slot: "${timeSlot} Timeslot"`);
+                Logger.log(`Added Substitutes Header for Time Slot: "${timeSlot || 'No Time Slot'}"`);
                 timeSlotSubstitutes.forEach(sub => {
                     contentArray.push(`@${sub.discordUsername}`);
                     Logger.log(`Added Substitute Mention: "@${sub.discordUsername}"`);
                 });
                 contentArray.push(''); // Blank line after substitutes
-                Logger.log(`Added blank line after Substitutes for Time Slot: "${timeSlot} Timeslot"`);
+                Logger.log(`Added blank line after Substitutes for Time Slot: "${timeSlot || 'No Time Slot'}"`);
             }
             
             // Add separator
             contentArray.push(''); // Blank line after separator
-            Logger.log(`Added separator for Time Slot: "${timeSlot} Timeslot"`);
+            Logger.log(`Added separator for Time Slot: "${timeSlot || 'No Time Slot'}"`);
         }
     });
     
@@ -350,6 +367,13 @@ export function writeDiscordPingsToSheet(sheet, pings) {
                 .setBackground(STYLING.colors.discord.timeslot)
                 .setFontColor(STYLING.colors.text.white);
             Logger.log(`Formatted Timeslot Header: "${content}"`);
+        } else if (content.startsWith("### Lobby Host")) {
+            // Lobby Host Headers: Same as Team Headers (Light Blue)
+            cell.setFontWeight("bold")
+                .setFontSize(STYLING.fontSize.teamHeader)
+                .setBackground(STYLING.colors.discord.lobbyHost)
+                .setFontColor(STYLING.colors.text.black);
+            Logger.log(`Formatted Lobby Host Header: "${content}"`);
         } else if (content.startsWith("### Team")) {
             // Team Headers: Light Blue
             cell.setFontWeight("bold")

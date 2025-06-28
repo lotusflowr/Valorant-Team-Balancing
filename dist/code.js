@@ -802,7 +802,6 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
         });
         rowIndex++; // Add an empty row after substitutes
       }
-      rowIndex += 2; // Add some space before the next time slot
     });
   }
 
@@ -1284,12 +1283,16 @@ function generateDiscordPings() {
       var firstCell = row[0] ? row[0].toString().trim() : '';
       Logger.log("Processing row ".concat(_i2 + 1, ": \"").concat(firstCell, "\""));
 
-      // Detect Time Slot (look for time patterns)
+      // Detect Time Slot (look for time patterns and specific formats)
       var timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
       var hasTimePattern = timePatterns.some(function (pattern) {
         return firstCell.toLowerCase().includes(pattern);
       });
-      if (hasTimePattern && !firstCell.includes('Total')) {
+
+      // Time slots should contain time patterns AND be in a specific format (like "6pm PST/9pm EST")
+      // Also check that it's not a team name or other content
+      if (hasTimePattern && !firstCell.includes('Total') && !firstCell.startsWith('Team') && !firstCell.startsWith('Discord') && !firstCell.startsWith('Substitutes') && (firstCell.includes('/') || firstCell.includes(' ')) && firstCell.length > 5) {
+        // Time slots are typically longer than team names
         currentTimeSlot = firstCell;
         currentSection = "timeSlot";
         if (!substitutes[currentTimeSlot]) {
@@ -1336,7 +1339,8 @@ function generateDiscordPings() {
 
       // Process Player Rows for Teams
       if (currentSection === "players" && firstCell !== "") {
-        var discordValue = row[discordColIndex];
+        // Since Discord column is at index 0, the first cell contains the Discord username
+        var discordValue = firstCell;
         var lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
         if (discordValue && discordValue !== 'Discord') {
           var player = {
@@ -1352,7 +1356,8 @@ function generateDiscordPings() {
 
       // Process Player Rows for Substitutes
       if (currentSection === "substitutesPlayers" && firstCell !== "") {
-        var _discordValue = row[discordColIndex];
+        // Since Discord column is at index 0, the first cell contains the Discord username
+        var _discordValue = firstCell;
         var _lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
         if (_discordValue && _discordValue !== 'Discord') {
           var substitute = {
@@ -1360,8 +1365,13 @@ function generateDiscordPings() {
             riotID: row[1] ? row[1].toString().trim() : "",
             lobbyHost: _lobbyHostValue ? _lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
           };
-          substitutes[currentTimeSlot].push(substitute);
-          Logger.log("Added Substitute to Time Slot \"".concat(currentTimeSlot, "\": \"@").concat(substitute.discordUsername, "\" (Lobby Host: ").concat(substitute.lobbyHost, ")"));
+          // Handle no timeslot scenario by using a default key
+          var timeSlotKey = currentTimeSlot || "";
+          if (!substitutes[timeSlotKey]) {
+            substitutes[timeSlotKey] = [];
+          }
+          substitutes[timeSlotKey].push(substitute);
+          Logger.log("Added Substitute to Time Slot \"".concat(timeSlotKey, "\": \"@").concat(substitute.discordUsername, "\" (Lobby Host: ").concat(substitute.lobbyHost, ")"));
         }
         return 0; // continue
       }
@@ -1414,9 +1424,11 @@ function generateDiscordPings() {
     });
     var timeSlotSubstitutes = substitutes[timeSlot] || [];
     if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-      // Add time slot header with "Timeslot"
-      contentArray.push("## ".concat(timeSlot, " Timeslot"));
-      Logger.log("Added Time Slot Header: \"".concat(timeSlot, " Timeslot\""));
+      // Only add time slot header if it's not empty
+      if (timeSlot && timeSlot !== "") {
+        contentArray.push("## ".concat(timeSlot, " Timeslot"));
+        Logger.log("Added Time Slot Header: \"".concat(timeSlot, " Timeslot\""));
+      }
 
       // Group teams into pairs (e.g., Team 1 & Team 2)
       for (var _i3 = 0; _i3 < timeSlotTeams.length; _i3 += 2) {
@@ -1459,26 +1471,26 @@ function generateDiscordPings() {
             contentArray.push("@".concat(player.discordUsername));
             Logger.log("Added Player Mention: \"@".concat(player.discordUsername, "\""));
           });
-          contentArray.push(''); // Blank line after each team
-          Logger.log("Added blank line after Team: \"".concat(team.name, "\""));
+          // Remove blank line after each team
+          Logger.log("Added team \"".concat(team.name, "\" without blank line"));
         });
       }
 
       // Add substitutes section if there are any
       if (timeSlotSubstitutes.length > 0) {
         contentArray.push("### Substitutes");
-        Logger.log("Added Substitutes Header for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+        Logger.log("Added Substitutes Header for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
         timeSlotSubstitutes.forEach(function (sub) {
           contentArray.push("@".concat(sub.discordUsername));
           Logger.log("Added Substitute Mention: \"@".concat(sub.discordUsername, "\""));
         });
         contentArray.push(''); // Blank line after substitutes
-        Logger.log("Added blank line after Substitutes for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+        Logger.log("Added blank line after Substitutes for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
       }
 
       // Add separator
       contentArray.push(''); // Blank line after separator
-      Logger.log("Added separator for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+      Logger.log("Added separator for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
     }
   });
 
@@ -1528,6 +1540,10 @@ function writeDiscordPingsToSheet(sheet, pings) {
       // Timeslot Headers: Original Blue
       cell.setFontWeight("bold").setFontSize(STYLING.fontSize.timeslot).setBackground(STYLING.colors.discord.timeslot).setFontColor(STYLING.colors.text.white);
       Logger.log("Formatted Timeslot Header: \"".concat(content, "\""));
+    } else if (content.startsWith("### Lobby Host")) {
+      // Lobby Host Headers: Same as Team Headers (Light Blue)
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.teamHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
+      Logger.log("Formatted Lobby Host Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Team")) {
       // Team Headers: Light Blue
       cell.setFontWeight("bold").setFontSize(STYLING.fontSize.teamHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);

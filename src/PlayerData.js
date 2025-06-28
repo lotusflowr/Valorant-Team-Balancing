@@ -289,8 +289,6 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
 
                 rowIndex++; // Add an empty row after substitutes
             }
-
-            rowIndex += 2; // Add some space before the next time slot
         });
     }
 
