@@ -924,8 +924,21 @@ function createOptimalTeams(players, timeSlots) {
 
     // First, add unassigned players who can play in this time slot
     var unassignedPlayers = players.filter(function (p) {
-      return !globalAssignedPlayers.has(p.discordUsername) && p.timeSlots && p.timeSlots.includes(timeSlot);
+      if (!p.timeSlots || !p.timeSlots.toString().trim()) return false;
+      if (globalAssignedPlayers.has(p.discordUsername)) return false;
+
+      // Split time slots by comma and check if any match
+      var playerTimeSlots = p.timeSlots.toString().split(',').map(function (s) {
+        return s.trim();
+      });
+      var hasTimeSlot = playerTimeSlots.some(function (slot) {
+        return slot.toLowerCase() === timeSlot.toLowerCase();
+      });
+      return hasTimeSlot;
     });
+    Logger.log("Found ".concat(unassignedPlayers.length, " unassigned players for ").concat(timeSlot, ": ").concat(unassignedPlayers.map(function (p) {
+      return p.discordUsername;
+    }).join(', ')));
 
     // Add unassigned players first
     unassignedPlayers.forEach(function (player) {
@@ -935,13 +948,28 @@ function createOptimalTeams(players, timeSlots) {
 
     // Only if we don't have enough players for teams, add players who have already played
     if (timeSlotPlayers.length < TEAM_SIZE * 2) {
+      Logger.log("Not enough unassigned players (".concat(timeSlotPlayers.length, "), looking for multi-game players..."));
+
       // Add players who have already played but can play multiple games
       players.forEach(function (player) {
-        if (player.timeSlots && player.timeSlots.includes(timeSlot) && globalAssignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player) && player.multipleGames === 'yes') {
+        if (!player.timeSlots || !player.timeSlots.toString().trim()) return;
+        if (!globalAssignedPlayers.has(player.discordUsername)) return;
+        if (timeSlotPlayers.includes(player)) return;
+        if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') return;
+
+        // Split time slots by comma and check if any match
+        var playerTimeSlots = player.timeSlots.toString().split(',').map(function (s) {
+          return s.trim();
+        });
+        var hasTimeSlot = playerTimeSlots.some(function (slot) {
+          return slot.toLowerCase() === timeSlot.toLowerCase();
+        });
+        if (hasTimeSlot) {
           timeSlotPlayers.push(player);
-          Logger.log("Added multi-game player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
+          Logger.log("Added multi-game player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ", multipleGames: ").concat(player.multipleGames, ")"));
         }
       });
+      Logger.log("After adding multi-game players: ".concat(timeSlotPlayers.length, " total players"));
     }
 
     // Create teams for this time slot
@@ -957,7 +985,7 @@ function createOptimalTeams(players, timeSlots) {
 
     // Add players as substitutes if they've already played in a team OR are willing to sub
     result.substitutes[timeSlot] = slotResult.substitutes.filter(function (sub) {
-      return globalAssignedPlayers.has(sub.discordUsername) || sub.willSub === 'yes';
+      return globalAssignedPlayers.has(sub.discordUsername) || sub.willSub && sub.willSub.toLowerCase() === 'yes';
     });
     result.teams = result.teams.concat(slotResult.teams);
     Logger.log("\nCreated ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
@@ -968,9 +996,11 @@ function createOptimalTeams(players, timeSlots) {
   // After processing all time slots, mark players as permanently assigned if they don't want to play multiple games
   result.teams.forEach(function (team) {
     team.players.forEach(function (player) {
-      if (player.multipleGames !== 'yes') {
+      if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') {
         globalAssignedPlayers.add(player.discordUsername);
-        Logger.log("Marked as permanently assigned (no multiple games): ".concat(player.discordUsername));
+        Logger.log("Marked as permanently assigned (no multiple games): ".concat(player.discordUsername, " (multipleGames: ").concat(player.multipleGames, ")"));
+      } else {
+        Logger.log("Player can play multiple games: ".concat(player.discordUsername, " (multipleGames: ").concat(player.multipleGames, ")"));
       }
     });
   });
@@ -991,7 +1021,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     return {
       teams: [],
       substitutes: players.filter(function (p) {
-        return p.willSub === 'yes';
+        return p.willSub && p.willSub.toLowerCase() === 'yes';
       }),
       assignedPlayers: new Set()
     };
@@ -1048,7 +1078,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     return {
       teams: [],
       substitutes: players.filter(function (p) {
-        return p.willSub === 'yes';
+        return p.willSub && p.willSub.toLowerCase() === 'yes';
       }),
       assignedPlayers: new Set()
     };
@@ -1107,10 +1137,10 @@ function trySwapPlayers(team1, team2) {
       var player2 = team2.players[j];
 
       // Skip if either player doesn't want to play multiple games
-      if (player1.multipleGames && player1.multipleGames !== 'yes') {
+      if (player1.multipleGames && player1.multipleGames.toLowerCase() !== 'yes') {
         continue;
       }
-      if (player2.multipleGames && player2.multipleGames !== 'yes') {
+      if (player2.multipleGames && player2.multipleGames.toLowerCase() !== 'yes') {
         continue;
       }
 
@@ -1160,15 +1190,28 @@ function findDiscordColumn(teamsSheet) {
 
   // Get the header row to find the actual column index
   var headerRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+  Logger.log("Header row: ".concat(JSON.stringify(headerRow)));
+  Logger.log("Looking for Discord column with title: \"".concat(discordConfig.title, "\""));
 
   // Find the column with the discordUsername title
   for (var i = 0; i < headerRow.length; i++) {
-    if (headerRow[i] && headerRow[i].toString().trim().toLowerCase() === discordConfig.title.toLowerCase()) {
-      Logger.log("Found Discord column at index ".concat(i, " with title: ").concat(headerRow[i]));
+    var headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+    Logger.log("Column ".concat(i, ": \"").concat(headerValue, "\""));
+    if (headerValue.toLowerCase() === discordConfig.title.toLowerCase()) {
+      Logger.log("Found Discord column at index ".concat(i, " with title: ").concat(headerValue));
       return i;
     }
   }
-  throw new Error("Discord column with title \"".concat(discordConfig.title, "\" not found in Teams sheet."));
+
+  // If exact match not found, try partial matches
+  for (var _i = 0; _i < headerRow.length; _i++) {
+    var _headerValue = headerRow[_i] ? headerRow[_i].toString().trim() : '';
+    if (_headerValue.toLowerCase().includes('discord') || _headerValue.toLowerCase().includes('username')) {
+      Logger.log("Found potential Discord column at index ".concat(_i, " with title: ").concat(_headerValue));
+      return _i;
+    }
+  }
+  throw new Error("Discord column with title \"".concat(discordConfig.title, "\" not found in Teams sheet. Available headers: ").concat(headerRow.join(', ')));
 }
 function generateDiscordPings() {
   Logger.log("Starting Discord Pings generation");
@@ -1632,6 +1675,7 @@ function saveColumnConfiguration() {
       data.push(row);
     }
     Logger.log('Saving config rows: ' + JSON.stringify(data));
+
     // Filter out empty rows and build configuration
     var configs = data.filter(function (row) {
       return row[0] && row[0].toString().trim();
@@ -1646,10 +1690,13 @@ function saveColumnConfiguration() {
         description: (row[6] || '').toString().trim()
       };
     });
+    Logger.log('Parsed configs: ' + JSON.stringify(configs));
+
     // For output, only include columns with display=true
     var displayColumns = configs.filter(function (c) {
       return c.display;
     });
+    Logger.log('Display columns: ' + JSON.stringify(displayColumns));
     updateOutputSheetConfig(displayColumns);
     // Save all configs for logic use
     PropertiesService.getScriptProperties().setProperty('COLUMN_CONFIG', JSON.stringify(configs));
