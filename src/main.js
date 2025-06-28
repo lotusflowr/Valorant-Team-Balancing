@@ -1,7 +1,6 @@
 // Import UI functions
 import {
-    onOpen,
-    manageColumnConfiguration
+    onOpen
 } from './UIFunctions.js';
 
 // Import team balancer functions
@@ -32,7 +31,6 @@ import {
 // Expose functions to the global scope for Google Apps Script
 var global = {};
 global.onOpen = onOpen;
-global.manageColumnConfiguration = manageColumnConfiguration;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;

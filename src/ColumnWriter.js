@@ -194,6 +194,13 @@ export class ColumnWriter {
         try {
             const numColumns = this.displayConfigs.length;
             this.sheet.autoResizeColumns(1, numColumns);
+            
+            // Add 10px to each column for better spacing
+            for (let col = 1; col <= numColumns; col++) {
+                const currentWidth = this.sheet.getColumnWidth(col);
+                this.sheet.setColumnWidth(col, currentWidth + 10);
+            }
+            
             Logger.log(`Auto-resized ${numColumns} columns in sheet: ${this.sheet.getName()}`);
         } catch (error) {
             Logger.log(`Error auto-resizing columns: ${error.message}`);

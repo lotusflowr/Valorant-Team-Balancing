@@ -62,66 +62,8 @@ export function openColumnConfigurationSheet() {
         ]);
     });
     
-    // Write configuration table
-    const range = configSheet.getRange(1, 1, configData.length, configData[0].length);
-    range.setValues(configData);
-    
-    // Style header row
-    const headerRange = configSheet.getRange(1, 1, 1, configData[0].length);
-    headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-    
-    // Add data validation for Type column
-    const typeRange = configSheet.getRange(2, 4, configData.length - 1, 1);
-    const typeRule = SpreadsheetApp.newDataValidation()
-        .requireValueInList(['data', 'calculated', 'display'], true)
-        .setAllowInvalid(false)
-        .build();
-    typeRange.setDataValidation(typeRule);
-    
-    // Add data validation for Display column
-    const displayRange = configSheet.getRange(2, 5, configData.length - 1, 1);
-    const displayRule = SpreadsheetApp.newDataValidation()
-        .requireValueInList(['TRUE', 'FALSE'], true)
-        .setAllowInvalid(false)
-        .build();
-    displayRange.setDataValidation(displayRule);
-    
-    // Autofit table columns
-    configSheet.autoResizeColumns(1, 6);
-    
-    // Set specific column widths for better readability
-    configSheet.setColumnWidth(1, 120); // Column Key
-    configSheet.setColumnWidth(2, 150); // Title
-    configSheet.setColumnWidth(3, 80);  // Width
-    configSheet.setColumnWidth(4, 100); // Type
-    configSheet.setColumnWidth(5, 80);  // Display
-    configSheet.setColumnWidth(6, 100); // Source Column
-    
-    // Write instructions in column H (after the table)
-    const instructions = getInstructions();
-    const instructionRange = configSheet.getRange(1, 8, instructions.length, 1);
-    instructionRange.setValues(instructions);
-    
-    // Style the instructions
-    const instructionHeaderRange = configSheet.getRange(1, 8, 1, 1);
-    instructionHeaderRange.setFontWeight('bold')
-        .setFontSize(14)
-        .setBackground('#4A86E8')
-        .setFontColor('white');
-    
-    // Style section headers
-    const sectionHeaders = findSectionHeaders(instructions);
-    
-    sectionHeaders.forEach(rowIndex => {
-        const sectionRange = configSheet.getRange(rowIndex + 1, 8, 1, 1);
-        sectionRange.setFontWeight('bold')
-            .setFontSize(12)
-            .setBackground('#E8F0FE')
-            .setFontColor('#1A73E8');
-    });
-    
-    // Set instructions column width to be wide enough
-    configSheet.setColumnWidth(8, 400);
+    // Setup and style the sheet
+    setupConfigSheet(configSheet, configData);
     
     SpreadsheetApp.getUi().alert('Column Configuration sheet opened! Edit the table above, then use "Save & Apply Column Config" to apply changes.');
 }
@@ -337,14 +279,6 @@ export function restoreDefaultConfiguration() {
         // Clear existing content
         sheet.clear();
         
-        // Set up headers
-        const headers = [
-            ['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']
-        ];
-        const headerRange = sheet.getRange(1, 1, 1, 6);
-        headerRange.setValues(headers);
-        headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-        
         // Convert default configs to table format
         const configData = getDefaultConfig().map(config => [
             config.key,
@@ -355,68 +289,18 @@ export function restoreDefaultConfiguration() {
             config.sourceColumn || ''
         ]);
         
-        // Write configuration data
-        const dataRange = sheet.getRange(2, 1, configData.length, 6);
-        dataRange.setValues(configData);
+        // Add header row
+        const fullConfigData = [
+            ['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column'],
+            ...configData
+        ];
         
-        // Add data validation for Type column
-        const typeRange = sheet.getRange(2, 4, configData.length, 1);
-        const typeRule = SpreadsheetApp.newDataValidation()
-            .requireValueInList(['data', 'calculated', 'display'], true)
-            .setAllowInvalid(false)
-            .build();
-        typeRange.setDataValidation(typeRule);
-        
-        // Add data validation for Display column
-        const displayRange = sheet.getRange(2, 5, configData.length, 1);
-        const displayRule = SpreadsheetApp.newDataValidation()
-            .requireValueInList(['TRUE', 'FALSE'], true)
-            .setAllowInvalid(false)
-            .build();
-        displayRange.setDataValidation(displayRule);
-        
-        // Autofit config sheet after writing config table
-        sheet.autoResizeColumns(1, 6);
-        
-        // Set specific column widths for better readability
-        sheet.setColumnWidth(1, 120); // Column Key
-        sheet.setColumnWidth(2, 150); // Title
-        sheet.setColumnWidth(3, 80);  // Width
-        sheet.setColumnWidth(4, 100); // Type
-        sheet.setColumnWidth(5, 80);  // Display
-        sheet.setColumnWidth(6, 100); // Source Column
-        
-        // Write instructions in column H (after the table)
-        const instructions = getInstructions();
-        const instructionRange = sheet.getRange(1, 8, instructions.length, 1);
-        instructionRange.setValues(instructions);
-        
-        // Style the instructions
-        const instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
-        instructionHeaderRange.setFontWeight('bold')
-            .setFontSize(14)
-            .setBackground('#4A86E8')
-            .setFontColor('white');
-        
-        // Style section headers
-        const sectionHeaders = findSectionHeaders(instructions);
-        
-        sectionHeaders.forEach(rowIndex => {
-            const sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
-            sectionRange.setFontWeight('bold')
-                .setFontSize(12)
-                .setBackground('#E8F0FE')
-                .setFontColor('#1A73E8');
-        });
-        
-        // Set instructions column width to be wide enough
-        sheet.setColumnWidth(8, 400);
-        
-        // Freeze header row
-        sheet.setFrozenRows(1);
+        // Setup and style the sheet
+        setupConfigSheet(sheet, fullConfigData);
         
         // Apply the configuration immediately
         saveColumnConfiguration();
+        
         SpreadsheetApp.getUi().alert('Success', 'Column configuration has been reset to defaults and applied successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
         
     } catch (error) {
@@ -455,14 +339,6 @@ export function restoreFromLastSave() {
         // Clear existing content
         sheet.clear();
         
-        // Set up headers
-        const headers = [
-            ['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']
-        ];
-        const headerRange = sheet.getRange(1, 1, 1, 6);
-        headerRange.setValues(headers);
-        headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-        
         // Convert saved configs to table format
         const configData = savedConfigs.map(config => [
             config.key,
@@ -473,65 +349,14 @@ export function restoreFromLastSave() {
             config.sourceColumn || ''
         ]);
         
-        // Write configuration data
-        const dataRange = sheet.getRange(2, 1, configData.length, 6);
-        dataRange.setValues(configData);
+        // Add header row
+        const fullConfigData = [
+            ['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column'],
+            ...configData
+        ];
         
-        // Add data validation for Type column
-        const typeRange = sheet.getRange(2, 4, configData.length, 1);
-        const typeRule = SpreadsheetApp.newDataValidation()
-            .requireValueInList(['data', 'calculated', 'display'], true)
-            .setAllowInvalid(false)
-            .build();
-        typeRange.setDataValidation(typeRule);
-        
-        // Add data validation for Display column
-        const displayRange = sheet.getRange(2, 5, configData.length, 1);
-        const displayRule = SpreadsheetApp.newDataValidation()
-            .requireValueInList(['TRUE', 'FALSE'], true)
-            .setAllowInvalid(false)
-            .build();
-        displayRange.setDataValidation(displayRule);
-        
-        // Autofit config sheet after writing config table
-        sheet.autoResizeColumns(1, 6);
-        
-        // Set specific column widths for better readability
-        sheet.setColumnWidth(1, 120); // Column Key
-        sheet.setColumnWidth(2, 150); // Title
-        sheet.setColumnWidth(3, 80);  // Width
-        sheet.setColumnWidth(4, 100); // Type
-        sheet.setColumnWidth(5, 80);  // Display
-        sheet.setColumnWidth(6, 100); // Source Column
-        
-        // Write instructions in column H (after the table)
-        const instructions = getInstructions();
-        const instructionRange = sheet.getRange(1, 8, instructions.length, 1);
-        instructionRange.setValues(instructions);
-        
-        // Style the instructions
-        const instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
-        instructionHeaderRange.setFontWeight('bold')
-            .setFontSize(14)
-            .setBackground('#4A86E8')
-            .setFontColor('white');
-        
-        // Style section headers
-        const sectionHeaders = findSectionHeaders(instructions);
-        
-        sectionHeaders.forEach(rowIndex => {
-            const sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
-            sectionRange.setFontWeight('bold')
-                .setFontSize(12)
-                .setBackground('#E8F0FE')
-                .setFontColor('#1A73E8');
-        });
-        
-        // Set instructions column width to be wide enough
-        sheet.setColumnWidth(8, 400);
-        
-        // Freeze header row
-        sheet.setFrozenRows(1);
+        // Setup and style the sheet
+        setupConfigSheet(sheet, fullConfigData);
         
         // Apply the configuration immediately
         saveColumnConfiguration();
@@ -582,4 +407,72 @@ export function showFormResponseHeaders() {
     });
     
     SpreadsheetApp.getUi().alert('Form Response Headers', headerInfo, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Sets up and styles the column configuration sheet
+ */
+function setupConfigSheet(sheet, configData) {
+    // Write configuration table
+    const range = sheet.getRange(1, 1, configData.length, configData[0].length);
+    range.setValues(configData);
+    
+    // Style header row
+    const headerRange = sheet.getRange(1, 1, 1, configData[0].length);
+    headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
+    
+    // Add data validation for Type column
+    const typeRange = sheet.getRange(2, 4, 100, 1);
+    const typeRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['data', 'calculated', 'display'], true)
+        .setAllowInvalid(false)
+        .build();
+    typeRange.setDataValidation(typeRule);
+    
+    // Add data validation for Display column
+    const displayRange = sheet.getRange(2, 5, 100, 1);
+    const displayRule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['TRUE', 'FALSE'], true)
+        .setAllowInvalid(false)
+        .build();
+    displayRange.setDataValidation(displayRule);
+    
+    // Autofit table columns
+    sheet.autoResizeColumns(1, 6);
+    
+    // Force autofit on specific columns and add spacing
+    for (let col = 1; col <= 6; col++) {
+        sheet.autoResizeColumn(col);
+        const currentWidth = sheet.getColumnWidth(col);
+        sheet.setColumnWidth(col, currentWidth + 10);
+    }
+    
+    // Write instructions in column H (after the table)
+    const instructions = getInstructions();
+    const instructionRange = sheet.getRange(1, 8, instructions.length, 1);
+    instructionRange.setValues(instructions);
+    
+    // Style the instructions
+    const instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
+    instructionHeaderRange.setFontWeight('bold')
+        .setFontSize(14)
+        .setBackground('#4A86E8')
+        .setFontColor('white');
+    
+    // Style section headers
+    const sectionHeaders = findSectionHeaders(instructions);
+    
+    sectionHeaders.forEach(rowIndex => {
+        const sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
+        sectionRange.setFontWeight('bold')
+            .setFontSize(12)
+            .setBackground('#E8F0FE')
+            .setFontColor('#1A73E8');
+    });
+    
+    // Set instructions column width to be wide enough
+    sheet.setColumnWidth(8, 650);
+    
+    // Freeze header row
+    sheet.setFrozenRows(1);
 } 

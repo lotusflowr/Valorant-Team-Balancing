@@ -445,6 +445,12 @@ var ColumnWriter = /*#__PURE__*/function () {
       try {
         var numColumns = this.displayConfigs.length;
         this.sheet.autoResizeColumns(1, numColumns);
+
+        // Add 10px to each column for better spacing
+        for (var col = 1; col <= numColumns; col++) {
+          var currentWidth = this.sheet.getColumnWidth(col);
+          this.sheet.setColumnWidth(col, currentWidth + 10);
+        }
         Logger.log("Auto-resized ".concat(numColumns, " columns in sheet: ").concat(this.sheet.getName()));
       } catch (error) {
         Logger.log("Error auto-resizing columns: ".concat(error.message));
@@ -813,12 +819,12 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
   writer.autoResizeRows();
 }
 
-function _toConsumableArray$1(r) { return _arrayWithoutHoles$1(r) || _iterableToArray$1(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread$1(); }
-function _nonIterableSpread$1() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
-function _iterableToArray$1(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles$1(r) { if (Array.isArray(r)) return _arrayLikeToArray$1(r); }
-function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toConsumableArray$2(r) { return _arrayWithoutHoles$2(r) || _iterableToArray$2(r) || _unsupportedIterableToArray$2(r) || _nonIterableSpread$2(); }
+function _nonIterableSpread$2() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray$2(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$2(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$2(r, a) : void 0; } }
+function _iterableToArray$2(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles$2(r) { if (Array.isArray(r)) return _arrayLikeToArray$2(r); }
+function _arrayLikeToArray$2(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function applyLatestColumnConfig() {
   var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
   if (configData) {
@@ -858,7 +864,7 @@ function getTimeSlotsFromConfig() {
             return s !== '';
           });
         });
-        var uniqueTimeSlots = _toConsumableArray$1(new Set(splitTimeSlots));
+        var uniqueTimeSlots = _toConsumableArray$2(new Set(splitTimeSlots));
         Logger.log("Extracted time slots from config: ".concat(uniqueTimeSlots.join(', ')));
         return uniqueTimeSlots;
       }
@@ -1055,7 +1061,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   }).join(', ')));
 
   // First, distribute unassigned players to ensure everyone plays
-  var allTeamPlayers = [].concat(_toConsumableArray$1(unassignedPlayers), _toConsumableArray$1(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
+  var allTeamPlayers = [].concat(_toConsumableArray$2(unassignedPlayers), _toConsumableArray$2(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
   Logger.log("\nDistributing ".concat(allTeamPlayers.length, " players to teams"));
   for (var _i = 0; _i < allTeamPlayers.length; _i++) {
     var round = Math.floor(_i / numTeams);
@@ -1123,7 +1129,7 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   return {
     teams: teams,
     substitutes: substitutes,
-    assignedPlayers: new Set([].concat(_toConsumableArray$1(assignedPlayers), _toConsumableArray$1(teams.flatMap(function (team) {
+    assignedPlayers: new Set([].concat(_toConsumableArray$2(assignedPlayers), _toConsumableArray$2(teams.flatMap(function (team) {
       return team.players.map(function (p) {
         return p.discordUsername;
       });
@@ -1169,15 +1175,15 @@ function getTeamSpread(teams) {
   var totals = teams.map(function (team) {
     return team.total;
   });
-  return Math.max.apply(Math, _toConsumableArray$1(totals)) - Math.min.apply(Math, _toConsumableArray$1(totals));
+  return Math.max.apply(Math, _toConsumableArray$2(totals)) - Math.min.apply(Math, _toConsumableArray$2(totals));
 }
 
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toConsumableArray$1(r) { return _arrayWithoutHoles$1(r) || _iterableToArray$1(r) || _unsupportedIterableToArray$1(r) || _nonIterableSpread$1(); }
+function _nonIterableSpread$1() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray$1(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray$1(r, a) : void 0; } }
+function _iterableToArray$1(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles$1(r) { if (Array.isArray(r)) return _arrayLikeToArray$1(r); }
+function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function getColumnConfig() {
   var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
   if (configData) {
@@ -1415,7 +1421,7 @@ function generateDiscordPings() {
   Logger.log("Added title to contentArray.");
 
   // Group teams by time slot
-  var timeSlots = _toConsumableArray(new Set(teams.map(function (team) {
+  var timeSlots = _toConsumableArray$1(new Set(teams.map(function (team) {
     return team.timeSlot;
   })));
   Logger.log("Unique Time Slots: ".concat(timeSlots.join(", ")));
@@ -1573,6 +1579,13 @@ function writeDiscordPingsToSheet(sheet, pings) {
   Logger.log("Auto-resized and set minimum column width.");
 }
 
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
 /**
  * Column Configuration Manager
  * Allows users to configure column display order, titles, and types
@@ -1626,53 +1639,8 @@ function openColumnConfigurationSheet() {
     configData.push([config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || '']);
   });
 
-  // Write configuration table
-  var range = configSheet.getRange(1, 1, configData.length, configData[0].length);
-  range.setValues(configData);
-
-  // Style header row
-  var headerRange = configSheet.getRange(1, 1, 1, configData[0].length);
-  headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-
-  // Add data validation for Type column
-  var typeRange = configSheet.getRange(2, 4, configData.length - 1, 1);
-  var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
-  typeRange.setDataValidation(typeRule);
-
-  // Add data validation for Display column
-  var displayRange = configSheet.getRange(2, 5, configData.length - 1, 1);
-  var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
-  displayRange.setDataValidation(displayRule);
-
-  // Autofit table columns
-  configSheet.autoResizeColumns(1, 6);
-
-  // Set specific column widths for better readability
-  configSheet.setColumnWidth(1, 120); // Column Key
-  configSheet.setColumnWidth(2, 150); // Title
-  configSheet.setColumnWidth(3, 80); // Width
-  configSheet.setColumnWidth(4, 100); // Type
-  configSheet.setColumnWidth(5, 80); // Display
-  configSheet.setColumnWidth(6, 100); // Source Column
-
-  // Write instructions in column H (after the table)
-  var instructions = getInstructions();
-  var instructionRange = configSheet.getRange(1, 8, instructions.length, 1);
-  instructionRange.setValues(instructions);
-
-  // Style the instructions
-  var instructionHeaderRange = configSheet.getRange(1, 8, 1, 1);
-  instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
-
-  // Style section headers
-  var sectionHeaders = findSectionHeaders(instructions);
-  sectionHeaders.forEach(function (rowIndex) {
-    var sectionRange = configSheet.getRange(rowIndex + 1, 8, 1, 1);
-    sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
-  });
-
-  // Set instructions column width to be wide enough
-  configSheet.setColumnWidth(8, 400);
+  // Setup and style the sheet
+  setupConfigSheet(configSheet, configData);
   SpreadsheetApp.getUi().alert('Column Configuration sheet opened! Edit the table above, then use "Save & Apply Column Config" to apply changes.');
 }
 
@@ -1867,63 +1835,16 @@ function restoreDefaultConfiguration() {
     // Clear existing content
     sheet.clear();
 
-    // Set up headers
-    var headers = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
-    var headerRange = sheet.getRange(1, 1, 1, 6);
-    headerRange.setValues(headers);
-    headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-
     // Convert default configs to table format
     var configData = getDefaultConfig().map(function (config) {
       return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
     });
 
-    // Write configuration data
-    var dataRange = sheet.getRange(2, 1, configData.length, 6);
-    dataRange.setValues(configData);
+    // Add header row
+    var fullConfigData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']].concat(_toConsumableArray(configData));
 
-    // Add data validation for Type column
-    var typeRange = sheet.getRange(2, 4, configData.length, 1);
-    var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
-    typeRange.setDataValidation(typeRule);
-
-    // Add data validation for Display column
-    var displayRange = sheet.getRange(2, 5, configData.length, 1);
-    var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
-    displayRange.setDataValidation(displayRule);
-
-    // Autofit config sheet after writing config table
-    sheet.autoResizeColumns(1, 6);
-
-    // Set specific column widths for better readability
-    sheet.setColumnWidth(1, 120); // Column Key
-    sheet.setColumnWidth(2, 150); // Title
-    sheet.setColumnWidth(3, 80); // Width
-    sheet.setColumnWidth(4, 100); // Type
-    sheet.setColumnWidth(5, 80); // Display
-    sheet.setColumnWidth(6, 100); // Source Column
-
-    // Write instructions in column H (after the table)
-    var instructions = getInstructions();
-    var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
-    instructionRange.setValues(instructions);
-
-    // Style the instructions
-    var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
-    instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
-
-    // Style section headers
-    var sectionHeaders = findSectionHeaders(instructions);
-    sectionHeaders.forEach(function (rowIndex) {
-      var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
-      sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
-    });
-
-    // Set instructions column width to be wide enough
-    sheet.setColumnWidth(8, 400);
-
-    // Freeze header row
-    sheet.setFrozenRows(1);
+    // Setup and style the sheet
+    setupConfigSheet(sheet, fullConfigData);
 
     // Apply the configuration immediately
     saveColumnConfiguration();
@@ -1962,63 +1883,16 @@ function restoreFromLastSave() {
     // Clear existing content
     sheet.clear();
 
-    // Set up headers
-    var headers = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
-    var headerRange = sheet.getRange(1, 1, 1, 6);
-    headerRange.setValues(headers);
-    headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
-
     // Convert saved configs to table format
     var configData = savedConfigs.map(function (config) {
       return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
     });
 
-    // Write configuration data
-    var dataRange = sheet.getRange(2, 1, configData.length, 6);
-    dataRange.setValues(configData);
+    // Add header row
+    var fullConfigData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']].concat(_toConsumableArray(configData));
 
-    // Add data validation for Type column
-    var typeRange = sheet.getRange(2, 4, configData.length, 1);
-    var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
-    typeRange.setDataValidation(typeRule);
-
-    // Add data validation for Display column
-    var displayRange = sheet.getRange(2, 5, configData.length, 1);
-    var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
-    displayRange.setDataValidation(displayRule);
-
-    // Autofit config sheet after writing config table
-    sheet.autoResizeColumns(1, 6);
-
-    // Set specific column widths for better readability
-    sheet.setColumnWidth(1, 120); // Column Key
-    sheet.setColumnWidth(2, 150); // Title
-    sheet.setColumnWidth(3, 80); // Width
-    sheet.setColumnWidth(4, 100); // Type
-    sheet.setColumnWidth(5, 80); // Display
-    sheet.setColumnWidth(6, 100); // Source Column
-
-    // Write instructions in column H (after the table)
-    var instructions = getInstructions();
-    var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
-    instructionRange.setValues(instructions);
-
-    // Style the instructions
-    var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
-    instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
-
-    // Style section headers
-    var sectionHeaders = findSectionHeaders(instructions);
-    sectionHeaders.forEach(function (rowIndex) {
-      var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
-      sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
-    });
-
-    // Set instructions column width to be wide enough
-    sheet.setColumnWidth(8, 400);
-
-    // Freeze header row
-    sheet.setFrozenRows(1);
+    // Setup and style the sheet
+    setupConfigSheet(sheet, fullConfigData);
 
     // Apply the configuration immediately
     saveColumnConfiguration();
@@ -2065,6 +1939,61 @@ function showFormResponseHeaders() {
     headerInfo += "".concat(columnLetter, ": ").concat(header || 'Empty', "\n");
   });
   SpreadsheetApp.getUi().alert('Form Response Headers', headerInfo, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Sets up and styles the column configuration sheet
+ */
+function setupConfigSheet(sheet, configData) {
+  // Write configuration table
+  var range = sheet.getRange(1, 1, configData.length, configData[0].length);
+  range.setValues(configData);
+
+  // Style header row
+  var headerRange = sheet.getRange(1, 1, 1, configData[0].length);
+  headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
+
+  // Add data validation for Type column
+  var typeRange = sheet.getRange(2, 4, 100, 1);
+  var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
+  typeRange.setDataValidation(typeRule);
+
+  // Add data validation for Display column
+  var displayRange = sheet.getRange(2, 5, 100, 1);
+  var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
+  displayRange.setDataValidation(displayRule);
+
+  // Autofit table columns
+  sheet.autoResizeColumns(1, 6);
+
+  // Force autofit on specific columns and add spacing
+  for (var col = 1; col <= 6; col++) {
+    sheet.autoResizeColumn(col);
+    var currentWidth = sheet.getColumnWidth(col);
+    sheet.setColumnWidth(col, currentWidth + 10);
+  }
+
+  // Write instructions in column H (after the table)
+  var instructions = getInstructions();
+  var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
+  instructionRange.setValues(instructions);
+
+  // Style the instructions
+  var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
+  instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
+
+  // Style section headers
+  var sectionHeaders = findSectionHeaders(instructions);
+  sectionHeaders.forEach(function (rowIndex) {
+    var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
+    sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
+  });
+
+  // Set instructions column width to be wide enough
+  sheet.setColumnWidth(8, 650);
+
+  // Freeze header row
+  sheet.setFrozenRows(1);
 }
 
 /***** UI FUNCTIONS *****/
