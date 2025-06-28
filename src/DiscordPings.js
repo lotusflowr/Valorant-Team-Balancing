@@ -74,9 +74,7 @@ export function generateDiscordPings() {
     }
     
     const allData = teamsSheet.getDataRange().getValues();
-    if (allData.length < 2) {
-        throw new Error("Teams sheet is empty. Please create teams first.");
-    }
+    Logger.log(`Total rows in Teams sheet: ${allData.length}`);
     
     // Find the Discord column
     const discordColIndex = findDiscordColumn(teamsSheet);
@@ -106,25 +104,114 @@ export function generateDiscordPings() {
         }
     }
     
-    // Determine where the actual data starts by looking for team headers
-    let dataStartRow = 1; // Start from row 2 (index 1) by default
-    for (let i = 0; i < Math.min(3, allData.length); i++) {
-        const row = allData[i];
-        if (row.some(cell => cell && cell.toString().trim().startsWith('Team'))) {
-            dataStartRow = i;
-            break;
-        }
-    }
-    Logger.log(`Data starts from row ${dataStartRow + 1}`);
-    
-    let contentArray = [];
+    // Initialize variables
     let currentTimeSlot = null;
     let currentTeam = null;
-    let inTeam = false;
-    let inSubs = false;
-    let timeSlotLobbyHosts = new Map(); // Track lobby hosts for each time slot
+    let teams = [];
+    let substitutes = {};
+    let currentSection = null; // Possible values: null, "team", "players", "substitutes", "substitutesPlayers"
     
-    // Add title as first element
+    // Process each row in the Teams sheet
+    for (let i = 0; i < allData.length; i++) {
+        const row = allData[i];
+        const firstCell = row[0] ? row[0].toString().trim() : '';
+        Logger.log(`Processing row ${i + 1}: "${firstCell}"`);
+        
+        // Detect Time Slot (look for time patterns)
+        const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
+        const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
+        
+        if (hasTimePattern && !firstCell.includes('Total')) {
+            currentTimeSlot = firstCell;
+            currentSection = "timeSlot";
+            if (!substitutes[currentTimeSlot]) {
+                substitutes[currentTimeSlot] = [];
+            }
+            Logger.log(`Detected Time Slot: "${currentTimeSlot}"`);
+            continue;
+        }
+        
+        // Detect Team Header
+        if (firstCell.startsWith("Team")) {
+            currentTeam = {
+                name: firstCell,
+                timeSlot: currentTimeSlot,
+                players: []
+            };
+            teams.push(currentTeam);
+            currentSection = "team";
+            Logger.log(`Detected Team: "${currentTeam.name}" under Time Slot: "${currentTimeSlot}"`);
+            continue;
+        }
+        
+        // Detect "Discord" header indicating the start of Players section for a Team
+        if (firstCell === "Discord" && currentSection === "team") {
+            currentSection = "players";
+            Logger.log(`Detected Players section under Team: "${currentTeam.name}"`);
+            continue;
+        }
+        
+        // Detect "Substitutes" header
+        if (firstCell === "Substitutes") {
+            currentTeam = null;
+            currentSection = "substitutes";
+            Logger.log(`Detected Substitutes section under Time Slot: "${currentTimeSlot}"`);
+            continue;
+        }
+        
+        // Detect "Discord" header indicating the start of Players section for Substitutes
+        if (firstCell === "Discord" && currentSection === "substitutes") {
+            currentSection = "substitutesPlayers";
+            Logger.log(`Detected Players section under Substitutes for Time Slot: "${currentTimeSlot}"`);
+            continue;
+        }
+        
+        // Process Player Rows for Teams
+        if (currentSection === "players" && firstCell !== "") {
+            const discordValue = row[discordColIndex];
+            const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
+            
+            if (discordValue && discordValue !== 'Discord') {
+                const player = {
+                    discordUsername: discordValue.toString().replace(/^@/, '').trim(),
+                    riotID: row[1] ? row[1].toString().trim() : "",
+                    lobbyHost: lobbyHostValue ? lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
+                };
+                currentTeam.players.push(player);
+                Logger.log(`Added Player to Team "${currentTeam.name}": "@${player.discordUsername}" (Lobby Host: ${player.lobbyHost})`);
+            }
+            continue;
+        }
+        
+        // Process Player Rows for Substitutes
+        if (currentSection === "substitutesPlayers" && firstCell !== "") {
+            const discordValue = row[discordColIndex];
+            const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
+            
+            if (discordValue && discordValue !== 'Discord') {
+                const substitute = {
+                    discordUsername: discordValue.toString().replace(/^@/, '').trim(),
+                    riotID: row[1] ? row[1].toString().trim() : "",
+                    lobbyHost: lobbyHostValue ? lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
+                };
+                substitutes[currentTimeSlot].push(substitute);
+                Logger.log(`Added Substitute to Time Slot "${currentTimeSlot}": "@${substitute.discordUsername}" (Lobby Host: ${substitute.lobbyHost})`);
+            }
+            continue;
+        }
+        
+        // Reset section if encountering an empty row
+        if (firstCell === "") {
+            currentSection = null;
+            Logger.log("Encountered empty row. Resetting current section.");
+            continue;
+        }
+    }
+    
+    Logger.log(`Total Teams Parsed: ${teams.length}`);
+    Logger.log(`Total Substitutes Parsed: ${JSON.stringify(substitutes)}`);
+    
+    // Create pings content
     const currentDate = new Date();
     const gameDay = PropertiesService.getScriptProperties().getProperty('GAME_DAY') || "Saturday";
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -134,111 +221,97 @@ export function generateDiscordPings() {
     const nextGameDay = new Date(currentDate);
     nextGameDay.setDate(currentDate.getDate() + daysUntilGame);
     const formattedDate = nextGameDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    Logger.log(`Game Day: "${gameDay}", Date: "${formattedDate}"`);
     
+    // Create the content array
+    const contentArray = [];
+    
+    // Add title as first element
     contentArray.push(`# Here are the teams for ${gameDay}, ${formattedDate}!`);
+    Logger.log("Added title to contentArray.");
     
-    // Process each row in the Teams sheet, starting from the data start row
-    for (let i = dataStartRow; i < allData.length; i++) {
-        const row = allData[i];
-        const firstCell = row[0] ? row[0].toString().trim() : '';
-        const discordValue = row[discordColIndex];
-        const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
+    // Group teams by time slot
+    const timeSlots = [...new Set(teams.map(team => team.timeSlot))];
+    Logger.log(`Unique Time Slots: ${timeSlots.join(", ")}`);
+    
+    timeSlots.forEach(timeSlot => {
+        const timeSlotTeams = teams.filter(team => team.timeSlot === timeSlot);
+        const timeSlotSubstitutes = substitutes[timeSlot] || [];
         
-        Logger.log(`Processing row ${i + 1}: firstCell="${firstCell}", discordValue="${discordValue}", lobbyHostValue="${lobbyHostValue}"`);
-        
-        // Skip empty rows
-        if (!firstCell) {
-            continue;
-        }
-        
-        // Check for time slot headers (these contain time patterns and are typically merged cells)
-        const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
-        const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
-        
-        if (hasTimePattern && !firstCell.includes('Total')) {
-            currentTimeSlot = firstCell;
-            contentArray.push(`## ${currentTimeSlot} Timeslot`);
-            timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
-            Logger.log(`Added time slot header: ${currentTimeSlot}`);
-            continue;
-        }
-        
-        // Check for team headers
-        if (firstCell.startsWith('Team')) {
-            currentTeam = firstCell;
-            contentArray.push(`### ${currentTeam}`);
-            inTeam = true;
-            inSubs = false;
-            Logger.log(`Added team header: ${currentTeam}`);
-            continue;
-        }
-        
-        // Check for substitutes header
-        if (firstCell === 'Substitutes') {
-            contentArray.push('### Substitutes');
-            inTeam = false;
-            inSubs = true;
-            Logger.log(`Added substitutes header`);
-            continue;
-        }
-        
-        // Skip other headers and totals
-        if (firstCell === 'Discord' || firstCell.includes('Total')) {
-            continue;
-        }
-        
-        // If we have a Discord value and we're in a team or substitutes section, this is a player
-        if ((inTeam || inSubs) && discordValue && discordValue !== 'Discord') {
-            const cleanDiscordValue = discordValue.toString().replace(/^@/, '').trim();
-            if (cleanDiscordValue) {
-                contentArray.push(`@${cleanDiscordValue}`);
-                Logger.log(`Added player mention: @${cleanDiscordValue}`);
+        if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
+            // Add time slot header with "Timeslot"
+            contentArray.push(`## ${timeSlot} Timeslot`);
+            Logger.log(`Added Time Slot Header: "${timeSlot} Timeslot"`);
+            
+            // Group teams into pairs (e.g., Team 1 & Team 2)
+            for (let i = 0; i < timeSlotTeams.length; i += 2) {
+                const pair = timeSlotTeams.slice(i, i + 2);
+                Logger.log(`Processing Team Pair: "${pair.map(t => t.name).join(" & ")}"`);
                 
-                // Check if this player is a lobby host
-                if (lobbyHostValue && lobbyHostValue.toString().toLowerCase() === 'yes' && currentTimeSlot) {
-                    const lobbyHosts = timeSlotLobbyHosts.get(currentTimeSlot) || [];
-                    lobbyHosts.push(cleanDiscordValue);
-                    timeSlotLobbyHosts.set(currentTimeSlot, lobbyHosts);
-                    Logger.log(`Added lobby host: @${cleanDiscordValue} for time slot: ${currentTimeSlot}`);
+                // Assign one Lobby Host per pair
+                const lobbyHosts = pair.flatMap(team => team.players).filter(player => player.lobbyHost);
+                let selectedHost = null;
+                if (lobbyHosts.length > 0) {
+                    selectedHost = lobbyHosts[0]; // Select the first Lobby Host found
+                    Logger.log(`Selected Lobby Host: "@${selectedHost.discordUsername}" for Team Pair: "${pair.map(t => t.name).join(" & ")}"`);
                 } else {
-                    Logger.log(`Not a lobby host: lobbyHostValue="${lobbyHostValue}", currentTimeSlot="${currentTimeSlot}"`);
+                    Logger.log(`No Lobby Host found for Team Pair: "${pair.map(t => t.name).join(" & ")}"`);
                 }
+                
+                // Add Lobby Host section if a host is selected
+                if (selectedHost) {
+                    contentArray.push("### Lobby Host");
+                    contentArray.push(`@${selectedHost.discordUsername}`);
+                    contentArray.push(''); // Blank line after Lobby Host
+                    Logger.log(`Added Lobby Host Section: "@${selectedHost.discordUsername}"`);
+                }
+                
+                // Add each team in the pair
+                pair.forEach(team => {
+                    contentArray.push(`### ${team.name}`);
+                    Logger.log(`Added Team Header: "${team.name}"`);
+                    team.players.forEach(player => {
+                        contentArray.push(`@${player.discordUsername}`);
+                        Logger.log(`Added Player Mention: "@${player.discordUsername}"`);
+                    });
+                    contentArray.push(''); // Blank line after each team
+                    Logger.log(`Added blank line after Team: "${team.name}"`);
+                });
             }
-        }
-    }
-    
-    // Add lobby host sections for each time slot
-    Logger.log(`Time slot lobby hosts map: ${JSON.stringify(Array.from(timeSlotLobbyHosts.entries()))}`);
-    timeSlotLobbyHosts.forEach((lobbyHosts, timeSlot) => {
-        Logger.log(`Processing lobby hosts for time slot "${timeSlot}": ${lobbyHosts.join(', ')}`);
-        if (lobbyHosts.length > 0) {
-            // Find the time slot section and add lobby host info after it
-            const timeSlotIndex = contentArray.findIndex(line => line === `## ${timeSlot} Timeslot`);
-            Logger.log(`Found time slot "${timeSlot}" at index ${timeSlotIndex}`);
-            if (timeSlotIndex !== -1) {
-                // Insert lobby host section after the time slot header
-                contentArray.splice(timeSlotIndex + 1, 0, `### Lobby Host: @${lobbyHosts[0]}`);
-                Logger.log(`Added lobby host section for ${timeSlot}: @${lobbyHosts[0]}`);
-            } else {
-                Logger.log(`Could not find time slot "${timeSlot}" in content array`);
+            
+            // Add substitutes section if there are any
+            if (timeSlotSubstitutes.length > 0) {
+                contentArray.push("### Substitutes");
+                Logger.log(`Added Substitutes Header for Time Slot: "${timeSlot} Timeslot"`);
+                timeSlotSubstitutes.forEach(sub => {
+                    contentArray.push(`@${sub.discordUsername}`);
+                    Logger.log(`Added Substitute Mention: "@${sub.discordUsername}"`);
+                });
+                contentArray.push(''); // Blank line after substitutes
+                Logger.log(`Added blank line after Substitutes for Time Slot: "${timeSlot} Timeslot"`);
             }
-        } else {
-            Logger.log(`No lobby hosts found for time slot "${timeSlot}"`);
+            
+            // Add separator
+            contentArray.push(''); // Blank line after separator
+            Logger.log(`Added separator for Time Slot: "${timeSlot} Timeslot"`);
         }
     });
     
+    // Join all text for potential direct usage (e.g., sending via API)
     const discordPingText = contentArray.join('\n');
-    Logger.log(`Generated Discord pings text: ${discordPingText}`);
+    Logger.log(`Generated Discord Ping Text:\n${discordPingText}`);
     
+    // Invoke the write function to write to the "Discord Pings" sheet
     try {
         const discordPingsSheet = ss.getSheetByName("Discord Pings") || ss.insertSheet("Discord Pings");
         writeDiscordPingsToSheet(discordPingsSheet, discordPingText);
-        Logger.log("Successfully wrote Discord pings to sheet");
+        Logger.log("Successfully wrote Discord pings to the 'Discord Pings' sheet.");
     } catch (error) {
         Logger.log(`Error writing to Discord Pings sheet: ${error.message}`);
         throw error;
     }
     
+    // Optionally, return the ping text if needed elsewhere
     return discordPingText;
 }
 
