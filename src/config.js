@@ -142,7 +142,8 @@ export const STYLING = {
     fontSize: {
         title: 18,
         timeslot: 14,
-        teamHeader: 12,
+        teamName: 12,
+        columnHeader: 11,
         subHeader: 11,
         player: 11,
         default: 11

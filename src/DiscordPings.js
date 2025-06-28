@@ -370,21 +370,21 @@ export function writeDiscordPingsToSheet(sheet, pings) {
         } else if (content.startsWith("### Lobby Host")) {
             // Lobby Host Headers: Same as Team Headers (Light Blue)
             cell.setFontWeight("bold")
-                .setFontSize(STYLING.fontSize.teamHeader)
+                .setFontSize(STYLING.fontSize.columnHeader)
                 .setBackground(STYLING.colors.discord.lobbyHost)
                 .setFontColor(STYLING.colors.text.black);
             Logger.log(`Formatted Lobby Host Header: "${content}"`);
         } else if (content.startsWith("### Team")) {
             // Team Headers: Light Blue
             cell.setFontWeight("bold")
-                .setFontSize(STYLING.fontSize.teamHeader)
+                .setFontSize(STYLING.fontSize.columnHeader)
                 .setBackground(STYLING.colors.discord.lobbyHost)
                 .setFontColor(STYLING.colors.text.black);
             Logger.log(`Formatted Team Header: "${content}"`);
         } else if (content.startsWith("### Substitutes")) {
             // Substitutes Header: Different Shade of Blue
             cell.setFontWeight("bold")
-                .setFontSize(STYLING.fontSize.teamHeader)
+                .setFontSize(STYLING.fontSize.columnHeader)
                 .setBackground(STYLING.colors.discord.substitutes)
                 .setFontColor(STYLING.colors.text.black);
             Logger.log(`Formatted Substitutes Header: "${content}"`);

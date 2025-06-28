@@ -96,7 +96,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
             writer.writeMergedHeader(rowIndex + 1, team.name, {
                 backgroundColor: teamColor,
                 textColor: STYLING.colors.text.black,
-                fontSize: STYLING.fontSize.teamHeader,
+                fontSize: STYLING.fontSize.teamName,
                 mergeAll: false // Don't merge the last column (for total)
             });
 
@@ -105,7 +105,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
             totalCell.setFontWeight("bold")
                 .setBackground(teamColor)
                 .setFontColor(STYLING.colors.text.black)
-                .setFontSize(STYLING.fontSize.teamHeader)
+                .setFontSize(STYLING.fontSize.teamName)
                 .setHorizontalAlignment("right");
 
             // Add formula for team total
@@ -121,7 +121,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
             writer.writeHeaders(rowIndex + 1, {
                 backgroundColor: teamColor,
                 textColor: STYLING.colors.text.black,
-                fontSize: STYLING.fontSize.teamHeader
+                fontSize: STYLING.fontSize.columnHeader
             });
             rowIndex++;
 
@@ -202,7 +202,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
                 writer.writeMergedHeader(rowIndex + 1, team.name, {
                     backgroundColor: teamColor,
                     textColor: STYLING.colors.text.black,
-                    fontSize: STYLING.fontSize.teamHeader,
+                    fontSize: STYLING.fontSize.teamName,
                     mergeAll: false // Don't merge the last column (for total)
                 });
 
@@ -211,7 +211,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
                 totalCell.setFontWeight("bold")
                     .setBackground(teamColor)
                     .setFontColor(STYLING.colors.text.black)
-                    .setFontSize(STYLING.fontSize.teamHeader)
+                    .setFontSize(STYLING.fontSize.teamName)
                     .setHorizontalAlignment("right");
 
                 // Add formula for team total
@@ -227,7 +227,7 @@ export function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
                 writer.writeHeaders(rowIndex + 1, {
                     backgroundColor: teamColor,
                     textColor: STYLING.colors.text.black,
-                    fontSize: STYLING.fontSize.teamHeader
+                    fontSize: STYLING.fontSize.columnHeader
                 });
                 rowIndex++;
 

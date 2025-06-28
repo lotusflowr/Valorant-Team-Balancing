@@ -116,7 +116,8 @@ var STYLING = {
   fontSize: {
     title: 18,
     timeslot: 14,
-    teamHeader: 12,
+    teamName: 12,
+    columnHeader: 11,
     subHeader: 11,
     player: 11,
     "default": 11
@@ -345,7 +346,7 @@ var ColumnWriter = /*#__PURE__*/function () {
         _options$textColor2 = options.textColor,
         textColor = _options$textColor2 === void 0 ? STYLING.colors.text.white : _options$textColor2,
         _options$fontSize2 = options.fontSize,
-        fontSize = _options$fontSize2 === void 0 ? STYLING.fontSize.teamHeader : _options$fontSize2,
+        fontSize = _options$fontSize2 === void 0 ? STYLING.fontSize.columnHeader : _options$fontSize2,
         _options$fontWeight = options.fontWeight,
         fontWeight = _options$fontWeight === void 0 ? "bold" : _options$fontWeight,
         _options$useAutoTitle = options.useAutoTitles,
@@ -624,13 +625,13 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
       writer.writeMergedHeader(rowIndex + 1, team.name, {
         backgroundColor: teamColor,
         textColor: STYLING.colors.text.black,
-        fontSize: STYLING.fontSize.teamHeader,
+        fontSize: STYLING.fontSize.teamName,
         mergeAll: false // Don't merge the last column (for total)
       });
 
       // Add Team Total in the last column
       var totalCell = sheet.getRange(rowIndex + 1, writer.getTotalColumns());
-      totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamHeader).setHorizontalAlignment("right");
+      totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamName).setHorizontalAlignment("right");
 
       // Add formula for team total
       var startRow = rowIndex + 3;
@@ -644,7 +645,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
       writer.writeHeaders(rowIndex + 1, {
         backgroundColor: teamColor,
         textColor: STYLING.colors.text.black,
-        fontSize: STYLING.fontSize.teamHeader
+        fontSize: STYLING.fontSize.columnHeader
       });
       rowIndex++;
 
@@ -724,13 +725,13 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
         writer.writeMergedHeader(rowIndex + 1, team.name, {
           backgroundColor: teamColor,
           textColor: STYLING.colors.text.black,
-          fontSize: STYLING.fontSize.teamHeader,
+          fontSize: STYLING.fontSize.teamName,
           mergeAll: false // Don't merge the last column (for total)
         });
 
         // Add Team Total in the last column
         var totalCell = sheet.getRange(rowIndex + 1, writer.getTotalColumns());
-        totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamHeader).setHorizontalAlignment("right");
+        totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamName).setHorizontalAlignment("right");
 
         // Add formula for team total
         var startRow = rowIndex + 3;
@@ -744,7 +745,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
         writer.writeHeaders(rowIndex + 1, {
           backgroundColor: teamColor,
           textColor: STYLING.colors.text.black,
-          fontSize: STYLING.fontSize.teamHeader
+          fontSize: STYLING.fontSize.columnHeader
         });
         rowIndex++;
 
@@ -1542,15 +1543,15 @@ function writeDiscordPingsToSheet(sheet, pings) {
       Logger.log("Formatted Timeslot Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Lobby Host")) {
       // Lobby Host Headers: Same as Team Headers (Light Blue)
-      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.teamHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Lobby Host Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Team")) {
       // Team Headers: Light Blue
-      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.teamHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Team Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Substitutes")) {
       // Substitutes Header: Different Shade of Blue
-      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.teamHeader).setBackground(STYLING.colors.discord.substitutes).setFontColor(STYLING.colors.text.black);
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.substitutes).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Substitutes Header: \"".concat(content, "\""));
     } else if (content.startsWith("@")) {
       // Player Names: Indented

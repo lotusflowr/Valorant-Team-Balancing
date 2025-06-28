@@ -105,7 +105,7 @@ export class ColumnWriter {
         const { 
             backgroundColor = STYLING.colors.header, 
             textColor = STYLING.colors.text.white, 
-            fontSize = STYLING.fontSize.teamHeader,
+            fontSize = STYLING.fontSize.columnHeader,
             fontWeight = "bold",
             useAutoTitles = false
         } = options;
