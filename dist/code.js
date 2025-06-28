@@ -1644,42 +1644,35 @@ function openColumnConfigurationSheet() {
   var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
   displayRange.setDataValidation(displayRule);
 
-  // Autofit config sheet after writing config table
-  configSheet.autoResizeColumns(1, configData[0].length);
+  // Autofit table columns
+  configSheet.autoResizeColumns(1, 6);
 
-  // Write instructions well below the config table
-  var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
-  var instructionStartRow = configData.length + 3;
-  var instructionRange = configSheet.getRange(instructionStartRow, 1, instructions.length, 1);
+  // Set specific column widths for better readability
+  configSheet.setColumnWidth(1, 120); // Column Key
+  configSheet.setColumnWidth(2, 150); // Title
+  configSheet.setColumnWidth(3, 80); // Width
+  configSheet.setColumnWidth(4, 100); // Type
+  configSheet.setColumnWidth(5, 80); // Display
+  configSheet.setColumnWidth(6, 100); // Source Column
+
+  // Write instructions in column H (after the table)
+  var instructions = getInstructions();
+  var instructionRange = configSheet.getRange(1, 8, instructions.length, 1);
   instructionRange.setValues(instructions);
 
   // Style the instructions
-  var instructionHeaderRange = configSheet.getRange(instructionStartRow, 1, 1, 1);
+  var instructionHeaderRange = configSheet.getRange(1, 8, 1, 1);
   instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
 
   // Style section headers
-  var sectionHeaders = [instructionStartRow + 2,
-  // Quick Start
-  instructionStartRow + 9,
-  // Column Types
-  instructionStartRow + 13,
-  // How to Configure
-  instructionStartRow + 24,
-  // Simple Reordering
-  instructionStartRow + 30,
-  // Calculated Columns
-  instructionStartRow + 33,
-  // Examples
-  instructionStartRow + 39,
-  // Important Notes
-  instructionStartRow + 44,
-  // Available Keys
-  instructionStartRow + 47 // Key Requirements
-  ];
+  var sectionHeaders = findSectionHeaders(instructions);
   sectionHeaders.forEach(function (rowIndex) {
-    var sectionRange = configSheet.getRange(rowIndex, 1, 1, 1);
+    var sectionRange = configSheet.getRange(rowIndex + 1, 8, 1, 1);
     sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
   });
+
+  // Set instructions column width to be wide enough
+  configSheet.setColumnWidth(8, 400);
   SpreadsheetApp.getUi().alert('Column Configuration sheet opened! Edit the table above, then use "Save & Apply Column Config" to apply changes.');
 }
 
@@ -1765,6 +1758,28 @@ function getDefaultConfig() {
     display: true,
     sourceColumn: ''
   }];
+}
+
+/**
+ * Gets the instructions content
+ */
+function getInstructions() {
+  return [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername, preferredAgents, etc.)'], ['• calculated: Computed value that depends on other columns (currently only averageRank can use this)'], ['• display: Empty column for manual input (e.g., notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings and team balancing (used as user ID)'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display, currently DOES NOT automatically match duos'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
+}
+
+/**
+ * Finds section header positions in the instructions
+ */
+function findSectionHeaders(instructions) {
+  var sectionHeaders = [];
+  var sectionTitles = ['QUICK START', 'COLUMN TYPES', 'HOW TO CONFIGURE', 'SIMPLE REORDERING', 'CALCULATED COLUMNS', 'EXAMPLES', 'IMPORTANT NOTES', 'VARIABLES USED IN CODE:', 'KEY REQUIREMENTS'];
+  for (var i = 0; i < instructions.length; i++) {
+    var row = instructions[i];
+    if (row[0] && sectionTitles.includes(row[0])) {
+      sectionHeaders.push(i);
+    }
+  }
+  return sectionHeaders;
 }
 
 /**
@@ -1880,39 +1895,32 @@ function restoreDefaultConfiguration() {
     // Autofit config sheet after writing config table
     sheet.autoResizeColumns(1, 6);
 
-    // Write instructions well below the config table
-    var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
-    var instructionStartRow = configData.length + 3;
-    var instructionRange = sheet.getRange(instructionStartRow, 1, instructions.length, 1);
+    // Set specific column widths for better readability
+    sheet.setColumnWidth(1, 120); // Column Key
+    sheet.setColumnWidth(2, 150); // Title
+    sheet.setColumnWidth(3, 80); // Width
+    sheet.setColumnWidth(4, 100); // Type
+    sheet.setColumnWidth(5, 80); // Display
+    sheet.setColumnWidth(6, 100); // Source Column
+
+    // Write instructions in column H (after the table)
+    var instructions = getInstructions();
+    var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
     instructionRange.setValues(instructions);
 
     // Style the instructions
-    var instructionHeaderRange = sheet.getRange(instructionStartRow, 1, 1, 1);
+    var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
     instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
 
     // Style section headers
-    var sectionHeaders = [instructionStartRow + 2,
-    // Quick Start
-    instructionStartRow + 9,
-    // Column Types
-    instructionStartRow + 13,
-    // How to Configure
-    instructionStartRow + 24,
-    // Simple Reordering
-    instructionStartRow + 30,
-    // Calculated Columns
-    instructionStartRow + 33,
-    // Examples
-    instructionStartRow + 39,
-    // Important Notes
-    instructionStartRow + 44,
-    // Available Keys
-    instructionStartRow + 47 // Key Requirements
-    ];
+    var sectionHeaders = findSectionHeaders(instructions);
     sectionHeaders.forEach(function (rowIndex) {
-      var sectionRange = sheet.getRange(rowIndex, 1, 1, 1);
+      var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
       sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
     });
+
+    // Set instructions column width to be wide enough
+    sheet.setColumnWidth(8, 400);
 
     // Freeze header row
     sheet.setFrozenRows(1);
@@ -1982,39 +1990,32 @@ function restoreFromLastSave() {
     // Autofit config sheet after writing config table
     sheet.autoResizeColumns(1, 6);
 
-    // Write instructions well below the config table
-    var instructions = [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername)'], ['• calculated: Computed value that depends on other columns (e.g., averageRank)'], ['• display: Empty column for manual input (e.g., preferredAgents, notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display'], [''], ['AVAILABLE KEYS'], ['• riotID, discordUsername, currentRank, peakRank, lobbyHost, averageRank, timeSlots'], ['• pronouns, multipleGames, willSub, duo'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
-    var instructionStartRow = configData.length + 3;
-    var instructionRange = sheet.getRange(instructionStartRow, 1, instructions.length, 1);
+    // Set specific column widths for better readability
+    sheet.setColumnWidth(1, 120); // Column Key
+    sheet.setColumnWidth(2, 150); // Title
+    sheet.setColumnWidth(3, 80); // Width
+    sheet.setColumnWidth(4, 100); // Type
+    sheet.setColumnWidth(5, 80); // Display
+    sheet.setColumnWidth(6, 100); // Source Column
+
+    // Write instructions in column H (after the table)
+    var instructions = getInstructions();
+    var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
     instructionRange.setValues(instructions);
 
     // Style the instructions
-    var instructionHeaderRange = sheet.getRange(instructionStartRow, 1, 1, 1);
+    var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
     instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
 
     // Style section headers
-    var sectionHeaders = [instructionStartRow + 2,
-    // Quick Start
-    instructionStartRow + 9,
-    // Column Types
-    instructionStartRow + 13,
-    // How to Configure
-    instructionStartRow + 24,
-    // Simple Reordering
-    instructionStartRow + 30,
-    // Calculated Columns
-    instructionStartRow + 33,
-    // Examples
-    instructionStartRow + 39,
-    // Important Notes
-    instructionStartRow + 44,
-    // Available Keys
-    instructionStartRow + 47 // Key Requirements
-    ];
+    var sectionHeaders = findSectionHeaders(instructions);
     sectionHeaders.forEach(function (rowIndex) {
-      var sectionRange = sheet.getRange(rowIndex, 1, 1, 1);
+      var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
       sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
     });
+
+    // Set instructions column width to be wide enough
+    sheet.setColumnWidth(8, 400);
 
     // Freeze header row
     sheet.setFrozenRows(1);
