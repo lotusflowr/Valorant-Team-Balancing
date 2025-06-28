@@ -19,16 +19,18 @@ function findDiscordColumn(teamsSheet) {
         throw new Error('discordUsername column not configured. Please add it to your column configuration.');
     }
     
-    // Check both first and second rows for headers (time slots can push headers to row 2)
+    // Check first, second, and third rows for headers (time slots can push headers to row 2 or 3)
     const firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
     const secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    const thirdRow = teamsSheet.getRange(3, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
     
     Logger.log(`First row: ${JSON.stringify(firstRow)}`);
     Logger.log(`Second row: ${JSON.stringify(secondRow)}`);
+    Logger.log(`Third row: ${JSON.stringify(thirdRow)}`);
     Logger.log(`Looking for Discord column with title: "${discordConfig.title}"`);
     
-    // Try to find the Discord column in either row
-    const rows = [firstRow, secondRow];
+    // Try to find the Discord column in any of the first three rows
+    const rows = [firstRow, secondRow, thirdRow];
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
         const headerRow = rows[rowIndex];
         Logger.log(`Checking row ${rowIndex + 1} for Discord column...`);
@@ -44,7 +46,7 @@ function findDiscordColumn(teamsSheet) {
         }
     }
     
-    // If exact match not found, try partial matches in both rows
+    // If exact match not found, try partial matches in all three rows
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
         const headerRow = rows[rowIndex];
         Logger.log(`Checking row ${rowIndex + 1} for partial Discord matches...`);
@@ -58,7 +60,7 @@ function findDiscordColumn(teamsSheet) {
         }
     }
     
-    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet. Available headers in row 1: ${firstRow.join(', ')}. Available headers in row 2: ${secondRow.join(', ')}`);
+    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet. Available headers in row 1: ${firstRow.join(', ')}. Available headers in row 2: ${secondRow.join(', ')}. Available headers in row 3: ${thirdRow.join(', ')}`);
 }
 
 export function generateDiscordPings() {
@@ -85,12 +87,13 @@ export function generateDiscordPings() {
     const lobbyHostConfig = config.find(c => c.key === 'lobbyHost');
     let lobbyHostColIndex = null;
     if (lobbyHostConfig) {
-        // Check both rows for lobby host column
+        // Check first, second, and third rows for lobby host column
         const firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
         const secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+        const thirdRow = teamsSheet.getRange(3, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
         
-        for (let rowIndex = 0; rowIndex < 2; rowIndex++) {
-            const headerRow = rowIndex === 0 ? firstRow : secondRow;
+        for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
+            const headerRow = rowIndex === 0 ? firstRow : rowIndex === 1 ? secondRow : thirdRow;
             for (let i = 0; i < headerRow.length; i++) {
                 const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
                 if (headerValue.toLowerCase() === lobbyHostConfig.title.toLowerCase()) {
