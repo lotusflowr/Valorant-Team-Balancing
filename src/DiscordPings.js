@@ -19,32 +19,46 @@ function findDiscordColumn(teamsSheet) {
         throw new Error('discordUsername column not configured. Please add it to your column configuration.');
     }
     
-    // Get the header row to find the actual column index
-    const headerRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
-    Logger.log(`Header row: ${JSON.stringify(headerRow)}`);
+    // Check both first and second rows for headers (time slots can push headers to row 2)
+    const firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    const secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    
+    Logger.log(`First row: ${JSON.stringify(firstRow)}`);
+    Logger.log(`Second row: ${JSON.stringify(secondRow)}`);
     Logger.log(`Looking for Discord column with title: "${discordConfig.title}"`);
     
-    // Find the column with the discordUsername title
-    for (let i = 0; i < headerRow.length; i++) {
-        const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
-        Logger.log(`Column ${i}: "${headerValue}"`);
+    // Try to find the Discord column in either row
+    const rows = [firstRow, secondRow];
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const headerRow = rows[rowIndex];
+        Logger.log(`Checking row ${rowIndex + 1} for Discord column...`);
         
-        if (headerValue.toLowerCase() === discordConfig.title.toLowerCase()) {
-            Logger.log(`Found Discord column at index ${i} with title: ${headerValue}`);
-            return i;
+        for (let i = 0; i < headerRow.length; i++) {
+            const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+            Logger.log(`Column ${i}: "${headerValue}"`);
+            
+            if (headerValue.toLowerCase() === discordConfig.title.toLowerCase()) {
+                Logger.log(`Found Discord column at index ${i} with title: ${headerValue} in row ${rowIndex + 1}`);
+                return i;
+            }
         }
     }
     
-    // If exact match not found, try partial matches
-    for (let i = 0; i < headerRow.length; i++) {
-        const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
-        if (headerValue.toLowerCase().includes('discord') || headerValue.toLowerCase().includes('username')) {
-            Logger.log(`Found potential Discord column at index ${i} with title: ${headerValue}`);
-            return i;
+    // If exact match not found, try partial matches in both rows
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const headerRow = rows[rowIndex];
+        Logger.log(`Checking row ${rowIndex + 1} for partial Discord matches...`);
+        
+        for (let i = 0; i < headerRow.length; i++) {
+            const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+            if (headerValue.toLowerCase().includes('discord') || headerValue.toLowerCase().includes('username')) {
+                Logger.log(`Found potential Discord column at index ${i} with title: ${headerValue} in row ${rowIndex + 1}`);
+                return i;
+            }
         }
     }
     
-    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet. Available headers: ${headerRow.join(', ')}`);
+    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet. Available headers in row 1: ${firstRow.join(', ')}. Available headers in row 2: ${secondRow.join(', ')}`);
 }
 
 export function generateDiscordPings() {
@@ -66,11 +80,46 @@ export function generateDiscordPings() {
     const discordColIndex = findDiscordColumn(teamsSheet);
     Logger.log(`Discord column index: ${discordColIndex}`);
     
+    // Find the Lobby Host column if it exists
+    const config = getColumnConfig();
+    const lobbyHostConfig = config.find(c => c.key === 'lobbyHost');
+    let lobbyHostColIndex = null;
+    if (lobbyHostConfig) {
+        // Check both rows for lobby host column
+        const firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+        const secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+        
+        for (let rowIndex = 0; rowIndex < 2; rowIndex++) {
+            const headerRow = rowIndex === 0 ? firstRow : secondRow;
+            for (let i = 0; i < headerRow.length; i++) {
+                const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+                if (headerValue.toLowerCase() === lobbyHostConfig.title.toLowerCase()) {
+                    lobbyHostColIndex = i;
+                    Logger.log(`Found Lobby Host column at index ${i} with title: ${headerValue} in row ${rowIndex + 1}`);
+                    break;
+                }
+            }
+            if (lobbyHostColIndex !== null) break;
+        }
+    }
+    
+    // Determine where the actual data starts by looking for team headers
+    let dataStartRow = 1; // Start from row 2 (index 1) by default
+    for (let i = 0; i < Math.min(3, allData.length); i++) {
+        const row = allData[i];
+        if (row.some(cell => cell && cell.toString().trim().startsWith('Team'))) {
+            dataStartRow = i;
+            break;
+        }
+    }
+    Logger.log(`Data starts from row ${dataStartRow + 1}`);
+    
     let contentArray = [];
     let currentTimeSlot = null;
     let currentTeam = null;
     let inTeam = false;
     let inSubs = false;
+    let timeSlotLobbyHosts = new Map(); // Track lobby hosts for each time slot
     
     // Add title as first element
     const currentDate = new Date();
@@ -85,13 +134,14 @@ export function generateDiscordPings() {
     
     contentArray.push(`# Here are the teams for ${gameDay}, ${formattedDate}!`);
     
-    // Process each row in the Teams sheet
-    for (let i = 1; i < allData.length; i++) {
+    // Process each row in the Teams sheet, starting from the data start row
+    for (let i = dataStartRow; i < allData.length; i++) {
         const row = allData[i];
         const firstCell = row[0] ? row[0].toString().trim() : '';
         const discordValue = row[discordColIndex];
+        const lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
         
-        Logger.log(`Processing row ${i}: firstCell="${firstCell}", discordValue="${discordValue}"`);
+        Logger.log(`Processing row ${i + 1}: firstCell="${firstCell}", discordValue="${discordValue}", lobbyHostValue="${lobbyHostValue}"`);
         
         // Check for time slot headers (merged cells)
         if (firstCell && firstCell !== 'Discord' && !firstCell.startsWith('Team') && firstCell !== 'Substitutes' && !firstCell.startsWith('@')) {
@@ -99,6 +149,7 @@ export function generateDiscordPings() {
             if (!firstCell.includes('Total')) {
                 currentTimeSlot = firstCell;
                 contentArray.push(`## ${currentTimeSlot} Timeslot`);
+                timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
                 Logger.log(`Added time slot header: ${currentTimeSlot}`);
             }
             continue;
@@ -134,9 +185,30 @@ export function generateDiscordPings() {
             if (cleanDiscordValue) {
                 contentArray.push(`@${cleanDiscordValue}`);
                 Logger.log(`Added player mention: @${cleanDiscordValue}`);
+                
+                // Check if this player is a lobby host
+                if (lobbyHostValue && lobbyHostValue.toString().toLowerCase() === 'yes' && currentTimeSlot) {
+                    const lobbyHosts = timeSlotLobbyHosts.get(currentTimeSlot) || [];
+                    lobbyHosts.push(cleanDiscordValue);
+                    timeSlotLobbyHosts.set(currentTimeSlot, lobbyHosts);
+                    Logger.log(`Added lobby host: @${cleanDiscordValue} for time slot: ${currentTimeSlot}`);
+                }
             }
         }
     }
+    
+    // Add lobby host sections for each time slot
+    timeSlotLobbyHosts.forEach((lobbyHosts, timeSlot) => {
+        if (lobbyHosts.length > 0) {
+            // Find the time slot section and add lobby host info after it
+            const timeSlotIndex = contentArray.findIndex(line => line === `## ${timeSlot} Timeslot`);
+            if (timeSlotIndex !== -1) {
+                // Insert lobby host section after the time slot header
+                contentArray.splice(timeSlotIndex + 1, 0, `### Lobby Host: @${lobbyHosts[0]}`);
+                Logger.log(`Added lobby host section for ${timeSlot}: @${lobbyHosts[0]}`);
+            }
+        }
+    });
     
     const discordPingText = contentArray.join('\n');
     Logger.log(`Generated Discord pings text: ${discordPingText}`);
