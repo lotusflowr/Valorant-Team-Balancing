@@ -1,5 +1,10 @@
 /** @OnlyCurrentDoc */
 
+function getGameDay() {
+  var scriptProperties = PropertiesService.getScriptProperties();
+  return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Saturday if not set
+}
+
 // ============================================================================
 // CORE SETTINGS
 // ============================================================================
@@ -127,11 +132,6 @@ var STYLING = {
     "default": 21
   }
 };
-
-function getGameDay() {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Saturday if not set
-}
 
 function setConditionalFormatting(range) {
   var rules = [{
@@ -2004,44 +2004,7 @@ function setupConfigSheet(sheet, configData) {
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('Open Column Configuration', 'openColumnConfigurationSheet').addItem('Save & Apply Column Config', 'saveColumnConfiguration').addItem('Restore Default Config', 'restoreDefaultConfiguration').addItem('Restore from Last Save', 'restoreFromLastSave').addSeparator().addItem('Manage Game Day', 'manageGameDay').addItem('Clear Responses', 'clearResponses').addToUi();
-}
-
-/**
- * Creates a UI for managing column configuration
- */
-function manageColumnConfiguration() {
-  var ui = SpreadsheetApp.getUi();
-  var result = ui.prompt('Manage Column Configuration', "Column Configuration Management\n\n" + 'Choose an option:\n' + '[1]: Open Column Configuration Sheet\n' + '[2]: Save Current Configuration\n' + '[3]: Load Saved Configuration\n' + '[4]: Restore Default Configuration\n' + '[5]: Restore from Last Save\n' + '[6]: Cancel', ui.ButtonSet.OK_CANCEL);
-  if (result.getSelectedButton() == ui.Button.OK) {
-    var choice = result.getResponseText().trim().toUpperCase();
-    switch (choice) {
-      case '1':
-        openColumnConfigurationSheet();
-        break;
-      case '2':
-        saveColumnConfiguration();
-        break;
-      case '3':
-        loadColumnConfiguration();
-        break;
-      case '4':
-        restoreDefaultConfiguration();
-        break;
-      case '5':
-        restoreFromLastSave();
-        break;
-      case '6':
-        ui.alert('Cancelled', 'Column configuration management was cancelled.', ui.ButtonSet.OK);
-        break;
-      default:
-        ui.alert('Invalid Choice', 'Please enter 1, 2, 3, 4, 5, or 6.', ui.ButtonSet.OK);
-        manageColumnConfiguration();
-      // Recursive call to try again
-    }
-  } else {
-    ui.alert('Cancelled', 'Column configuration management was cancelled.', ui.ButtonSet.OK);
-  }
+  ui.createMenu('SCRIPTS').addItem('⚖️ Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('🔔 Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('⚙ Load Column Configuration', 'openColumnConfigurationSheet').addItem('💾 Save & Apply Config', 'saveColumnConfiguration').addItem('♻️ Restore from Last Save', 'restoreFromLastSave').addItem('🧹 Reset Config to Default', 'restoreDefaultConfiguration').addSeparator().addItem('📅 Change Game Day', 'changeGameDay').addItem('🧽 Clear Responses', 'clearResponses').addToUi();
 }
 
 // Import UI functions
@@ -2049,7 +2012,6 @@ function manageColumnConfiguration() {
 // Expose functions to the global scope for Google Apps Script
 var global = {};
 global.onOpen = onOpen;
-global.manageColumnConfiguration = manageColumnConfiguration;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
