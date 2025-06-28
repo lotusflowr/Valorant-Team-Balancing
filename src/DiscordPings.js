@@ -146,19 +146,20 @@ export function generateDiscordPings() {
         
         Logger.log(`Processing row ${i + 1}: firstCell="${firstCell}", discordValue="${discordValue}", lobbyHostValue="${lobbyHostValue}"`);
         
-        // Check for time slot headers (these are typically merged cells spanning multiple columns)
-        // Time slot headers are usually in the format like "6pm PST/9pm EST" and are in merged cells
-        if (firstCell && firstCell !== 'Discord' && !firstCell.startsWith('Team') && firstCell !== 'Substitutes' && !firstCell.startsWith('@')) {
-            // Check if this looks like a time slot header (contains time patterns)
-            const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
-            const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
-            
-            if (hasTimePattern && !firstCell.includes('Total')) {
-                currentTimeSlot = firstCell;
-                contentArray.push(`## ${currentTimeSlot} Timeslot`);
-                timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
-                Logger.log(`Added time slot header: ${currentTimeSlot}`);
-            }
+        // Skip empty rows
+        if (!firstCell) {
+            continue;
+        }
+        
+        // Check for time slot headers (these contain time patterns and are typically merged cells)
+        const timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
+        const hasTimePattern = timePatterns.some(pattern => firstCell.toLowerCase().includes(pattern));
+        
+        if (hasTimePattern && !firstCell.includes('Total')) {
+            currentTimeSlot = firstCell;
+            contentArray.push(`## ${currentTimeSlot} Timeslot`);
+            timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
+            Logger.log(`Added time slot header: ${currentTimeSlot}`);
             continue;
         }
         
@@ -181,12 +182,12 @@ export function generateDiscordPings() {
             continue;
         }
         
-        // Skip empty rows and headers
-        if (firstCell === '' || firstCell === 'Discord' || firstCell.includes('Total')) {
+        // Skip other headers and totals
+        if (firstCell === 'Discord' || firstCell.includes('Total')) {
             continue;
         }
         
-        // Add player mentions if we're in a team or substitutes section and have a Discord value
+        // If we have a Discord value and we're in a team or substitutes section, this is a player
         if ((inTeam || inSubs) && discordValue && discordValue !== 'Discord') {
             const cleanDiscordValue = discordValue.toString().replace(/^@/, '').trim();
             if (cleanDiscordValue) {

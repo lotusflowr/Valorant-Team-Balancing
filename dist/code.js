@@ -1309,20 +1309,21 @@ function generateDiscordPings() {
       var lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
       Logger.log("Processing row ".concat(_i3 + 1, ": firstCell=\"").concat(firstCell, "\", discordValue=\"").concat(discordValue, "\", lobbyHostValue=\"").concat(lobbyHostValue, "\""));
 
-      // Check for time slot headers (these are typically merged cells spanning multiple columns)
-      // Time slot headers are usually in the format like "6pm PST/9pm EST" and are in merged cells
-      if (firstCell && firstCell !== 'Discord' && !firstCell.startsWith('Team') && firstCell !== 'Substitutes' && !firstCell.startsWith('@')) {
-        // Check if this looks like a time slot header (contains time patterns)
-        var timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
-        var hasTimePattern = timePatterns.some(function (pattern) {
-          return firstCell.toLowerCase().includes(pattern);
-        });
-        if (hasTimePattern && !firstCell.includes('Total')) {
-          currentTimeSlot = firstCell;
-          contentArray.push("## ".concat(currentTimeSlot, " Timeslot"));
-          timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
-          Logger.log("Added time slot header: ".concat(currentTimeSlot));
-        }
+      // Skip empty rows
+      if (!firstCell) {
+        return 0; // continue
+      }
+
+      // Check for time slot headers (these contain time patterns and are typically merged cells)
+      var timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
+      var hasTimePattern = timePatterns.some(function (pattern) {
+        return firstCell.toLowerCase().includes(pattern);
+      });
+      if (hasTimePattern && !firstCell.includes('Total')) {
+        currentTimeSlot = firstCell;
+        contentArray.push("## ".concat(currentTimeSlot, " Timeslot"));
+        timeSlotLobbyHosts.set(currentTimeSlot, []); // Initialize lobby hosts for this time slot
+        Logger.log("Added time slot header: ".concat(currentTimeSlot));
         return 0; // continue
       }
 
@@ -1345,12 +1346,12 @@ function generateDiscordPings() {
         return 0; // continue
       }
 
-      // Skip empty rows and headers
-      if (firstCell === '' || firstCell === 'Discord' || firstCell.includes('Total')) {
+      // Skip other headers and totals
+      if (firstCell === 'Discord' || firstCell.includes('Total')) {
         return 0; // continue
       }
 
-      // Add player mentions if we're in a team or substitutes section and have a Discord value
+      // If we have a Discord value and we're in a team or substitutes section, this is a player
       if ((inTeam || inSubs) && discordValue && discordValue !== 'Discord') {
         var cleanDiscordValue = discordValue.toString().replace(/^@/, '').trim();
         if (cleanDiscordValue) {
