@@ -29,7 +29,7 @@ export function onOpen() {
         .addItem('⚖️ Balance Teams and Players', 'sortPlayersIntoBalancedTeams')
         .addItem('🔔 Generate Discord Pings', 'generateDiscordPings')
         .addSeparator()
-        .addItem('⚙ Load Column Configuration', 'openColumnConfigurationSheet')
+        .addItem('⚙️ Load Column Configuration', 'openColumnConfigurationSheet')
         .addItem('💾 Save & Apply Config', 'saveColumnConfiguration')
         .addItem('♻️ Restore from Last Save', 'restoreFromLastSave')
         .addItem('🧹 Reset Config to Default', 'restoreDefaultConfiguration')
