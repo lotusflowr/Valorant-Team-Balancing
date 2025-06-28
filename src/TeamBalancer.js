@@ -1,8 +1,7 @@
-import { TEAM_SIZE } from './config.js';
+import { TEAM_SIZE, OUTPUT_SHEET_CONFIG } from './config.js';
 
 import {
-  getTimeSlots,
-  getGameDay,
+  getGameDay
 } from './TimeSlotManager.js';
 
 import {
@@ -10,11 +9,54 @@ import {
   writeTeamsToSheet
 } from './PlayerData.js';
 
+function applyLatestColumnConfig() {
+    const configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+    if (configData) {
+        const configs = JSON.parse(configData);
+        OUTPUT_SHEET_CONFIG.columns = configs.map(config => ({
+            key: config.key,
+            width: config.width,
+            title: config.title,
+            type: config.type
+        }));
+    }
+}
+
+function getTimeSlotsFromConfig() {
+    const configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+    if (configData) {
+        const configs = JSON.parse(configData);
+        const timeSlotsConfig = configs.find(c => c.key === 'timeSlots');
+        if (timeSlotsConfig && timeSlotsConfig.sourceColumn) {
+            // Extract time slots from the source column
+            const ss = SpreadsheetApp.getActiveSpreadsheet();
+            const playersSheet = ss.getSheets()[0];
+            const columnIndex = timeSlotsConfig.sourceColumn.charCodeAt(0) - 65; // Convert A=0, B=1, etc.
+            
+            if (playersSheet.getLastRow() > 1) {
+                const timeSlotsRange = playersSheet.getRange(2, columnIndex + 1, playersSheet.getLastRow() - 1, 1);
+                const timeSlotValues = timeSlotsRange.getValues().flat().filter(Boolean);
+                
+                // Split any combined time slots and get unique values
+                const splitTimeSlots = timeSlotValues.flatMap(slot => 
+                    slot.toString().split(',').map(s => s.trim()).filter(s => s !== '')
+                );
+                
+                const uniqueTimeSlots = [...new Set(splitTimeSlots)];
+                Logger.log(`Extracted time slots from config: ${uniqueTimeSlots.join(', ')}`);
+                return uniqueTimeSlots;
+            }
+        }
+    }
+    return [];
+}
+
 export function sortPlayersIntoBalancedTeams() {
+    applyLatestColumnConfig();
     Logger.log("sortPlayersIntoBalancedTeams function started");
 
-    // Update Time and Day variables
-    const TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
+    // Get time slots from config instead of global TIME_SLOTS
+    const TIME_SLOTS = getTimeSlotsFromConfig();
     const GAME_DAY = getGameDay(); // Refresh GAME_DAY at the start of the function
 
     try {
@@ -46,7 +88,7 @@ export function sortPlayersIntoBalancedTeams() {
 }
 
 /***** TEAM BALANCING LOGIC FUNCTIONS *****/
-export function createOptimalTeams(players, TIME_SLOTS) {
+export function createOptimalTeams(players, timeSlots) {
     let result = {
         teams: [],
         substitutes: {}
@@ -54,21 +96,27 @@ export function createOptimalTeams(players, TIME_SLOTS) {
     let globalAssignedPlayers = new Set(); // Track players assigned across all time slots
     let tempAssignedPlayers = new Set(); // Track temporary assignments for current slot
 
-    // Ensure TIME_SLOTS is defined and not empty
-    if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
-        Logger.log("Error: TIME_SLOTS is undefined or empty");
+    // Check if we have time slots from config
+    if (!timeSlots || timeSlots.length === 0) {
+        Logger.log("No time slots configured - balancing all players as one group");
+        // Balance all players as one group
+        const slotResult = createOptimalTeamsForTimeSlot(players, "All Players", tempAssignedPlayers);
+        result.teams = slotResult.teams;
+        result.substitutes = { "All Players": slotResult.substitutes };
         return result;
     }
 
-    // Process each time slot
-    TIME_SLOTS.forEach((timeSlot) => {
+    Logger.log(`Processing ${timeSlots.length} time slots from config: ${timeSlots.join(', ')}`);
+
+    // Process each time slot from config
+    timeSlots.forEach((timeSlot) => {
         Logger.log(`\nProcessing time slot: ${timeSlot}`);
         let timeSlotPlayers = [];
 
         // First, add unassigned players who can play in this time slot
         const unassignedPlayers = players.filter(p => 
             !globalAssignedPlayers.has(p.discordUsername) && 
-            p.timeSlots.includes(timeSlot)
+            p.timeSlots && p.timeSlots.includes(timeSlot)
         );
         
         // Add unassigned players first
@@ -81,7 +129,7 @@ export function createOptimalTeams(players, TIME_SLOTS) {
         if (timeSlotPlayers.length < TEAM_SIZE * 2) {
             // Add players who have already played but can play multiple games
             players.forEach(player => {
-                if (player.timeSlots.includes(timeSlot) && 
+                if (player.timeSlots && player.timeSlots.includes(timeSlot) && 
                     globalAssignedPlayers.has(player.discordUsername) && 
                     !timeSlotPlayers.includes(player) &&
                     player.multipleGames === 'yes') {
@@ -185,7 +233,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
 
     // If we don't have at least 2 teams after filtering, return empty result
     if (teams.length < 2) {
-        Logger.log(`Not enough complete teams after filtering (need 2, have ${teams.length})`);
+        Logger.log(`Not enough complete teams after filtering (have ${teams.length}, need 2)`);
         return {
             teams: [],
             substitutes: players.filter(p => p.willSub === 'yes'),
@@ -193,60 +241,27 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         };
     }
 
-    // Remaining players become substitutes only if they marked willSub as 'yes'
-    const substitutes = [...unassignedPlayers, ...previouslyAssignedPlayers].slice(numTeams * TEAM_SIZE).filter(p => p.willSub === 'yes');
-    Logger.log(`\nSubstitutes: ${substitutes.map(p => p.discordUsername).join(', ')}`);
+    // Remaining players become substitutes
+    const assignedPlayerNames = teams.flatMap(team => team.players.map(p => p.discordUsername));
+    const substitutes = players.filter(p => !assignedPlayerNames.includes(p.discordUsername));
 
     // Optimize team balance
     const targetTotal = teams.reduce((sum, team) => sum + team.total, 0) / teams.length;
     Logger.log(`\nOptimizing team balance (target total: ${targetTotal.toFixed(2)})`);
-    let improved;
-    do {
-        improved = false;
-        let bestSwap = null;
-        let bestImprovement = 0;
-        // Try all possible valid swaps and pick the best one
+
+    for (let iteration = 0; iteration < 100; iteration++) {
+        let improved = false;
         for (let i = 0; i < teams.length; i++) {
             for (let j = i + 1; j < teams.length; j++) {
-                for (let p1 = 0; p1 < teams[i].players.length; p1++) {
-                    for (let p2 = 0; p2 < teams[j].players.length; p2++) {
-                        const player1 = teams[i].players[p1];
-                        const player2 = teams[j].players[p2];
-                        // Skip if either player doesn't want to play multiple games
-                        if (player1.multipleGames && player1.multipleGames !== 'yes') {
-                            continue;
-                        }
-                        if (player2.multipleGames && player2.multipleGames !== 'yes') {
-                            continue;
-                        }
-                        // Calculate new totals if we swap these players
-                        const newTotal1 = teams[i].total - Math.sqrt(player1.averageRank) + Math.sqrt(player2.averageRank);
-                        const newTotal2 = teams[j].total - Math.sqrt(player2.averageRank) + Math.sqrt(player1.averageRank);
-                        const currentDiff = Math.abs(teams[i].total - targetTotal) + Math.abs(teams[j].total - targetTotal);
-                        const newDiff = Math.abs(newTotal1 - targetTotal) + Math.abs(newTotal2 - targetTotal);
-                        const improvement = currentDiff - newDiff;
-                        if (improvement > bestImprovement) {
-                            bestImprovement = improvement;
-                            bestSwap = {i, j, p1, p2, newTotal1, newTotal2};
-                        }
-                    }
+                if (trySwapPlayers(teams[i], teams[j])) {
+                    improved = true;
                 }
             }
         }
-        if (bestSwap) {
-            // Perform the best swap found
-            const {i, j, p1, p2, newTotal1, newTotal2} = bestSwap;
-            const temp = teams[i].players[p1];
-            teams[i].players[p1] = teams[j].players[p2];
-            teams[j].players[p2] = temp;
-            teams[i].total = newTotal1;
-            teams[j].total = newTotal2;
-            improved = true;
-            Logger.log(`Swapped ${teams[i].players[p1].discordUsername} and ${teams[j].players[p2].discordUsername} between teams ${i + 1} and ${j + 1}`);
-        }
-    } while (improved);
+        if (!improved) break;
+    }
 
-    // Calculate team spread for logging
+    // Calculate final team spread for logging
     const teamSpread = getTeamSpread(teams);
     Logger.log(`\nFinal team spread for ${timeSlot}: ${teamSpread.toFixed(2)}`);
     teams.forEach((team, index) => {
@@ -259,6 +274,44 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         substitutes,
         assignedPlayers: new Set([...assignedPlayers, ...teams.flatMap(team => team.players.map(p => p.discordUsername))])
     };
+}
+
+function trySwapPlayers(team1, team2) {
+    for (let i = 0; i < team1.players.length; i++) {
+        for (let j = 0; j < team2.players.length; j++) {
+            const player1 = team1.players[i];
+            const player2 = team2.players[j];
+            
+            // Skip if either player doesn't want to play multiple games
+            if (player1.multipleGames && player1.multipleGames !== 'yes') {
+                continue;
+            }
+            if (player2.multipleGames && player2.multipleGames !== 'yes') {
+                continue;
+            }
+            
+            // Calculate new totals if we swap these players
+            const newTotal1 = team1.total - Math.sqrt(player1.averageRank) + Math.sqrt(player2.averageRank);
+            const newTotal2 = team2.total - Math.sqrt(player2.averageRank) + Math.sqrt(player1.averageRank);
+            
+            // Check if this swap improves balance
+            const currentDiff = Math.abs(team1.total - team2.total);
+            const newDiff = Math.abs(newTotal1 - newTotal2);
+            
+            if (newDiff < currentDiff) {
+                // Perform the swap
+                const temp = team1.players[i];
+                team1.players[i] = team2.players[j];
+                team2.players[j] = temp;
+                team1.total = newTotal1;
+                team2.total = newTotal2;
+                
+                Logger.log(`Swapped ${player1.discordUsername} and ${player2.discordUsername} between teams`);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function getTeamSpread(teams) {

@@ -11,6 +11,10 @@
             "functionName": "manageTimeSlots"
         },
         {
+            "menuName": "Manage Column Configuration",
+            "functionName": "manageColumnConfiguration"
+        },
+        {
             "menuName": "Sort and Balance Players",
             "functionName": "sortPlayersIntoBalancedTeams"
         },
@@ -21,6 +25,18 @@
         {
             "menuName": "Clear Responses",
             "functionName": "clearResponses"
+        },
+        {
+            "menuName": "Save Column Configuration",
+            "functionName": "saveColumnConfiguration"
+        },
+        {
+            "menuName": "Load Column Configuration",
+            "functionName": "loadColumnConfiguration"
+        },
+        {
+            "menuName": "Reset Column Configuration",
+            "functionName": "resetColumnConfiguration"
         }
     ]
   }

@@ -3,7 +3,7 @@ import { DEFAULT_TIME_SLOTS } from './config.js';
 export function getTimeSlots() {
     const scriptProperties = PropertiesService.getScriptProperties();
     const storedTimeSlots = scriptProperties.getProperty('TIME_SLOTS');
-    return storedTimeSlots ? JSON.parse(storedTimeSlots) : DEFAULT_TIME_SLOTS;
+    return storedTimeSlots ? JSON.parse(storedTimeSlots) : [];
 }
 
 export function setTimeSlots(newTimeSlots) {
