@@ -1,7 +1,5 @@
 import { DEFAULT_TIME_SLOTS, TIME_SLOTS_COLUMN, TEAM_SIZE } from './config.js';
-import {
-    getTimeSlots,
-} from './TimeSlotManager.js';
+import {getTimeSlots} from './TimeSlotManager.js';
 import {
   getRankValue,
   getRankName,
@@ -34,7 +32,9 @@ export function getPlayersData(sheet) {
         };
         player.averageRank = (player.currentRank + player.peakRank) / 2;
 
-        Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},\n        Current Rank: ${row[9]} (${player.currentRank}), Peak Rank: ${row[10]} (${player.peakRank}),\n        WillSub: ${player.willSub}, MultipleGames: ${player.multipleGames}, Time Slots: ${player.timeSlots}`);
+        Logger.log(`Player ${index + 1}: Discord: ${player.discordUsername},\n
+            Current Rank: ${getRankName(player.currentRank)} (${player.currentRank}), Peak Rank: ${getRankName(player.peakRank)} (${player.peakRank}),\n
+            WillSub: ${player.willSub}, MultipleGames: ${player.multipleGames}, Time Slots: ${player.timeSlots}`);
 
         return player;
     });

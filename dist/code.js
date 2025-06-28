@@ -63,65 +63,16 @@ function getContrastColor(hexcolor) {
   var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
+
+// Sequential list of ranks for easier rank-to-points conversion
+var RANK_ORDER = ["Iron 1", "Iron 2", "Iron 3", "Bronze 1", "Bronze 2", "Bronze 3", "Silver 1", "Silver 2", "Silver 3", "Gold 1", "Gold 2", "Gold 3", "Platinum 1", "Platinum 2", "Platinum 3", "Diamond 1", "Diamond 2", "Diamond 3", "Ascendant 1", "Ascendant 2", "Ascendant 3", "Immortal 1", "Immortal 2", "Immortal 3", "Radiant"];
 function getRankValue(rank) {
-  var ranks = {
-    "Iron 1": 1,
-    "Iron 2": 3,
-    "Iron 3": 6,
-    "Bronze 1": 10,
-    "Bronze 2": 12,
-    "Bronze 3": 15,
-    "Silver 1": 20,
-    "Silver 2": 22,
-    "Silver 3": 25,
-    "Gold 1": 30,
-    "Gold 2": 32,
-    "Gold 3": 35,
-    "Platinum 1": 40,
-    "Platinum 2": 42,
-    "Platinum 3": 45,
-    "Diamond 1": 50,
-    "Diamond 2": 52,
-    "Diamond 3": 55,
-    "Ascendant 1": 60,
-    "Ascendant 2": 65,
-    "Ascendant 3": 70,
-    "Immortal 1": 80,
-    "Immortal 2": 85,
-    "Immortal 3": 95,
-    "Radiant": 110
-  };
-  return ranks[rank] || 0;
+  var index = RANK_ORDER.indexOf(rank);
+  return index === -1 ? 0 : index + 1;
 }
 function getRankName(rankValue) {
-  var rankNames = {
-    1: "Iron 1",
-    3: "Iron 2",
-    6: "Iron 3",
-    10: "Bronze 1",
-    12: "Bronze 2",
-    15: "Bronze 3",
-    20: "Silver 1",
-    22: "Silver 2",
-    25: "Silver 3",
-    30: "Gold 1",
-    32: "Gold 2",
-    35: "Gold 3",
-    40: "Platinum 1",
-    42: "Platinum 2",
-    45: "Platinum 3",
-    50: "Diamond 1",
-    52: "Diamond 2",
-    55: "Diamond 3",
-    60: "Ascendant 1",
-    65: "Ascendant 2",
-    70: "Ascendant 3",
-    80: "Immortal 1",
-    85: "Immortal 2",
-    95: "Immortal 3",
-    110: "Radiant"
-  };
-  return rankNames[rankValue] || "Unranked";
+  // Values are one-indexed in getRankValue
+  return RANK_ORDER[rankValue - 1] || "Unranked";
 }
 function clearResponses() {
   // Get the active spreadsheet
@@ -231,7 +182,7 @@ function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
       var startRow = rowIndex + 3;
       var endRow = startRow + TEAM_SIZE - 1;
       var totalFormula = "SUM($F".concat(startRow, ":$F").concat(endRow, ")");
-      totalCell.setFormula("\"Total: \" & TEXT(".concat(totalFormula, ", \"0.0\")"));
+      totalCell.setFormula("=\"Total: \" & TEXT(".concat(totalFormula, ", \"0.0\")"));
       rowIndex++;
 
       // Write player header
