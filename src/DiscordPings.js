@@ -21,16 +21,30 @@ function findDiscordColumn(teamsSheet) {
     
     // Get the header row to find the actual column index
     const headerRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    Logger.log(`Header row: ${JSON.stringify(headerRow)}`);
+    Logger.log(`Looking for Discord column with title: "${discordConfig.title}"`);
     
     // Find the column with the discordUsername title
     for (let i = 0; i < headerRow.length; i++) {
-        if (headerRow[i] && headerRow[i].toString().trim().toLowerCase() === discordConfig.title.toLowerCase()) {
-            Logger.log(`Found Discord column at index ${i} with title: ${headerRow[i]}`);
+        const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+        Logger.log(`Column ${i}: "${headerValue}"`);
+        
+        if (headerValue.toLowerCase() === discordConfig.title.toLowerCase()) {
+            Logger.log(`Found Discord column at index ${i} with title: ${headerValue}`);
             return i;
         }
     }
     
-    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet.`);
+    // If exact match not found, try partial matches
+    for (let i = 0; i < headerRow.length; i++) {
+        const headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+        if (headerValue.toLowerCase().includes('discord') || headerValue.toLowerCase().includes('username')) {
+            Logger.log(`Found potential Discord column at index ${i} with title: ${headerValue}`);
+            return i;
+        }
+    }
+    
+    throw new Error(`Discord column with title "${discordConfig.title}" not found in Teams sheet. Available headers: ${headerRow.join(', ')}`);
 }
 
 export function generateDiscordPings() {

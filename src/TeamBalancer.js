@@ -114,10 +114,20 @@ export function createOptimalTeams(players, timeSlots) {
         let timeSlotPlayers = [];
 
         // First, add unassigned players who can play in this time slot
-        const unassignedPlayers = players.filter(p => 
-            !globalAssignedPlayers.has(p.discordUsername) && 
-            p.timeSlots && p.timeSlots.includes(timeSlot)
-        );
+        const unassignedPlayers = players.filter(p => {
+            if (!p.timeSlots || !p.timeSlots.toString().trim()) return false;
+            if (globalAssignedPlayers.has(p.discordUsername)) return false;
+            
+            // Split time slots by comma and check if any match
+            const playerTimeSlots = p.timeSlots.toString().split(',').map(s => s.trim());
+            const hasTimeSlot = playerTimeSlots.some(slot => 
+                slot.toLowerCase() === timeSlot.toLowerCase()
+            );
+            
+            return hasTimeSlot;
+        });
+        
+        Logger.log(`Found ${unassignedPlayers.length} unassigned players for ${timeSlot}: ${unassignedPlayers.map(p => p.discordUsername).join(', ')}`);
         
         // Add unassigned players first
         unassignedPlayers.forEach(player => {
@@ -127,16 +137,28 @@ export function createOptimalTeams(players, timeSlots) {
 
         // Only if we don't have enough players for teams, add players who have already played
         if (timeSlotPlayers.length < TEAM_SIZE * 2) {
+            Logger.log(`Not enough unassigned players (${timeSlotPlayers.length}), looking for multi-game players...`);
+            
             // Add players who have already played but can play multiple games
             players.forEach(player => {
-                if (player.timeSlots && player.timeSlots.includes(timeSlot) && 
-                    globalAssignedPlayers.has(player.discordUsername) && 
-                    !timeSlotPlayers.includes(player) &&
-                    player.multipleGames === 'yes') {
+                if (!player.timeSlots || !player.timeSlots.toString().trim()) return;
+                if (!globalAssignedPlayers.has(player.discordUsername)) return;
+                if (timeSlotPlayers.includes(player)) return;
+                if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') return;
+                
+                // Split time slots by comma and check if any match
+                const playerTimeSlots = player.timeSlots.toString().split(',').map(s => s.trim());
+                const hasTimeSlot = playerTimeSlots.some(slot => 
+                    slot.toLowerCase() === timeSlot.toLowerCase()
+                );
+                
+                if (hasTimeSlot) {
                     timeSlotPlayers.push(player);
-                    Logger.log(`Added multi-game player: ${player.discordUsername} (Rank: ${player.currentRank})`);
+                    Logger.log(`Added multi-game player: ${player.discordUsername} (Rank: ${player.currentRank}, multipleGames: ${player.multipleGames})`);
                 }
             });
+            
+            Logger.log(`After adding multi-game players: ${timeSlotPlayers.length} total players`);
         }
 
         // Create teams for this time slot
@@ -152,7 +174,7 @@ export function createOptimalTeams(players, timeSlots) {
 
         // Add players as substitutes if they've already played in a team OR are willing to sub
         result.substitutes[timeSlot] = slotResult.substitutes.filter(sub => 
-            globalAssignedPlayers.has(sub.discordUsername) || sub.willSub === 'yes'
+            globalAssignedPlayers.has(sub.discordUsername) || (sub.willSub && sub.willSub.toLowerCase() === 'yes')
         );
 
         result.teams = result.teams.concat(slotResult.teams);
@@ -165,9 +187,11 @@ export function createOptimalTeams(players, timeSlots) {
     // After processing all time slots, mark players as permanently assigned if they don't want to play multiple games
     result.teams.forEach(team => {
         team.players.forEach(player => {
-            if (player.multipleGames !== 'yes') {
+            if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') {
                 globalAssignedPlayers.add(player.discordUsername);
-                Logger.log(`Marked as permanently assigned (no multiple games): ${player.discordUsername}`);
+                Logger.log(`Marked as permanently assigned (no multiple games): ${player.discordUsername} (multipleGames: ${player.multipleGames})`);
+            } else {
+                Logger.log(`Player can play multiple games: ${player.discordUsername} (multipleGames: ${player.multipleGames})`);
             }
         });
     });
@@ -189,7 +213,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         Logger.log(`Not enough players for 2 teams (need ${TEAM_SIZE * 2} players, have ${numPlayers})`);
         return {
             teams: [],
-            substitutes: players.filter(p => p.willSub === 'yes'),
+            substitutes: players.filter(p => p.willSub && p.willSub.toLowerCase() === 'yes'),
             assignedPlayers: new Set()
         };
     }
@@ -236,7 +260,7 @@ export function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers
         Logger.log(`Not enough complete teams after filtering (have ${teams.length}, need 2)`);
         return {
             teams: [],
-            substitutes: players.filter(p => p.willSub === 'yes'),
+            substitutes: players.filter(p => p.willSub && p.willSub.toLowerCase() === 'yes'),
             assignedPlayers: new Set()
         };
     }
@@ -283,10 +307,10 @@ function trySwapPlayers(team1, team2) {
             const player2 = team2.players[j];
             
             // Skip if either player doesn't want to play multiple games
-            if (player1.multipleGames && player1.multipleGames !== 'yes') {
+            if (player1.multipleGames && player1.multipleGames.toLowerCase() !== 'yes') {
                 continue;
             }
-            if (player2.multipleGames && player2.multipleGames !== 'yes') {
+            if (player2.multipleGames && player2.multipleGames.toLowerCase() !== 'yes') {
                 continue;
             }
             

@@ -260,6 +260,7 @@ export function saveColumnConfiguration() {
             data.push(row);
         }
         Logger.log('Saving config rows: ' + JSON.stringify(data));
+        
         // Filter out empty rows and build configuration
         const configs = data
             .filter(row => row[0] && row[0].toString().trim())
@@ -272,8 +273,13 @@ export function saveColumnConfiguration() {
                 sourceColumn: (row[5] || '').toString().trim(),
                 description: (row[6] || '').toString().trim()
             }));
+        
+        Logger.log('Parsed configs: ' + JSON.stringify(configs));
+        
         // For output, only include columns with display=true
         const displayColumns = configs.filter(c => c.display);
+        Logger.log('Display columns: ' + JSON.stringify(displayColumns));
+        
         updateOutputSheetConfig(displayColumns);
         // Save all configs for logic use
         PropertiesService.getScriptProperties().setProperty('COLUMN_CONFIG', JSON.stringify(configs));
