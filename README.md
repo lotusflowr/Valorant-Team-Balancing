@@ -25,7 +25,7 @@ Automation scripts for Google Sheets, focused on balancing teams for custom Valo
 1. Clone the repository:
    ```bash
    git clone https://github.com/lotusflowr/Valorant-Team-Balancing.git
-   cd Galorants_scripts
+   cd Valorant-Team-Balancing
    ```
 
 2. Install dependencies:
