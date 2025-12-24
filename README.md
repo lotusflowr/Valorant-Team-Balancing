@@ -1,4 +1,4 @@
-# Galorants Scripts
+# Valorant Team Balancer
 
 Automation scripts for Google Sheets, focused on balancing teams for custom Valorant games.
 
