@@ -1,26 +1,137 @@
 /** @OnlyCurrentDoc */
 
-var DEFAULT_TIME_SLOTS = ["6pm PST/9pm EST", "7pm PST/10pm EST"];
-var TIME_SLOTS_COLUMN = 5;
-var TEAM_SIZE = 5;
-
-function getTimeSlots() {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  var storedTimeSlots = scriptProperties.getProperty('TIME_SLOTS');
-  return storedTimeSlots ? JSON.parse(storedTimeSlots) : DEFAULT_TIME_SLOTS;
-}
-function setTimeSlots(newTimeSlots) {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  scriptProperties.setProperty('TIME_SLOTS', JSON.stringify(newTimeSlots));
-}
 function getGameDay() {
   var scriptProperties = PropertiesService.getScriptProperties();
   return scriptProperties.getProperty('GAME_DAY') || "Saturday"; // Default to Saturday if not set
 }
-function setGameDay(newGameDay) {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  scriptProperties.setProperty('GAME_DAY', newGameDay);
-}
+
+// ============================================================================
+// CORE SETTINGS
+// ============================================================================
+var TEAM_SIZE = 5;
+
+// ============================================================================
+// OUTPUT SHEET CONFIGURATION (Teams Sheet)
+// ============================================================================
+var OUTPUT_SHEET_CONFIG = {
+  // Flexible column order - you can reorder these as needed
+  // Each entry defines: { key: 'dataKey', width: pixelWidth|'auto', title: 'Header Text', type: 'data|calculated|display' }
+  columns: [{
+    key: 'riotID',
+    width: 'auto',
+    title: 'Riot ID',
+    type: 'data'
+  }, {
+    key: 'discordUsername',
+    width: 'auto',
+    title: 'Discord',
+    type: 'data'
+  }, {
+    key: 'currentRank',
+    width: 'auto',
+    title: 'Current Rank',
+    type: 'data'
+  }, {
+    key: 'peakRank',
+    width: 'auto',
+    title: 'Peak Rank',
+    type: 'data'
+  }, {
+    key: 'lobbyHost',
+    width: 'auto',
+    title: 'Lobby Host',
+    type: 'data'
+  }, {
+    key: 'averageRank',
+    width: 'auto',
+    title: 'Avg Rank',
+    type: 'calculated'
+  }],
+  // Total number of columns (calculated automatically)
+  get totalColumns() {
+    return this.columns.length;
+  },
+  // Get column index by key (1-indexed for getRange)
+  getColumnIndex: function getColumnIndex(key) {
+    return this.columns.findIndex(function (col) {
+      return col.key === key;
+    }) + 1;
+  },
+  // Get column width by key
+  getColumnWidth: function getColumnWidth(key) {
+    var col = this.columns.find(function (col) {
+      return col.key === key;
+    });
+    return col ? col.width : 'auto'; // default to auto
+  },
+  // Get all column titles
+  getColumnTitles: function getColumnTitles() {
+    return this.columns.map(function (col) {
+      return col.title;
+    });
+  },
+  // Get data keys in order
+  getDataKeys: function getDataKeys() {
+    return this.columns.map(function (col) {
+      return col.key;
+    });
+  },
+  // Get column type by key
+  getColumnType: function getColumnType(key) {
+    var col = this.columns.find(function (col) {
+      return col.key === key;
+    });
+    return col ? col.type : 'data';
+  }
+};
+
+// ============================================================================
+// DISCORD PINGS CONFIGURATION
+// ============================================================================
+var DISCORD_PINGS_CONFIG = {
+  column: 1,
+  // Single column output
+  minWidth: 300,
+  rowHeight: 21
+};
+
+// ============================================================================
+// VISUAL STYLING
+// ============================================================================
+var STYLING = {
+  // Colors
+  colors: {
+    team: ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"],
+    header: "#4A86E8",
+    subHeader: "#A4C2F4",
+    substitute: "#F3F3F3",
+    discord: {
+      title: "#002B80",
+      timeslot: "#4A86E8",
+      lobbyHost: "#CFE2F3",
+      substitutes: "#A9D0F5"
+    },
+    text: {
+      white: "#ffffff",
+      black: "#000000"
+    },
+    border: "#000000"
+  },
+  // Font sizes
+  fontSize: {
+    title: 18,
+    timeslot: 14,
+    teamName: 12,
+    columnHeader: 11,
+    subHeader: 11,
+    player: 11,
+    "default": 11
+  },
+  // Row heights
+  rowHeight: {
+    "default": 21
+  }
+};
 
 function setConditionalFormatting(range) {
   var rules = [{
@@ -63,65 +174,12 @@ function getContrastColor(hexcolor) {
   var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
+
+// Sequential list of ranks for easier rank-to-points conversion
+var RANK_ORDER = ["Iron 1", "Iron 2", "Iron 3", "Bronze 1", "Bronze 2", "Bronze 3", "Silver 1", "Silver 2", "Silver 3", "Gold 1", "Gold 2", "Gold 3", "Platinum 1", "Platinum 2", "Platinum 3", "Diamond 1", "Diamond 2", "Diamond 3", "Ascendant 1", "Ascendant 2", "Ascendant 3", "Immortal 1", "Immortal 2", "Immortal 3", "Radiant"];
 function getRankValue(rank) {
-  var ranks = {
-    "Iron 1": 1,
-    "Iron 2": 3,
-    "Iron 3": 6,
-    "Bronze 1": 10,
-    "Bronze 2": 12,
-    "Bronze 3": 15,
-    "Silver 1": 20,
-    "Silver 2": 22,
-    "Silver 3": 25,
-    "Gold 1": 30,
-    "Gold 2": 32,
-    "Gold 3": 35,
-    "Platinum 1": 40,
-    "Platinum 2": 42,
-    "Platinum 3": 45,
-    "Diamond 1": 50,
-    "Diamond 2": 52,
-    "Diamond 3": 55,
-    "Ascendant 1": 60,
-    "Ascendant 2": 65,
-    "Ascendant 3": 70,
-    "Immortal 1": 80,
-    "Immortal 2": 85,
-    "Immortal 3": 95,
-    "Radiant": 110
-  };
-  return ranks[rank] || 0;
-}
-function getRankName(rankValue) {
-  var rankNames = {
-    1: "Iron 1",
-    3: "Iron 2",
-    6: "Iron 3",
-    10: "Bronze 1",
-    12: "Bronze 2",
-    15: "Bronze 3",
-    20: "Silver 1",
-    22: "Silver 2",
-    25: "Silver 3",
-    30: "Gold 1",
-    32: "Gold 2",
-    35: "Gold 3",
-    40: "Platinum 1",
-    42: "Platinum 2",
-    45: "Platinum 3",
-    50: "Diamond 1",
-    52: "Diamond 2",
-    55: "Diamond 3",
-    60: "Ascendant 1",
-    65: "Ascendant 2",
-    70: "Ascendant 3",
-    80: "Immortal 1",
-    85: "Immortal 2",
-    95: "Immortal 3",
-    110: "Radiant"
-  };
-  return rankNames[rankValue] || "Unranked";
+  var index = RANK_ORDER.indexOf(rank);
+  return index === -1 ? 0 : index + 1;
 }
 function clearResponses() {
   // Get the active spreadsheet
@@ -161,36 +219,384 @@ function clearResponses() {
   }
 }
 
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
+function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
+function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return (String )(t); }
+
+/**
+ * Utility class for writing data to sheets with flexible column configuration
+ */
+var ColumnWriter = /*#__PURE__*/function () {
+  function ColumnWriter(sheet) {
+    _classCallCheck(this, ColumnWriter);
+    this.sheet = sheet;
+    this.config = OUTPUT_SHEET_CONFIG;
+    this.loadDisplayConfig();
+  }
+
+  /**
+   * Load the display configuration from script properties
+   */
+  return _createClass(ColumnWriter, [{
+    key: "loadDisplayConfig",
+    value: function loadDisplayConfig() {
+      try {
+        var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+        if (configData) {
+          var configs = JSON.parse(configData);
+          // Filter to only display columns
+          this.displayConfigs = configs.filter(function (config) {
+            return config.display === true;
+          });
+          Logger.log("Loaded ".concat(this.displayConfigs.length, " display columns from config"));
+        } else {
+          // Fallback to OUTPUT_SHEET_CONFIG
+          this.displayConfigs = this.config.columns;
+          Logger.log("Using fallback config with ".concat(this.displayConfigs.length, " columns"));
+        }
+      } catch (error) {
+        Logger.log("Error loading display config: ".concat(error.message));
+        // Fallback to OUTPUT_SHEET_CONFIG
+        this.displayConfigs = this.config.columns;
+      }
+    }
+
+    /**
+     * Write a row of data using the configured column order (only display columns)
+     * @param {number} rowIndex - The row index to write to (1-indexed)
+     * @param {Object} playerData - The player data object
+     * @param {Object} options - Additional options for formatting
+     */
+  }, {
+    key: "writePlayerRow",
+    value: function writePlayerRow(rowIndex, playerData) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      var backgroundColor = options.backgroundColor,
+        _options$textColor = options.textColor,
+        textColor = _options$textColor === void 0 ? STYLING.colors.text.black : _options$textColor,
+        _options$fontSize = options.fontSize,
+        fontSize = _options$fontSize === void 0 ? STYLING.fontSize.player : _options$fontSize;
+
+      // Build the row data based on display config
+      var rowData = this.displayConfigs.map(function (config) {
+        var key = config.key;
+        switch (key) {
+          case 'riotID':
+            return playerData.riotID || '';
+          case 'discordUsername':
+            return playerData.discordUsername || '';
+          case 'timeSlots':
+            return Array.isArray(playerData.timeSlots) ? playerData.timeSlots.join(', ') : playerData.timeSlots || '';
+          case 'currentRank':
+            return playerData.currentRank || '';
+          case 'peakRank':
+            return playerData.peakRank || '';
+          case 'lobbyHost':
+            return playerData.lobbyHost || '';
+          case 'averageRank':
+            return playerData.averageRank ? playerData.averageRank.toFixed(2) : '';
+          case 'pronouns':
+            return playerData.pronouns || '';
+          case 'preferredAgents':
+            return playerData.preferredAgents || '';
+          case 'multipleGames':
+            return playerData.multipleGames || '';
+          case 'willSub':
+            return playerData.willSub || '';
+          case 'duo':
+            return playerData.duo || '';
+          case 'comments':
+            return playerData.comments || '';
+          default:
+            return playerData[key] || '';
+        }
+      });
+
+      // Write the data
+      var range = this.sheet.getRange(rowIndex, 1, 1, rowData.length);
+      range.setValues([rowData]);
+
+      // Apply formatting
+      if (backgroundColor) {
+        range.setBackground(backgroundColor);
+      }
+      range.setFontColor(textColor);
+      range.setFontSize(fontSize);
+      range.setHorizontalAlignment("center");
+      range.setVerticalAlignment("middle");
+      range.setBorder(true, true, true, true, true, true, STYLING.colors.border, SpreadsheetApp.BorderStyle.SOLID);
+      return range;
+    }
+
+    /**
+     * Write column headers using the configured titles
+     * @param {number} rowIndex - The row index to write headers to (1-indexed)
+     * @param {Object} options - Additional options for formatting
+     */
+  }, {
+    key: "writeHeaders",
+    value: function writeHeaders(rowIndex) {
+      var _this = this;
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var _options$backgroundCo = options.backgroundColor,
+        backgroundColor = _options$backgroundCo === void 0 ? STYLING.colors.header : _options$backgroundCo,
+        _options$textColor2 = options.textColor,
+        textColor = _options$textColor2 === void 0 ? STYLING.colors.text.white : _options$textColor2,
+        _options$fontSize2 = options.fontSize,
+        fontSize = _options$fontSize2 === void 0 ? STYLING.fontSize.columnHeader : _options$fontSize2,
+        _options$fontWeight = options.fontWeight,
+        fontWeight = _options$fontWeight === void 0 ? "bold" : _options$fontWeight,
+        _options$useAutoTitle = options.useAutoTitles,
+        useAutoTitles = _options$useAutoTitle === void 0 ? false : _options$useAutoTitle;
+      var headers;
+      if (useAutoTitles) {
+        // Try to get headers from the first row of the sheet
+        try {
+          var firstRow = this.sheet.getRange(1, 1, 1, this.displayConfigs.length).getValues()[0];
+          headers = firstRow.map(function (cell, index) {
+            if (cell && cell.toString().trim()) {
+              return cell.toString().trim();
+            } else {
+              // Fallback to configured title
+              return _this.displayConfigs[index] ? _this.displayConfigs[index].title : "Column ".concat(index + 1);
+            }
+          });
+        } catch (error) {
+          // Fallback to configured titles
+          headers = this.displayConfigs.map(function (config) {
+            return config.title;
+          });
+        }
+      } else {
+        headers = this.displayConfigs.map(function (config) {
+          return config.title;
+        });
+      }
+      var range = this.sheet.getRange(rowIndex, 1, 1, headers.length);
+      range.setValues([headers]);
+
+      // Apply formatting
+      range.setBackground(backgroundColor);
+      range.setFontColor(textColor);
+      range.setFontSize(fontSize);
+      range.setFontWeight(fontWeight);
+      range.setHorizontalAlignment("center");
+      range.setBorder(true, true, true, true, true, true, STYLING.colors.border, SpreadsheetApp.BorderStyle.SOLID);
+      return range;
+    }
+
+    /**
+     * Write a merged header (for time slots, team names, etc.)
+     * @param {number} rowIndex - The row index to write to (1-indexed)
+     * @param {string} text - The text to write
+     * @param {Object} options - Additional options for formatting
+     */
+  }, {
+    key: "writeMergedHeader",
+    value: function writeMergedHeader(rowIndex, text) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      var _options$backgroundCo2 = options.backgroundColor,
+        backgroundColor = _options$backgroundCo2 === void 0 ? STYLING.colors.header : _options$backgroundCo2,
+        _options$textColor3 = options.textColor,
+        textColor = _options$textColor3 === void 0 ? STYLING.colors.text.white : _options$textColor3,
+        _options$fontSize3 = options.fontSize,
+        fontSize = _options$fontSize3 === void 0 ? STYLING.fontSize.timeslot : _options$fontSize3,
+        _options$fontWeight2 = options.fontWeight,
+        fontWeight = _options$fontWeight2 === void 0 ? "bold" : _options$fontWeight2,
+        _options$mergeAll = options.mergeAll,
+        mergeAll = _options$mergeAll === void 0 ? true : _options$mergeAll;
+      var numColumns = mergeAll ? this.displayConfigs.length : this.displayConfigs.length - 1;
+      var range = this.sheet.getRange(rowIndex, 1, 1, numColumns);
+
+      // Always merge the range, regardless of mergeAll setting
+      range.merge();
+      range.setValue(text);
+      range.setBackground(backgroundColor);
+      range.setFontColor(textColor);
+      range.setFontSize(fontSize);
+      range.setFontWeight(fontWeight);
+      range.setHorizontalAlignment("center");
+      return range;
+    }
+
+    /**
+     * Set column widths based on configuration
+     */
+  }, {
+    key: "setColumnWidths",
+    value: function setColumnWidths() {
+      var _this2 = this;
+      this.displayConfigs.forEach(function (config, index) {
+        if (config.width !== 'auto') {
+          _this2.sheet.setColumnWidth(index + 1, config.width);
+        }
+      });
+    }
+
+    /**
+     * Auto-resize all columns (only for actual data columns)
+     */
+  }, {
+    key: "autoResizeColumns",
+    value: function autoResizeColumns() {
+      try {
+        var numColumns = this.displayConfigs.length;
+        this.sheet.autoResizeColumns(1, numColumns);
+
+        // Add 10px to each column for better spacing
+        for (var col = 1; col <= numColumns; col++) {
+          var currentWidth = this.sheet.getColumnWidth(col);
+          this.sheet.setColumnWidth(col, currentWidth + 10);
+        }
+        Logger.log("Auto-resized ".concat(numColumns, " columns in sheet: ").concat(this.sheet.getName()));
+      } catch (error) {
+        Logger.log("Error auto-resizing columns: ".concat(error.message));
+      }
+    }
+
+    /**
+     * Auto-resize rows
+     */
+  }, {
+    key: "autoResizeRows",
+    value: function autoResizeRows() {
+      try {
+        var lastRow = this.sheet.getLastRow();
+        if (lastRow > 0) {
+          this.sheet.autoResizeRows(1, lastRow);
+          Logger.log("Auto-resized ".concat(lastRow, " rows in sheet: ").concat(this.sheet.getName()));
+        }
+      } catch (error) {
+        Logger.log("Error auto-resizing rows: ".concat(error.message));
+      }
+    }
+
+    /**
+     * Get the total number of columns
+     */
+  }, {
+    key: "getTotalColumns",
+    value: function getTotalColumns() {
+      return this.displayConfigs.length;
+    }
+
+    /**
+     * Get column index by data key (1-indexed)
+     */
+  }, {
+    key: "getColumnIndex",
+    value: function getColumnIndex(key) {
+      return this.displayConfigs.findIndex(function (config) {
+        return config.key === key;
+      }) + 1;
+    }
+
+    /**
+     * Get column width by data key
+     */
+  }, {
+    key: "getColumnWidth",
+    value: function getColumnWidth(key) {
+      var config = this.displayConfigs.find(function (config) {
+        return config.key === key;
+      });
+      return config ? config.width : 'auto';
+    }
+
+    /**
+     * Get column type by data key
+     */
+  }, {
+    key: "getColumnType",
+    value: function getColumnType(key) {
+      var config = this.displayConfigs.find(function (config) {
+        return config.key === key;
+      });
+      return config ? config.type : null;
+    }
+
+    /**
+     * Get all available column keys
+     */
+  }, {
+    key: "getAvailableKeys",
+    value: function getAvailableKeys() {
+      return this.displayConfigs.map(function (config) {
+        return config.key;
+      });
+    }
+
+    /**
+     * Check if a key exists in the configuration
+     */
+  }, {
+    key: "hasKey",
+    value: function hasKey(key) {
+      return this.displayConfigs.some(function (config) {
+        return config.key === key;
+      });
+    }
+  }]);
+}();
+
+/**
+ * Factory function to create a ColumnWriter instance
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The sheet to write to
+ * @returns {ColumnWriter} - A new ColumnWriter instance
+ */
+function createColumnWriter(sheet) {
+  return new ColumnWriter(sheet);
+}
+
+function getColumnConfig$1() {
+  var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  if (configData) {
+    return JSON.parse(configData);
+  }
+  return [];
+}
+function getInputColumnIndex(key, config) {
+  var entry = config.find(function (c) {
+    return c.key === key;
+  });
+  if (!entry || !entry.sourceColumn || entry.sourceColumn === 'N/A') return null;
+  // Convert column letter to 0-based index
+  return entry.sourceColumn.charCodeAt(0) - 65;
+}
 function getPlayersData(sheet) {
-  var TIME_SLOTS = getTimeSlots();
+  var config = getColumnConfig$1();
   var data = sheet.getDataRange().getValues();
   Logger.log("Raw data: ".concat(JSON.stringify(data.slice(0, 2))));
   if (data.length < 2) {
     Logger.log("Not enough data in the sheet. Make sure there's at least one player entry.");
     return [];
   }
-  var players = data.slice(1).map(function (row, index) {
-    var player = {
-      timestamp: row[0],
-      discordUsername: row[1],
-      riotID: row[2],
-      pronouns: row[3],
-      timeSlots: row[TIME_SLOTS_COLUMN - 1] ? row[TIME_SLOTS_COLUMN - 1].toString().split(',').map(function (s) {
-        return s.trim();
-      }) : TIME_SLOTS,
-      multipleGames: row[5],
-      substitute: row[6].toString().toLowerCase() === 'yes',
-      lobbyHost: row[7],
-      duo: row[8],
-      currentRank: getRankValue(row[9]),
-      peakRank: getRankValue(row[10])
-    };
-    player.averageRank = (player.currentRank + player.peakRank) / 2;
-    Logger.log("Player ".concat(index + 1, ": Discord: ").concat(player.discordUsername, ",\n        Current Rank: ").concat(row[9], " (").concat(player.currentRank, "), Peak Rank: ").concat(row[10], " (").concat(player.peakRank, "),\n        Substitute: ").concat(player.substitute, ", Time Slots: ").concat(player.timeSlots));
+  var players = data.slice(1).map(function (row) {
+    var player = {};
+    config.forEach(function (col) {
+      var idx = getInputColumnIndex(col.key, config);
+      if (idx !== null && idx < row.length) {
+        player[col.key] = row[idx];
+      }
+    });
+    // Add calculated fields
+    if ('currentRank' in player && 'peakRank' in player) {
+      player.averageRank = (getRankValue(player.currentRank) + getRankValue(player.peakRank)) / 2;
+    }
     return player;
   });
+  Logger.log('Parsed players: ' + JSON.stringify(players));
+  if (!players.length) {
+    Logger.log('No valid players found. Raw data: ' + JSON.stringify(data));
+    Logger.log('Config: ' + JSON.stringify(config));
+  }
   var validPlayers = players.filter(function (player) {
-    var isValid = player.currentRank > 0 || player.peakRank > 0;
+    var current = getRankValue(player.currentRank);
+    var peak = getRankValue(player.peakRank);
+    var isValid = current > 0 || peak > 0;
     if (!isValid) {
       Logger.log("Filtered out player: ".concat(player.discordUsername, " (Current Rank: ").concat(player.currentRank, ", Peak Rank: ").concat(player.peakRank, ")"));
     }
@@ -204,93 +610,213 @@ function getPlayersData(sheet) {
 function writeTeamsToSheet(sheet, teamsAndSubs, TIME_SLOTS) {
   sheet.clear();
   var rowIndex = 0;
-  var teamColors = ["#FFF2CC", "#D9EAD3", "#C9DAF8", "#F4CCCC", "#FFD966", "#B6D7A8", "#9FC5E8", "#EA9999"];
-  var headerColor = "#4A86E8";
-  var subHeaderColor = "#A4C2F4";
-  TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
-    // Write time slot header
-    sheet.getRange(rowIndex + 1, 1, 1, 6).merge().setValue(timeSlot).setFontWeight("bold").setBackground(headerColor).setFontColor("#ffffff").setFontSize(14).setHorizontalAlignment("center");
-    rowIndex++;
-    var timeSlotTeams = teamsAndSubs.teams.filter(function (team) {
-      return team.timeSlot === timeSlot;
-    });
-    timeSlotTeams.forEach(function (team, teamIndex) {
-      var teamColor = teamColors[(slotIndex * 4 + teamIndex) % teamColors.length];
+
+  // Create column writer for flexible column handling
+  var writer = createColumnWriter(sheet);
+
+  // Check if we have time slot-based teams or single group teams
+  var hasTimeSlots = teamsAndSubs.teams.some(function (team) {
+    return team.timeSlot !== "All Players";
+  });
+  if (!hasTimeSlots) {
+    // Single group - no time slot headers
+    Logger.log("Writing teams without time slot headers");
+    teamsAndSubs.teams.forEach(function (team, teamIndex) {
+      var teamColor = STYLING.colors.team[teamIndex % STYLING.colors.team.length];
       var sortedPlayers = team.players.sort(function (a, b) {
         return b.averageRank - a.averageRank;
-      }); // Sort players by AVG Rank
+      });
 
-      // Write team header
-      sheet.getRange(rowIndex + 1, 1, 1, 5).merge().setValue(team.name).setFontWeight("bold").setBackground(teamColor).setFontColor("#000000").setFontSize(12).setHorizontalAlignment("center");
+      // Write team header (merged, leaving space for total)
+      writer.writeMergedHeader(rowIndex + 1, team.name, {
+        backgroundColor: teamColor,
+        textColor: STYLING.colors.text.black,
+        fontSize: STYLING.fontSize.teamName,
+        mergeAll: false // Don't merge the last column (for total)
+      });
 
-      // Add Team Total in the same row
-      var totalCell = sheet.getRange(rowIndex + 1, 6);
-      totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor("#000000").setFontSize(12).setHorizontalAlignment("right");
+      // Add Team Total in the last column
+      var totalCell = sheet.getRange(rowIndex + 1, writer.getTotalColumns());
+      totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamName).setHorizontalAlignment("right");
 
-      // Add formula for team total using column and row references
+      // Add formula for team total
       var startRow = rowIndex + 3;
       var endRow = startRow + TEAM_SIZE - 1;
-      var totalFormula = "SUM($F".concat(startRow, ":$F").concat(endRow, ")");
-      totalCell.setFormula("\"Total: \" & TEXT(".concat(totalFormula, ", \"0.0\")"));
+      var avgRankCol = writer.getColumnIndex('averageRank');
+      var totalFormula = "SUM(".concat(String.fromCharCode(64 + avgRankCol)).concat(startRow, ":").concat(String.fromCharCode(64 + avgRankCol)).concat(endRow, ")");
+      totalCell.setFormula("=\"Total: \" & TEXT(".concat(totalFormula, ", \"0.0\")"));
       rowIndex++;
 
-      // Write player header
-      var headerRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
-      headerRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]]).setFontWeight("bold").setBackground(teamColor).setFontColor("#000000").setHorizontalAlignment("center");
+      // Write player headers
+      writer.writeHeaders(rowIndex + 1, {
+        backgroundColor: teamColor,
+        textColor: STYLING.colors.text.black,
+        fontSize: STYLING.fontSize.columnHeader
+      });
       rowIndex++;
 
       // Write player data
       sortedPlayers.forEach(function (player) {
-        var playerRow = [player.discordUsername, player.riotID, getRankName(player.currentRank), getRankName(player.peakRank), player.lobbyHost, player.averageRank.toFixed(2)];
-        var range = sheet.getRange(rowIndex + 1, 1, 1, playerRow.length);
-        range.setValues([playerRow]).setBackground(teamColor);
+        writer.writePlayerRow(rowIndex + 1, player, {
+          backgroundColor: teamColor,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.player
+        });
 
-        // Set alignment
-        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
-        range.setVerticalAlignment("middle");
-        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
-        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
+        // Apply conditional formatting to rank columns
+        var currentRankCol = writer.getColumnIndex('currentRank');
+        writer.getColumnIndex('peakRank');
+        var rankRange = sheet.getRange(rowIndex + 1, currentRankCol, 1, 2);
+        setConditionalFormatting(rankRange);
         rowIndex++;
       });
       rowIndex++; // Add an empty row between teams
     });
 
-    // Write substitutes for this time slot
-    var substitutes = teamsAndSubs.substitutes[timeSlot];
+    // Write substitutes if any
+    var substitutes = teamsAndSubs.substitutes["All Players"];
     if (substitutes && substitutes.length > 0) {
       // Write substitutes header
-      sheet.getRange(rowIndex + 1, 1, 1, 6).merge().setValue("Substitutes").setFontWeight("bold").setBackground(subHeaderColor).setFontColor("#000000").setFontSize(12).setHorizontalAlignment("center");
+      writer.writeMergedHeader(rowIndex + 1, 'Substitutes', {
+        backgroundColor: STYLING.colors.subHeader,
+        textColor: STYLING.colors.text.black,
+        fontSize: STYLING.fontSize.subHeader
+      });
       rowIndex++;
 
-      // Write substitutes column headers
-      var subHeaderRange = sheet.getRange(rowIndex + 1, 1, 1, 6);
-      subHeaderRange.setValues([["Discord", "Riot ID", "Current Rank", "Peak Rank", "Lobby Host", "Avg Rank"]]).setFontWeight("bold").setBackground(subHeaderColor).setFontColor("#000000").setHorizontalAlignment("center");
+      // Write substitutes headers
+      writer.writeHeaders(rowIndex + 1, {
+        backgroundColor: STYLING.colors.subHeader,
+        textColor: STYLING.colors.text.black,
+        fontSize: STYLING.fontSize.subHeader
+      });
       rowIndex++;
 
       // Write substitute player data
       substitutes.forEach(function (sub) {
-        var subRow = [sub.discordUsername, sub.riotID, getRankName(sub.currentRank), getRankName(sub.peakRank), sub.lobbyHost, sub.averageRank.toFixed(2)];
-        var range = sheet.getRange(rowIndex + 1, 1, 1, subRow.length);
-        range.setValues([subRow]).setBackground("#F3F3F3");
+        writer.writePlayerRow(rowIndex + 1, sub, {
+          backgroundColor: STYLING.colors.substitute,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.player
+        });
 
-        // Set alignment
-        range.setHorizontalAlignment("center").setVerticalAlignment("middle");
-        range.setVerticalAlignment("middle");
-        range.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
-        setConditionalFormatting(range.offset(0, 2, 1, 2)); // Apply conditional formatting to Current Rank and Peak Rank
+        // Apply conditional formatting to rank columns
+        var currentRankCol = writer.getColumnIndex('currentRank');
+        writer.getColumnIndex('peakRank');
+        var rankRange = sheet.getRange(rowIndex + 1, currentRankCol, 1, 2);
+        setConditionalFormatting(rankRange);
         rowIndex++;
       });
-      rowIndex++; // Add an empty row after substitutes
     }
-    rowIndex += 2; // Add some space before the next time slot
-  });
+  } else {
+    // Time slot-based teams - use existing logic
+    TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
+      // Write time slot header
+      writer.writeMergedHeader(rowIndex + 1, timeSlot, {
+        backgroundColor: STYLING.colors.header,
+        textColor: STYLING.colors.text.white,
+        fontSize: STYLING.fontSize.timeslot
+      });
+      rowIndex++;
+      var timeSlotTeams = teamsAndSubs.teams.filter(function (team) {
+        return team.timeSlot === timeSlot;
+      });
+      timeSlotTeams.forEach(function (team, teamIndex) {
+        var teamColor = STYLING.colors.team[(slotIndex * 4 + teamIndex) % STYLING.colors.team.length];
+        var sortedPlayers = team.players.sort(function (a, b) {
+          return b.averageRank - a.averageRank;
+        });
 
-  // Adjust column widths
-  sheet.autoResizeColumns(1, 6);
-  sheet.setColumnWidth(1, 150); // Set Discord column width
-  sheet.setColumnWidth(2, 150); // Set Riot ID column width
-  sheet.setColumnWidth(6, 100); // Set Avg Rank column width
-  sheet.setFrozenRows(1);
+        // Write team header (merged, leaving space for total)
+        writer.writeMergedHeader(rowIndex + 1, team.name, {
+          backgroundColor: teamColor,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.teamName,
+          mergeAll: false // Don't merge the last column (for total)
+        });
+
+        // Add Team Total in the last column
+        var totalCell = sheet.getRange(rowIndex + 1, writer.getTotalColumns());
+        totalCell.setFontWeight("bold").setBackground(teamColor).setFontColor(STYLING.colors.text.black).setFontSize(STYLING.fontSize.teamName).setHorizontalAlignment("right");
+
+        // Add formula for team total
+        var startRow = rowIndex + 3;
+        var endRow = startRow + TEAM_SIZE - 1;
+        var avgRankCol = writer.getColumnIndex('averageRank');
+        var totalFormula = "SUM(".concat(String.fromCharCode(64 + avgRankCol)).concat(startRow, ":").concat(String.fromCharCode(64 + avgRankCol)).concat(endRow, ")");
+        totalCell.setFormula("=\"Total: \" & TEXT(".concat(totalFormula, ", \"0.0\")"));
+        rowIndex++;
+
+        // Write player headers
+        writer.writeHeaders(rowIndex + 1, {
+          backgroundColor: teamColor,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.columnHeader
+        });
+        rowIndex++;
+
+        // Write player data
+        sortedPlayers.forEach(function (player) {
+          writer.writePlayerRow(rowIndex + 1, player, {
+            backgroundColor: teamColor,
+            textColor: STYLING.colors.text.black,
+            fontSize: STYLING.fontSize.player
+          });
+
+          // Apply conditional formatting to rank columns
+          var currentRankCol = writer.getColumnIndex('currentRank');
+          writer.getColumnIndex('peakRank');
+          var rankRange = sheet.getRange(rowIndex + 1, currentRankCol, 1, 2);
+          setConditionalFormatting(rankRange);
+          rowIndex++;
+        });
+        rowIndex++; // Add an empty row between teams
+      });
+
+      // Write substitutes for this time slot
+      var substitutes = teamsAndSubs.substitutes[timeSlot];
+      if (substitutes && substitutes.length > 0) {
+        // Write substitutes header
+        writer.writeMergedHeader(rowIndex + 1, 'Substitutes', {
+          backgroundColor: STYLING.colors.subHeader,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.subHeader
+        });
+        rowIndex++;
+
+        // Write substitutes headers
+        writer.writeHeaders(rowIndex + 1, {
+          backgroundColor: STYLING.colors.subHeader,
+          textColor: STYLING.colors.text.black,
+          fontSize: STYLING.fontSize.subHeader
+        });
+        rowIndex++;
+
+        // Write substitute player data
+        substitutes.forEach(function (sub) {
+          writer.writePlayerRow(rowIndex + 1, sub, {
+            backgroundColor: STYLING.colors.substitute,
+            textColor: STYLING.colors.text.black,
+            fontSize: STYLING.fontSize.player
+          });
+
+          // Apply conditional formatting to rank columns
+          var currentRankCol = writer.getColumnIndex('currentRank');
+          writer.getColumnIndex('peakRank');
+          var rankRange = sheet.getRange(rowIndex + 1, currentRankCol, 1, 2);
+          setConditionalFormatting(rankRange);
+          rowIndex++;
+        });
+        rowIndex++; // Add an empty row after substitutes
+      }
+    });
+  }
+
+  // Set column widths and auto-resize
+  writer.setColumnWidths();
+  // After all data/formatting is done, autofit only the data columns
+  writer.autoResizeColumns();
+  writer.autoResizeRows();
 }
 
 function _toConsumableArray$2(r) { return _arrayWithoutHoles$2(r) || _iterableToArray$2(r) || _unsupportedIterableToArray$2(r) || _nonIterableSpread$2(); }
@@ -299,11 +825,59 @@ function _unsupportedIterableToArray$2(r, a) { if (r) { if ("string" == typeof r
 function _iterableToArray$2(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles$2(r) { if (Array.isArray(r)) return _arrayLikeToArray$2(r); }
 function _arrayLikeToArray$2(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function applyLatestColumnConfig() {
+  var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  if (configData) {
+    var configs = JSON.parse(configData);
+    OUTPUT_SHEET_CONFIG.columns = configs.map(function (config) {
+      return {
+        key: config.key,
+        width: config.width,
+        title: config.title,
+        type: config.type
+      };
+    });
+  }
+}
+function getTimeSlotsFromConfig() {
+  var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  if (configData) {
+    var configs = JSON.parse(configData);
+    var timeSlotsConfig = configs.find(function (c) {
+      return c.key === 'timeSlots';
+    });
+    if (timeSlotsConfig && timeSlotsConfig.sourceColumn) {
+      // Extract time slots from the source column
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var playersSheet = ss.getSheets()[0];
+      var columnIndex = timeSlotsConfig.sourceColumn.charCodeAt(0) - 65; // Convert A=0, B=1, etc.
+
+      if (playersSheet.getLastRow() > 1) {
+        var timeSlotsRange = playersSheet.getRange(2, columnIndex + 1, playersSheet.getLastRow() - 1, 1);
+        var timeSlotValues = timeSlotsRange.getValues().flat().filter(Boolean);
+
+        // Split any combined time slots and get unique values
+        var splitTimeSlots = timeSlotValues.flatMap(function (slot) {
+          return slot.toString().split(',').map(function (s) {
+            return s.trim();
+          }).filter(function (s) {
+            return s !== '';
+          });
+        });
+        var uniqueTimeSlots = _toConsumableArray$2(new Set(splitTimeSlots));
+        Logger.log("Extracted time slots from config: ".concat(uniqueTimeSlots.join(', ')));
+        return uniqueTimeSlots;
+      }
+    }
+  }
+  return [];
+}
 function sortPlayersIntoBalancedTeams() {
+  applyLatestColumnConfig();
   Logger.log("sortPlayersIntoBalancedTeams function started");
 
-  // Update Time and Day variables
-  var TIME_SLOTS = getTimeSlots(); // Refresh TIME_SLOTS at the start of the function
+  // Get time slots from config instead of global TIME_SLOTS
+  var TIME_SLOTS = getTimeSlotsFromConfig();
   getGameDay(); // Refresh GAME_DAY at the start of the function
 
   try {
@@ -328,100 +902,209 @@ function sortPlayersIntoBalancedTeams() {
 }
 
 /***** TEAM BALANCING LOGIC FUNCTIONS *****/
-function createOptimalTeams(players, TIME_SLOTS) {
+function createOptimalTeams(players, timeSlots) {
   var result = {
     teams: [],
     substitutes: {}
   };
-  var assignedPlayers = new Set();
+  var globalAssignedPlayers = new Set(); // Track players assigned across all time slots
+  var tempAssignedPlayers = new Set(); // Track temporary assignments for current slot
 
-  // Ensure TIME_SLOTS is defined and not empty
-  if (!TIME_SLOTS || TIME_SLOTS.length === 0) {
-    Logger.log("Error: TIME_SLOTS is undefined or empty");
+  // Check if we have time slots from config
+  if (!timeSlots || timeSlots.length === 0) {
+    Logger.log("No time slots configured - balancing all players as one group");
+    // Balance all players as one group
+    var slotResult = createOptimalTeamsForTimeSlot(players, "All Players", tempAssignedPlayers);
+    result.teams = slotResult.teams;
+    result.substitutes = {
+      "All Players": slotResult.substitutes
+    };
     return result;
   }
+  Logger.log("Processing ".concat(timeSlots.length, " time slots from config: ").concat(timeSlots.join(', ')));
 
-  // Sort players based on the number of available time slots (ascending)
-  players.sort(function (a, b) {
-    return a.timeSlots.length - b.timeSlots.length;
-  });
-
-  // Process each time slot
-  TIME_SLOTS.forEach(function (timeSlot, slotIndex) {
+  // Process each time slot from config
+  timeSlots.forEach(function (timeSlot) {
+    Logger.log("\nProcessing time slot: ".concat(timeSlot));
     var timeSlotPlayers = [];
 
-    // First, add players who can only play in this time slot
-    players.forEach(function (player) {
-      if (player.timeSlots.length === 1 && player.timeSlots[0] === timeSlot && !assignedPlayers.has(player.discordUsername)) {
-        timeSlotPlayers.push(player);
-      }
+    // First, add unassigned players who can play in this time slot
+    var unassignedPlayers = players.filter(function (p) {
+      if (!p.timeSlots || !p.timeSlots.toString().trim()) return false;
+      if (globalAssignedPlayers.has(p.discordUsername)) return false;
+
+      // Split time slots by comma and check if any match
+      var playerTimeSlots = p.timeSlots.toString().split(',').map(function (s) {
+        return s.trim();
+      });
+      var hasTimeSlot = playerTimeSlots.some(function (slot) {
+        return slot.toLowerCase() === timeSlot.toLowerCase();
+      });
+      return hasTimeSlot;
+    });
+    Logger.log("Found ".concat(unassignedPlayers.length, " unassigned players for ").concat(timeSlot, ": ").concat(unassignedPlayers.map(function (p) {
+      return p.discordUsername;
+    }).join(', ')));
+
+    // Add unassigned players first
+    unassignedPlayers.forEach(function (player) {
+      timeSlotPlayers.push(player);
+      Logger.log("Added unassigned player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ")"));
     });
 
-    // Then, add players who haven't played yet and can play in this slot
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && !assignedPlayers.has(player.discordUsername) && !timeSlotPlayers.includes(player)) {
-        timeSlotPlayers.push(player);
-      }
-    });
+    // Only if we don't have enough players for teams, add players who have already played
+    if (timeSlotPlayers.length < TEAM_SIZE * 2) {
+      Logger.log("Not enough unassigned players (".concat(timeSlotPlayers.length, "), looking for multi-game players..."));
 
-    // Finally, add any remaining available players
-    players.forEach(function (player) {
-      if (player.timeSlots.includes(timeSlot) && !timeSlotPlayers.includes(player)) {
-        timeSlotPlayers.push(player);
-      }
-    });
+      // Add players who have already played but can play multiple games
+      players.forEach(function (player) {
+        if (!player.timeSlots || !player.timeSlots.toString().trim()) return;
+        if (!globalAssignedPlayers.has(player.discordUsername)) return;
+        if (timeSlotPlayers.includes(player)) return;
+        if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') return;
+
+        // Split time slots by comma and check if any match
+        var playerTimeSlots = player.timeSlots.toString().split(',').map(function (s) {
+          return s.trim();
+        });
+        var hasTimeSlot = playerTimeSlots.some(function (slot) {
+          return slot.toLowerCase() === timeSlot.toLowerCase();
+        });
+        if (hasTimeSlot) {
+          timeSlotPlayers.push(player);
+          Logger.log("Added multi-game player: ".concat(player.discordUsername, " (Rank: ").concat(player.currentRank, ", multipleGames: ").concat(player.multipleGames, ")"));
+        }
+      });
+      Logger.log("After adding multi-game players: ".concat(timeSlotPlayers.length, " total players"));
+    }
 
     // Create teams for this time slot
-    var slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, assignedPlayers);
+    var slotResult = createOptimalTeamsForTimeSlot(timeSlotPlayers, timeSlot, tempAssignedPlayers);
+
+    // Update global assignments
+    slotResult.teams.forEach(function (team) {
+      team.players.forEach(function (player) {
+        globalAssignedPlayers.add(player.discordUsername);
+        tempAssignedPlayers.add(player.discordUsername);
+      });
+    });
+
+    // Add players as substitutes if they've already played in a team OR are willing to sub
+    result.substitutes[timeSlot] = slotResult.substitutes.filter(function (sub) {
+      return globalAssignedPlayers.has(sub.discordUsername) || sub.willSub && sub.willSub.toLowerCase() === 'yes';
+    });
     result.teams = result.teams.concat(slotResult.teams);
-    result.substitutes[timeSlot] = slotResult.substitutes;
-    assignedPlayers = new Set([].concat(_toConsumableArray$2(assignedPlayers), _toConsumableArray$2(slotResult.assignedPlayers)));
-    Logger.log("Created ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
-    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(slotResult.substitutes.length));
+    Logger.log("\nCreated ".concat(slotResult.teams.length, " teams for time slot: ").concat(timeSlot));
+    Logger.log("Substitutes for time slot ".concat(timeSlot, ": ").concat(result.substitutes[timeSlot].length));
+    Logger.log("Current global assigned players: ".concat(Array.from(globalAssignedPlayers).join(', ')));
+  });
+
+  // After processing all time slots, mark players as permanently assigned if they don't want to play multiple games
+  result.teams.forEach(function (team) {
+    team.players.forEach(function (player) {
+      if (!player.multipleGames || player.multipleGames.toLowerCase() !== 'yes') {
+        globalAssignedPlayers.add(player.discordUsername);
+        Logger.log("Marked as permanently assigned (no multiple games): ".concat(player.discordUsername, " (multipleGames: ").concat(player.multipleGames, ")"));
+      } else {
+        Logger.log("Player can play multiple games: ".concat(player.discordUsername, " (multipleGames: ").concat(player.multipleGames, ")"));
+      }
+    });
   });
   return result;
 }
 function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
   var numPlayers = players.length;
-  var maxTeams = Math.floor(numPlayers / TEAM_SIZE);
+  // Calculate the max number of full teams (must be even, each with TEAM_SIZE players)
+  var maxFullTeams = Math.floor(numPlayers / TEAM_SIZE);
+  if (maxFullTeams % 2 !== 0) maxFullTeams -= 1; // ensure even
+  Logger.log("\nCreating teams for ".concat(timeSlot, ":"));
+  Logger.log("Total players: ".concat(numPlayers));
+  Logger.log("Maximum possible full teams: ".concat(maxFullTeams));
 
-  // Ensure even number of teams and all teams have exactly TEAM_SIZE players
-  var adjustedNumTeams = Math.floor(maxTeams / 2) * 2;
+  // If we don't have enough players for at least 2 teams of TEAM_SIZE, return empty result
+  if (maxFullTeams < 2) {
+    Logger.log("Not enough players for 2 teams (need ".concat(TEAM_SIZE * 2, " players, have ").concat(numPlayers, ")"));
+    return {
+      teams: [],
+      substitutes: players.filter(function (p) {
+        return p.willSub && p.willSub.toLowerCase() === 'yes';
+      }),
+      assignedPlayers: new Set()
+    };
+  }
+  var numTeams = maxFullTeams;
+  Logger.log("Creating ".concat(numTeams, " teams"));
   var teams = [];
 
   // Initialize empty teams
-  for (var i = 0; i < adjustedNumTeams; i++) {
+  for (var i = 0; i < numTeams; i++) {
     teams.push({
       name: "Team ".concat(i + 1),
       timeSlot: timeSlot,
       players: [],
-      total: 0 // total rank power of the team
+      total: 0
     });
   }
 
-  // Sort players: single time slot first, then unassigned, then by rank (descending)
-  players.sort(function (a, b) {
-    if (a.timeSlots.length !== b.timeSlots.length) {
-      return a.timeSlots.length - b.timeSlots.length;
-    }
-    if (assignedPlayers.has(a.discordUsername) !== assignedPlayers.has(b.discordUsername)) {
-      return assignedPlayers.has(a.discordUsername) ? 1 : -1;
-    }
-    return b.averageRank - a.averageRank;
+  // Separate players into unassigned and previously assigned groups
+  var unassignedPlayers = players.filter(function (p) {
+    return !assignedPlayers.has(p.discordUsername);
   });
+  var previouslyAssignedPlayers = players.filter(function (p) {
+    return assignedPlayers.has(p.discordUsername);
+  });
+  Logger.log("\nUnassigned players: ".concat(unassignedPlayers.map(function (p) {
+    return p.discordUsername;
+  }).join(', ')));
+  Logger.log("Previously assigned players: ".concat(previouslyAssignedPlayers.map(function (p) {
+    return p.discordUsername;
+  }).join(', ')));
 
-  // Distribute players evenly across teams
-  var teamPlayers = players.slice(0, adjustedNumTeams * TEAM_SIZE);
-  for (var _i = 0; _i < teamPlayers.length; _i++) {
-    var teamIndex = _i % adjustedNumTeams;
-    teams[teamIndex].players.push(teamPlayers[_i]);
-    teams[teamIndex].total += teamPlayers[_i].averageRank;
+  // First, distribute unassigned players to ensure everyone plays
+  var allTeamPlayers = [].concat(_toConsumableArray$2(unassignedPlayers), _toConsumableArray$2(previouslyAssignedPlayers)).slice(0, numTeams * TEAM_SIZE);
+  Logger.log("\nDistributing ".concat(allTeamPlayers.length, " players to teams"));
+  for (var _i = 0; _i < allTeamPlayers.length; _i++) {
+    var round = Math.floor(_i / numTeams);
+    var position = _i % numTeams;
+    var teamIndex = round % 2 === 0 ? position : numTeams - 1 - position;
+    teams[teamIndex].players.push(allTeamPlayers[_i]);
+    teams[teamIndex].total += Math.sqrt(allTeamPlayers[_i].averageRank); // Use square root for balancing
+    Logger.log("Added ".concat(allTeamPlayers[_i].discordUsername, " to Team ").concat(teamIndex + 1));
+  }
+
+  // Verify all teams have exactly TEAM_SIZE players
+  teams = teams.filter(function (team) {
+    return team.players.length === TEAM_SIZE;
+  });
+  Logger.log("\nTeams after filtering for complete teams: ".concat(teams.length));
+
+  // If we don't have at least 2 teams after filtering, return empty result
+  if (teams.length < 2) {
+    Logger.log("Not enough complete teams after filtering (have ".concat(teams.length, ", need 2)"));
+    return {
+      teams: [],
+      substitutes: players.filter(function (p) {
+        return p.willSub && p.willSub.toLowerCase() === 'yes';
+      }),
+      assignedPlayers: new Set()
+    };
   }
 
   // Remaining players become substitutes
-  var substitutes = players.slice(adjustedNumTeams * TEAM_SIZE);
+  var assignedPlayerNames = teams.flatMap(function (team) {
+    return team.players.map(function (p) {
+      return p.discordUsername;
+    });
+  });
+  var substitutes = players.filter(function (p) {
+    return !assignedPlayerNames.includes(p.discordUsername);
+  });
 
   // Optimize team balance
+  var targetTotal = teams.reduce(function (sum, team) {
+    return sum + team.total;
+  }, 0) / teams.length;
+  Logger.log("\nOptimizing team balance (target total: ".concat(targetTotal.toFixed(2), ")"));
   for (var iteration = 0; iteration < 100; iteration++) {
     var improved = false;
     for (var _i2 = 0; _i2 < teams.length; _i2++) {
@@ -434,9 +1117,15 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
     if (!improved) break;
   }
 
-  // Calculate team spread for logging
+  // Calculate final team spread for logging
   var teamSpread = getTeamSpread(teams);
-  Logger.log("Team spread for ".concat(timeSlot, ": ").concat(teamSpread.toFixed(2)));
+  Logger.log("\nFinal team spread for ".concat(timeSlot, ": ").concat(teamSpread.toFixed(2)));
+  teams.forEach(function (team, index) {
+    Logger.log("Team ".concat(index + 1, " total: ").concat(team.total.toFixed(2)));
+    Logger.log("Team ".concat(index + 1, " players: ").concat(team.players.map(function (p) {
+      return p.discordUsername;
+    }).join(', ')));
+  });
   return {
     teams: teams,
     substitutes: substitutes,
@@ -450,18 +1139,32 @@ function createOptimalTeamsForTimeSlot(players, timeSlot, assignedPlayers) {
 function trySwapPlayers(team1, team2) {
   for (var i = 0; i < team1.players.length; i++) {
     for (var j = 0; j < team2.players.length; j++) {
-      var diff1 = team1.players[i].averageRank - team2.players[j].averageRank;
-      var newTotal1 = team1.total - diff1;
-      var newTotal2 = team2.total + diff1;
-      if (Math.abs(newTotal1 - newTotal2) < Math.abs(team1.total - team2.total)) {
-        // Swap players
+      var player1 = team1.players[i];
+      var player2 = team2.players[j];
+
+      // Skip if either player doesn't want to play multiple games
+      if (player1.multipleGames && player1.multipleGames.toLowerCase() !== 'yes') {
+        continue;
+      }
+      if (player2.multipleGames && player2.multipleGames.toLowerCase() !== 'yes') {
+        continue;
+      }
+
+      // Calculate new totals if we swap these players
+      var newTotal1 = team1.total - Math.sqrt(player1.averageRank) + Math.sqrt(player2.averageRank);
+      var newTotal2 = team2.total - Math.sqrt(player2.averageRank) + Math.sqrt(player1.averageRank);
+
+      // Check if this swap improves balance
+      var currentDiff = Math.abs(team1.total - team2.total);
+      var newDiff = Math.abs(newTotal1 - newTotal2);
+      if (newDiff < currentDiff) {
+        // Perform the swap
         var temp = team1.players[i];
         team1.players[i] = team2.players[j];
         team2.players[j] = temp;
-
-        // Update totals
         team1.total = newTotal1;
         team2.total = newTotal2;
+        Logger.log("Swapped ".concat(player1.discordUsername, " and ").concat(player2.discordUsername, " between teams"));
         return true;
       }
     }
@@ -481,17 +1184,98 @@ function _unsupportedIterableToArray$1(r, a) { if (r) { if ("string" == typeof r
 function _iterableToArray$1(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles$1(r) { if (Array.isArray(r)) return _arrayLikeToArray$1(r); }
 function _arrayLikeToArray$1(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function getColumnConfig() {
+  var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  if (configData) {
+    return JSON.parse(configData);
+  }
+  return [];
+}
+function findDiscordColumn(teamsSheet) {
+  var config = getColumnConfig();
+  var discordConfig = config.find(function (c) {
+    return c.key === 'discordUsername';
+  });
+  if (!discordConfig) {
+    throw new Error('discordUsername column not configured. Please add it to your column configuration.');
+  }
+
+  // Check first, second, and third rows for headers (time slots can push headers to row 2 or 3)
+  var firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+  var secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+  var thirdRow = teamsSheet.getRange(3, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+  Logger.log("First row: ".concat(JSON.stringify(firstRow)));
+  Logger.log("Second row: ".concat(JSON.stringify(secondRow)));
+  Logger.log("Third row: ".concat(JSON.stringify(thirdRow)));
+  Logger.log("Looking for Discord column with title: \"".concat(discordConfig.title, "\""));
+
+  // Try to find the Discord column in any of the first three rows
+  var rows = [firstRow, secondRow, thirdRow];
+  for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    var headerRow = rows[rowIndex];
+    Logger.log("Checking row ".concat(rowIndex + 1, " for Discord column..."));
+    for (var i = 0; i < headerRow.length; i++) {
+      var headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+      Logger.log("Column ".concat(i, ": \"").concat(headerValue, "\""));
+      if (headerValue.toLowerCase() === discordConfig.title.toLowerCase()) {
+        Logger.log("Found Discord column at index ".concat(i, " with title: ").concat(headerValue, " in row ").concat(rowIndex + 1));
+        return i;
+      }
+    }
+  }
+
+  // If exact match not found, try partial matches in all three rows
+  for (var _rowIndex = 0; _rowIndex < rows.length; _rowIndex++) {
+    var _headerRow = rows[_rowIndex];
+    Logger.log("Checking row ".concat(_rowIndex + 1, " for partial Discord matches..."));
+    for (var _i = 0; _i < _headerRow.length; _i++) {
+      var _headerValue = _headerRow[_i] ? _headerRow[_i].toString().trim() : '';
+      if (_headerValue.toLowerCase().includes('discord') || _headerValue.toLowerCase().includes('username')) {
+        Logger.log("Found potential Discord column at index ".concat(_i, " with title: ").concat(_headerValue, " in row ").concat(_rowIndex + 1));
+        return _i;
+      }
+    }
+  }
+  throw new Error("Discord column with title \"".concat(discordConfig.title, "\" not found in Teams sheet. Available headers in row 1: ").concat(firstRow.join(', '), ". Available headers in row 2: ").concat(secondRow.join(', '), ". Available headers in row 3: ").concat(thirdRow.join(', ')));
+}
 function generateDiscordPings() {
+  Logger.log("Starting Discord Pings generation");
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var teamsSheet = ss.getSheetByName("Teams");
   if (!teamsSheet) {
-    Logger.log("Error: Teams sheet not found.");
     throw new Error("Teams sheet not found. Please create teams first.");
   }
+  var allData = teamsSheet.getDataRange().getValues();
+  Logger.log("Total rows in Teams sheet: ".concat(allData.length));
 
-  // Get all data from the Teams sheet
-  var data = teamsSheet.getDataRange().getValues();
-  Logger.log("Total rows in Teams sheet: ".concat(data.length));
+  // Find the Discord column
+  var discordColIndex = findDiscordColumn(teamsSheet);
+  Logger.log("Discord column index: ".concat(discordColIndex));
+
+  // Find the Lobby Host column if it exists
+  var config = getColumnConfig();
+  var lobbyHostConfig = config.find(function (c) {
+    return c.key === 'lobbyHost';
+  });
+  var lobbyHostColIndex = null;
+  if (lobbyHostConfig) {
+    // Check first, second, and third rows for lobby host column
+    var firstRow = teamsSheet.getRange(1, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    var secondRow = teamsSheet.getRange(2, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    var thirdRow = teamsSheet.getRange(3, 1, 1, teamsSheet.getLastColumn()).getValues()[0];
+    for (var rowIndex = 0; rowIndex < 3; rowIndex++) {
+      var headerRow = rowIndex === 0 ? firstRow : rowIndex === 1 ? secondRow : thirdRow;
+      for (var i = 0; i < headerRow.length; i++) {
+        var headerValue = headerRow[i] ? headerRow[i].toString().trim() : '';
+        if (headerValue.toLowerCase() === lobbyHostConfig.title.toLowerCase()) {
+          lobbyHostColIndex = i;
+          Logger.log("Found Lobby Host column at index ".concat(i, " with title: ").concat(headerValue, " in row ").concat(rowIndex + 1));
+          break;
+        }
+      }
+      if (lobbyHostColIndex !== null) break;
+    }
+  }
 
   // Initialize variables
   var currentTimeSlot = null;
@@ -501,90 +1285,115 @@ function generateDiscordPings() {
   var currentSection = null; // Possible values: null, "team", "players", "substitutes", "substitutesPlayers"
 
   // Process each row in the Teams sheet
-  for (var i = 0; i < data.length; i++) {
-    var row = data[i];
-    var firstCell = row[0].toString().trim();
-    Logger.log("Processing row ".concat(i + 1, ": \"").concat(firstCell, "\""));
+  var _loop = function _loop() {
+      var row = allData[_i2];
+      var firstCell = row[0] ? row[0].toString().trim() : '';
+      Logger.log("Processing row ".concat(_i2 + 1, ": \"").concat(firstCell, "\""));
 
-    // Detect Time Slot
-    if (row.length === 6 && (firstCell.includes("CEST") || firstCell.includes("WEST"))) {
-      currentTimeSlot = firstCell;
-      currentSection = "timeSlot";
-      if (!substitutes[currentTimeSlot]) {
-        substitutes[currentTimeSlot] = [];
+      // Detect Time Slot (look for time patterns and specific formats)
+      var timePatterns = ['am', 'pm', 'pst', 'est', 'cst', 'mst', 'utc', 'gmt'];
+      var hasTimePattern = timePatterns.some(function (pattern) {
+        return firstCell.toLowerCase().includes(pattern);
+      });
+
+      // Time slots should contain time patterns AND be in a specific format (like "6pm PST/9pm EST")
+      // Also check that it's not a team name or other content
+      if (hasTimePattern && !firstCell.includes('Total') && !firstCell.startsWith('Team') && !firstCell.startsWith('Discord') && !firstCell.startsWith('Substitutes') && (firstCell.includes('/') || firstCell.includes(' ')) && firstCell.length > 5) {
+        // Time slots are typically longer than team names
+        currentTimeSlot = firstCell;
+        currentSection = "timeSlot";
+        if (!substitutes[currentTimeSlot]) {
+          substitutes[currentTimeSlot] = [];
+        }
+        Logger.log("Detected Time Slot: \"".concat(currentTimeSlot, "\""));
+        return 0; // continue
       }
-      Logger.log("Detected Time Slot: \"".concat(currentTimeSlot, "\""));
-      continue;
-    }
 
-    // Detect Team Header
-    if (firstCell.startsWith("Team")) {
-      currentTeam = {
-        name: firstCell,
-        // e.g., "Team 1"
-        timeSlot: currentTimeSlot,
-        players: []
-      };
-      teams.push(currentTeam);
-      currentSection = "team";
-      Logger.log("Detected Team: \"".concat(currentTeam.name, "\" under Time Slot: \"").concat(currentTimeSlot, "\""));
-      continue;
-    }
+      // Detect Team Header
+      if (firstCell.startsWith("Team")) {
+        currentTeam = {
+          name: firstCell,
+          timeSlot: currentTimeSlot,
+          players: []
+        };
+        teams.push(currentTeam);
+        currentSection = "team";
+        Logger.log("Detected Team: \"".concat(currentTeam.name, "\" under Time Slot: \"").concat(currentTimeSlot, "\""));
+        return 0; // continue
+      }
 
-    // Detect "Discord" header indicating the start of Players section for a Team
-    if (firstCell === "Discord" && currentSection === "team") {
-      currentSection = "players";
-      Logger.log("Detected Players section under Team: \"".concat(currentTeam.name, "\""));
-      continue;
-    }
+      // Detect "Discord" header indicating the start of Players section for a Team
+      if (firstCell === "Discord" && currentSection === "team") {
+        currentSection = "players";
+        Logger.log("Detected Players section under Team: \"".concat(currentTeam.name, "\""));
+        return 0; // continue
+      }
 
-    // Detect "Substitutes" header
-    if (firstCell === "Substitutes") {
-      currentTeam = null;
-      currentSection = "substitutes";
-      Logger.log("Detected Substitutes section under Time Slot: \"".concat(currentTimeSlot, "\""));
-      continue;
-    }
+      // Detect "Substitutes" header
+      if (firstCell === "Substitutes") {
+        currentTeam = null;
+        currentSection = "substitutes";
+        Logger.log("Detected Substitutes section under Time Slot: \"".concat(currentTimeSlot, "\""));
+        return 0; // continue
+      }
 
-    // Detect "Discord" header indicating the start of Players section for Substitutes
-    if (firstCell === "Discord" && currentSection === "substitutes") {
-      currentSection = "substitutesPlayers";
-      Logger.log("Detected Players section under Substitutes for Time Slot: \"".concat(currentTimeSlot, "\""));
-      continue;
-    }
+      // Detect "Discord" header indicating the start of Players section for Substitutes
+      if (firstCell === "Discord" && currentSection === "substitutes") {
+        currentSection = "substitutesPlayers";
+        Logger.log("Detected Players section under Substitutes for Time Slot: \"".concat(currentTimeSlot, "\""));
+        return 0; // continue
+      }
 
-    // Process Player Rows for Teams
-    if (currentSection === "players" && firstCell !== "") {
-      var player = {
-        discordUsername: firstCell.replace(/^@/, '').trim(),
-        // Remove "@" if present
-        riotID: row[1] ? row[1].toString().trim() : "",
-        lobbyHost: row[4] ? row[4].toString().trim().toLowerCase() === "yes" : false
-      };
-      currentTeam.players.push(player);
-      Logger.log("Added Player to Team \"".concat(currentTeam.name, "\": \"@").concat(player.discordUsername, "\" (Lobby Host: ").concat(player.lobbyHost, ")"));
-      continue;
-    }
+      // Process Player Rows for Teams
+      if (currentSection === "players" && firstCell !== "") {
+        // Since Discord column is at index 0, the first cell contains the Discord username
+        var discordValue = firstCell;
+        var lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
+        if (discordValue && discordValue !== 'Discord') {
+          var player = {
+            discordUsername: discordValue.toString().replace(/^@/, '').trim(),
+            riotID: row[1] ? row[1].toString().trim() : "",
+            lobbyHost: lobbyHostValue ? lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
+          };
+          currentTeam.players.push(player);
+          Logger.log("Added Player to Team \"".concat(currentTeam.name, "\": \"@").concat(player.discordUsername, "\" (Lobby Host: ").concat(player.lobbyHost, ")"));
+        }
+        return 0; // continue
+      }
 
-    // Process Player Rows for Substitutes
-    if (currentSection === "substitutesPlayers" && firstCell !== "") {
-      var substitute = {
-        discordUsername: firstCell.replace(/^@/, '').trim(),
-        // Remove "@" if present
-        riotID: row[1] ? row[1].toString().trim() : "",
-        lobbyHost: row[4] ? row[4].toString().trim().toLowerCase() === "yes" : false
-      };
-      substitutes[currentTimeSlot].push(substitute);
-      Logger.log("Added Substitute to Time Slot \"".concat(currentTimeSlot, "\": \"@").concat(substitute.discordUsername, "\" (Lobby Host: ").concat(substitute.lobbyHost, ")"));
-      continue;
-    }
+      // Process Player Rows for Substitutes
+      if (currentSection === "substitutesPlayers" && firstCell !== "") {
+        // Since Discord column is at index 0, the first cell contains the Discord username
+        var _discordValue = firstCell;
+        var _lobbyHostValue = lobbyHostColIndex !== null ? row[lobbyHostColIndex] : null;
+        if (_discordValue && _discordValue !== 'Discord') {
+          var substitute = {
+            discordUsername: _discordValue.toString().replace(/^@/, '').trim(),
+            riotID: row[1] ? row[1].toString().trim() : "",
+            lobbyHost: _lobbyHostValue ? _lobbyHostValue.toString().trim().toLowerCase() === "yes" : false
+          };
+          // Handle no timeslot scenario by using a default key
+          var timeSlotKey = currentTimeSlot || "";
+          if (!substitutes[timeSlotKey]) {
+            substitutes[timeSlotKey] = [];
+          }
+          substitutes[timeSlotKey].push(substitute);
+          Logger.log("Added Substitute to Time Slot \"".concat(timeSlotKey, "\": \"@").concat(substitute.discordUsername, "\" (Lobby Host: ").concat(substitute.lobbyHost, ")"));
+        }
+        return 0; // continue
+      }
 
-    // Reset section if encountering an empty row
-    if (firstCell === "") {
-      currentSection = null;
-      Logger.log("Encountered empty row. Resetting current section.");
-      continue;
-    }
+      // Reset section if encountering an empty row
+      if (firstCell === "") {
+        currentSection = null;
+        Logger.log("Encountered empty row. Resetting current section.");
+        return 0; // continue
+      }
+    },
+    _ret;
+  for (var _i2 = 0; _i2 < allData.length; _i2++) {
+    _ret = _loop();
+    if (_ret === 0) continue;
   }
   Logger.log("Total Teams Parsed: ".concat(teams.length));
   Logger.log("Total Substitutes Parsed: ".concat(JSON.stringify(substitutes)));
@@ -622,13 +1431,15 @@ function generateDiscordPings() {
     });
     var timeSlotSubstitutes = substitutes[timeSlot] || [];
     if (timeSlotTeams.length > 0 || timeSlotSubstitutes.length > 0) {
-      // Add time slot header with "Timeslot"
-      contentArray.push("## ".concat(timeSlot, " Timeslot"));
-      Logger.log("Added Time Slot Header: \"".concat(timeSlot, " Timeslot\""));
+      // Only add time slot header if it's not empty
+      if (timeSlot && timeSlot !== "") {
+        contentArray.push("## ".concat(timeSlot, " Timeslot"));
+        Logger.log("Added Time Slot Header: \"".concat(timeSlot, " Timeslot\""));
+      }
 
       // Group teams into pairs (e.g., Team 1 & Team 2)
-      for (var _i = 0; _i < timeSlotTeams.length; _i += 2) {
-        var pair = timeSlotTeams.slice(_i, _i + 2);
+      for (var _i3 = 0; _i3 < timeSlotTeams.length; _i3 += 2) {
+        var pair = timeSlotTeams.slice(_i3, _i3 + 2);
         Logger.log("Processing Team Pair: \"".concat(pair.map(function (t) {
           return t.name;
         }).join(" & "), "\""));
@@ -667,32 +1478,32 @@ function generateDiscordPings() {
             contentArray.push("@".concat(player.discordUsername));
             Logger.log("Added Player Mention: \"@".concat(player.discordUsername, "\""));
           });
-          contentArray.push(''); // Blank line after each team
-          Logger.log("Added blank line after Team: \"".concat(team.name, "\""));
+          // Remove blank line after each team
+          Logger.log("Added team \"".concat(team.name, "\" without blank line"));
         });
       }
 
       // Add substitutes section if there are any
       if (timeSlotSubstitutes.length > 0) {
         contentArray.push("### Substitutes");
-        Logger.log("Added Substitutes Header for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+        Logger.log("Added Substitutes Header for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
         timeSlotSubstitutes.forEach(function (sub) {
           contentArray.push("@".concat(sub.discordUsername));
           Logger.log("Added Substitute Mention: \"@".concat(sub.discordUsername, "\""));
         });
         contentArray.push(''); // Blank line after substitutes
-        Logger.log("Added blank line after Substitutes for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+        Logger.log("Added blank line after Substitutes for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
       }
 
       // Add separator
       contentArray.push(''); // Blank line after separator
-      Logger.log("Added separator for Time Slot: \"".concat(timeSlot, " Timeslot\""));
+      Logger.log("Added separator for Time Slot: \"".concat(timeSlot || 'No Time Slot', "\""));
     }
   });
 
   // Join all text for potential direct usage (e.g., sending via API)
   var discordPingText = contentArray.join('\n');
-  Logger.log("Generated Discord Ping Text:\n" + discordPingText);
+  Logger.log("Generated Discord Ping Text:\n".concat(discordPingText));
 
   // Invoke the write function to write to the "Discord Pings" sheet
   try {
@@ -712,7 +1523,7 @@ function writeDiscordPingsToSheet(sheet, pings) {
   Logger.log("Cleared existing content in Discord Pings sheet.");
   var lines = pings.split("\n");
   var numRows = lines.length;
-  var range = sheet.getRange(1, 1, numRows, 1);
+  var range = sheet.getRange(1, DISCORD_PINGS_CONFIG.column, numRows, 1);
   Logger.log("Total lines to write: ".concat(numRows));
 
   // Set values and basic formatting
@@ -725,51 +1536,46 @@ function writeDiscordPingsToSheet(sheet, pings) {
 
   // Apply formatting based on line content
   for (var i = 0; i < numRows; i++) {
-    var cell = range.getCell(i + 1, 1);
+    var cell = range.getCell(i + 1, DISCORD_PINGS_CONFIG.column);
     var content = lines[i].trim();
     Logger.log("Formatting row ".concat(i + 1, ": \"").concat(content, "\""));
     if (content.startsWith("# ")) {
       // Title Header: Darker Blue
-      cell.setFontWeight("bold").setFontSize(18).setBackground("#002B80") // Darker Blue
-      .setFontColor("#ffffff");
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.title).setBackground(STYLING.colors.discord.title).setFontColor(STYLING.colors.text.white);
       Logger.log("Formatted Title: \"".concat(content, "\""));
     } else if (content.startsWith("## ") && content.endsWith("Timeslot")) {
       // Timeslot Headers: Original Blue
-      cell.setFontWeight("bold").setFontSize(14).setBackground("#4A86E8") // Original Blue
-      .setFontColor("#ffffff");
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.timeslot).setBackground(STYLING.colors.discord.timeslot).setFontColor(STYLING.colors.text.white);
       Logger.log("Formatted Timeslot Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Lobby Host")) {
-      // Lobby Host Headers: Light Blue
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3") // Light Blue
-      .setFontColor("#000000"); // Black text
+      // Lobby Host Headers: Same as Team Headers (Light Blue)
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Lobby Host Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Team")) {
       // Team Headers: Light Blue
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#CFE2F3") // Light Blue
-      .setFontColor("#000000"); // Black text
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.lobbyHost).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Team Header: \"".concat(content, "\""));
     } else if (content.startsWith("### Substitutes")) {
       // Substitutes Header: Different Shade of Blue
-      cell.setFontWeight("bold").setFontSize(13).setBackground("#A9D0F5") // Light Sky Blue
-      .setFontColor("#000000"); // Black text
+      cell.setFontWeight("bold").setFontSize(STYLING.fontSize.columnHeader).setBackground(STYLING.colors.discord.substitutes).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Substitutes Header: \"".concat(content, "\""));
     } else if (content.startsWith("@")) {
       // Player Names: Indented
-      cell.setFontSize(11).setFontColor("#000000"); // Black test
+      cell.setFontSize(STYLING.fontSize.player).setFontColor(STYLING.colors.text.black);
       Logger.log("Formatted Player Mention: \"".concat(content, "\""));
     } else if (content === "") {
       // Empty Lines: Clear Content and Remove Background
-      cell.setValue("").setBackground(null); // Remove any background color
+      cell.setValue("").setBackground(null);
       Logger.log("Cleared empty row ".concat(i + 1));
     }
 
     // Adjust row height for non-separator rows
     if (!content.startsWith("---")) {
-      sheet.setRowHeight(i + 1, 21);
+      sheet.setRowHeight(i + 1, DISCORD_PINGS_CONFIG.rowHeight);
     }
   }
-  sheet.autoResizeColumns(1, 1);
-  sheet.setColumnWidth(1, Math.max(sheet.getColumnWidth(1), 300)); // Ensure minimum width
+  sheet.autoResizeColumns(DISCORD_PINGS_CONFIG.column, 1);
+  sheet.setColumnWidth(DISCORD_PINGS_CONFIG.column, Math.max(sheet.getColumnWidth(DISCORD_PINGS_CONFIG.column), DISCORD_PINGS_CONFIG.minWidth));
   Logger.log("Auto-resized and set minimum column width.");
 }
 
@@ -780,6 +1586,416 @@ function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Sym
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
+/**
+ * Column Configuration Manager
+ * Allows users to configure column display order, titles, and types
+ */
+
+/**
+ * Opens the Column Configuration sheet for editing
+ */
+function openColumnConfigurationSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var configSheet = ss.getSheetByName('Column Configuration');
+  if (!configSheet) {
+    configSheet = ss.insertSheet('Column Configuration');
+  }
+
+  // Clear existing content
+  configSheet.clear();
+
+  // Get actual column headers from Form Responses sheet
+  var formSheet = ss.getSheetByName('Form Responses 1');
+  if (formSheet) {
+    var headers = formSheet.getRange(1, 1, 1, formSheet.getLastColumn()).getValues()[0];
+    headers.map(function (header, index) {
+      return {
+        column: String.fromCharCode(65 + index),
+        // A, B, C, etc.
+        index: index + 1,
+        header: header || "Column ".concat(index + 1)
+      };
+    });
+  }
+
+  // Create configuration table
+  var configData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']];
+
+  // Load saved configuration first
+  var savedConfigData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+  var savedConfigs = [];
+  if (savedConfigData) {
+    savedConfigs = JSON.parse(savedConfigData);
+    Logger.log('Loaded saved config: ' + JSON.stringify(savedConfigs));
+  }
+
+  // If no saved config, use defaults
+  if (savedConfigs.length === 0) {
+    savedConfigs = getDefaultConfig();
+  }
+
+  // Add saved configuration to table
+  savedConfigs.forEach(function (config) {
+    configData.push([config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || '']);
+  });
+
+  // Setup and style the sheet
+  setupConfigSheet(configSheet, configData);
+  SpreadsheetApp.getUi().alert('Column Configuration sheet opened! Edit the table above, then use "Save & Apply Column Config" to apply changes.');
+}
+
+/**
+ * Gets the default configuration
+ */
+function getDefaultConfig() {
+  return [{
+    key: 'discordUsername',
+    title: 'Discord',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'B'
+  }, {
+    key: 'riotID',
+    title: 'Riot ID',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'C'
+  }, {
+    key: 'pronouns',
+    title: 'Pronouns',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'D'
+  }, {
+    key: 'timeSlots',
+    title: 'Time Slots',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'E'
+  }, {
+    key: 'multipleGames',
+    title: 'Multiple Games',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'F'
+  }, {
+    key: 'willSub',
+    title: 'Will Sub',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'G'
+  }, {
+    key: 'lobbyHost',
+    title: 'Lobby Host',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'H'
+  }, {
+    key: 'duo',
+    title: 'Duo',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'I'
+  }, {
+    key: 'currentRank',
+    title: 'Current Rank',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'J'
+  }, {
+    key: 'peakRank',
+    title: 'Peak Rank',
+    width: 'auto',
+    type: 'data',
+    display: true,
+    sourceColumn: 'K'
+  }, {
+    key: 'averageRank',
+    title: 'Avg Rank',
+    width: 'auto',
+    type: 'calculated',
+    display: true,
+    sourceColumn: ''
+  }];
+}
+
+/**
+ * Gets the instructions content
+ */
+function getInstructions() {
+  return [['COLUMN CONFIGURATION INSTRUCTIONS'], [''], ['QUICK START'], ['• Use the Display column (TRUE/FALSE) to control which columns appear in the output'], ['• All variables are available for logic, but only those with Display=TRUE are shown'], ['• If timeSlots is not displayed or is blank, all players are balanced as one group'], ['• To use Discord Pings, you must have discordUsername column present and displayed'], [''], ['COLUMN TYPES'], ['• data: Gets value from Form Responses sheet (e.g., riotID, discordUsername, preferredAgents, etc.)'], ['• calculated: Computed value that depends on other columns (currently only averageRank can use this)'], ['• display: Empty column for manual input (e.g., notes)'], [''], ['HOW TO CONFIGURE'], ['1. Edit "Title" to change column headers'], ['2. Edit "Width" to "auto" for auto-resize, or enter pixel width (e.g., 150)'], ['3. Edit "Type" using dropdown: data/calculated/display'], ['4. Order is automatic - just move rows up/down to change position'], ['5. "Source Column" shows which Form Responses column provides data'], ['6. Use "Save & Apply Column Config" to apply changes'], ['7. Use "Restore Default Config" to restore defaults'], ['8. Use "Restore from Last Save" to restore last saved configuration'], [''], ['SIMPLE REORDERING'], ['• To move a column: Hold the row number and drag up/down to desired position'], ['• To add a column: Insert a new row and fill in the details'], ['• To remove a column: Delete the row'], ['• Order is determined by row position (top to bottom)'], [''], ['CALCULATED COLUMNS'], ['• averageRank: Requires currentRank and peakRank to be configured'], [''], ['EXAMPLES'], ['• To add "Pronouns" column:'], ['  - Insert new row, Key: pronouns, Type: data'], ['• To move Discord to first: Drag Discord row to top'], ['• To remove column: Delete the row'], ['• To auto-resize: Set Width to "auto"'], [''], ['IMPORTANT NOTES'], ['• averageRank requires both currentRank and peakRank columns'], ['• Use "auto" width for automatic column sizing'], [''], ['VARIABLES USED IN CODE:'], ['• discordUsername: Required for Discord Pings and team balancing (used as user ID)'], ['• timeSlots: Used for time slot balancing (optional)'], ['• currentRank: Used for team balancing'], ['• peakRank: Used for team balancing'], ['• lobbyHost: Used for Discord Pings'], ['• multipleGames: Used for team balancing'], ['• willSub: Used for substitute assignment'], ['• riotID: Used for display'], ['• pronouns: Used for display'], ['• duo: Used for display, currently DOES NOT automatically match duos'], [''], ['KEY REQUIREMENTS'], ['• Key must be lowercase with no spaces or special characters'], ['• Key is used internally by the code to identify the column'], ['• Examples: riotID, discordUsername, currentRank (not "Riot ID" or "Discord Username")']];
+}
+
+/**
+ * Finds section header positions in the instructions
+ */
+function findSectionHeaders(instructions) {
+  var sectionHeaders = [];
+  var sectionTitles = ['QUICK START', 'COLUMN TYPES', 'HOW TO CONFIGURE', 'SIMPLE REORDERING', 'CALCULATED COLUMNS', 'EXAMPLES', 'IMPORTANT NOTES', 'VARIABLES USED IN CODE:', 'KEY REQUIREMENTS'];
+  for (var i = 0; i < instructions.length; i++) {
+    var row = instructions[i];
+    if (row[0] && sectionTitles.includes(row[0])) {
+      sectionHeaders.push(i);
+    }
+  }
+  return sectionHeaders;
+}
+
+/**
+ * Save column configuration from the sheet
+ */
+function saveColumnConfiguration() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Column Configuration');
+    if (!sheet) {
+      SpreadsheetApp.getUi().alert('Error', 'Column Configuration sheet not found. Please open it first.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    // Get data from the sheet (skip header rows)
+    var allData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues();
+    // Only process rows until the first empty row in Column A
+    var data = [];
+    for (var i = 0; i < allData.length; i++) {
+      if (!allData[i][0] || allData[i][0].toString().trim() === '') break;
+      data.push(allData[i]);
+    }
+    Logger.log('Saving config rows: ' + JSON.stringify(data));
+
+    // Filter out empty rows and build configuration
+    var configs = data.filter(function (row) {
+      return row[0] && row[0].toString().trim();
+    }).map(function (row, index) {
+      return {
+        key: (row[0] || '').toString().trim(),
+        title: (row[1] || '').toString().trim() || (row[0] || '').toString().trim(),
+        width: (row[2] || '').toString().trim() || 'auto',
+        type: (row[3] || '').toString().trim() || 'data',
+        display: (row[4] || '').toString().trim().toUpperCase() === 'TRUE',
+        sourceColumn: (row[5] || '').toString().trim()
+      };
+    });
+    Logger.log('Parsed configs: ' + JSON.stringify(configs));
+
+    // For output, only include columns with display=true
+    var displayColumns = configs.filter(function (c) {
+      return c.display;
+    });
+    Logger.log('Display columns: ' + JSON.stringify(displayColumns));
+    updateOutputSheetConfig(displayColumns);
+    // Save all configs for logic use
+    PropertiesService.getScriptProperties().setProperty('COLUMN_CONFIG', JSON.stringify(configs));
+    SpreadsheetApp.getUi().alert('Success', "Column configuration saved and applied successfully! ".concat(configs.length, " columns configured."), SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (error) {
+    Logger.log("Error saving column configuration: ".concat(error.message));
+    SpreadsheetApp.getUi().alert('Error', "Failed to save column configuration: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Load column configuration from script properties
+ */
+function loadColumnConfiguration() {
+  try {
+    var configData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+    if (!configData) {
+      SpreadsheetApp.getUi().alert('Info', 'No saved column configuration found. Use "Restore Default Config" to create defaults.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+    var configs = JSON.parse(configData);
+    updateOutputSheetConfig(configs);
+    SpreadsheetApp.getUi().alert('Success', 'Column configuration loaded successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (error) {
+    Logger.log("Error loading column configuration: ".concat(error.message));
+    SpreadsheetApp.getUi().alert('Error', "Failed to load column configuration: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Restore column configuration to defaults
+ */
+function restoreDefaultConfiguration() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Column Configuration');
+    if (!sheet) {
+      sheet = ss.insertSheet('Column Configuration');
+    }
+
+    // Clear existing content
+    sheet.clear();
+
+    // Convert default configs to table format
+    var configData = getDefaultConfig().map(function (config) {
+      return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
+    });
+
+    // Add header row
+    var fullConfigData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']].concat(_toConsumableArray(configData));
+
+    // Setup and style the sheet
+    setupConfigSheet(sheet, fullConfigData);
+
+    // Apply the configuration immediately
+    saveColumnConfiguration();
+    SpreadsheetApp.getUi().alert('Success', 'Column configuration has been reset to defaults and applied successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (error) {
+    Logger.log("Error resetting column configuration: ".concat(error.message));
+    SpreadsheetApp.getUi().alert('Error', "Failed to reset column configuration: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Restore column configuration from last saved configuration
+ */
+function restoreFromLastSave() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Column Configuration');
+    if (!sheet) {
+      sheet = ss.insertSheet('Column Configuration');
+    }
+
+    // Get the last saved configuration
+    var savedConfigData = PropertiesService.getScriptProperties().getProperty('COLUMN_CONFIG');
+    var savedConfigs = [];
+    if (savedConfigData) {
+      savedConfigs = JSON.parse(savedConfigData);
+      Logger.log('Restoring saved config: ' + JSON.stringify(savedConfigs));
+    }
+
+    // If no saved config exists, show error
+    if (savedConfigs.length === 0) {
+      SpreadsheetApp.getUi().alert('No Saved Configuration', 'No saved configuration found. Use "Save & Apply Column Config" first to save a configuration.', SpreadsheetApp.getUi().ButtonSet.OK);
+      return;
+    }
+
+    // Clear existing content
+    sheet.clear();
+
+    // Convert saved configs to table format
+    var configData = savedConfigs.map(function (config) {
+      return [config.key, config.title, config.width, config.type, config.display ? 'TRUE' : 'FALSE', config.sourceColumn || ''];
+    });
+
+    // Add header row
+    var fullConfigData = [['Column Key', 'Title', 'Width', 'Type', 'Display', 'Source Column']].concat(_toConsumableArray(configData));
+
+    // Setup and style the sheet
+    setupConfigSheet(sheet, fullConfigData);
+
+    // Apply the configuration immediately
+    saveColumnConfiguration();
+    SpreadsheetApp.getUi().alert('Success', 'Column configuration has been restored from last save and applied successfully!', SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (error) {
+    Logger.log("Error restoring from last save: ".concat(error.message));
+    SpreadsheetApp.getUi().alert('Error', "Failed to restore from last save: ".concat(error.message), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Update the OUTPUT_SHEET_CONFIG with new configuration
+ */
+function updateOutputSheetConfig(configs) {
+  // Convert configs to the format expected by OUTPUT_SHEET_CONFIG
+  var columns = configs.map(function (config) {
+    return {
+      key: config.key,
+      width: config.width,
+      title: config.title,
+      type: config.type
+    };
+  });
+
+  // Update the global config (this will be used by the team balancer)
+  OUTPUT_SHEET_CONFIG.columns = columns;
+  Logger.log("Updated OUTPUT_SHEET_CONFIG with ".concat(columns.length, " columns"));
+}
+
+/**
+ * Shows the actual column headers from Form Responses sheet
+ */
+function showFormResponseHeaders() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var formSheet = ss.getSheetByName('Form Responses 1');
+  if (!formSheet) {
+    SpreadsheetApp.getUi().alert('Form Responses 1 sheet not found!');
+    return;
+  }
+  var headers = formSheet.getRange(1, 1, 1, formSheet.getLastColumn()).getValues()[0];
+  var headerInfo = 'FORM RESPONSES COLUMNS:\n\n';
+  headers.forEach(function (header, index) {
+    var columnLetter = String.fromCharCode(65 + index);
+    headerInfo += "".concat(columnLetter, ": ").concat(header || 'Empty', "\n");
+  });
+  SpreadsheetApp.getUi().alert('Form Response Headers', headerInfo, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Sets up and styles the column configuration sheet
+ */
+function setupConfigSheet(sheet, configData) {
+  // Write configuration table
+  var range = sheet.getRange(1, 1, configData.length, configData[0].length);
+  range.setValues(configData);
+
+  // Style header row
+  var headerRange = sheet.getRange(1, 1, 1, configData[0].length);
+  headerRange.setBackground('#4A86E8').setFontColor('white').setFontWeight('bold');
+
+  // Add data validation for Type column
+  var typeRange = sheet.getRange(2, 4, 100, 1);
+  var typeRule = SpreadsheetApp.newDataValidation().requireValueInList(['data', 'calculated', 'display'], true).setAllowInvalid(false).build();
+  typeRange.setDataValidation(typeRule);
+
+  // Add data validation for Display column
+  var displayRange = sheet.getRange(2, 5, 100, 1);
+  var displayRule = SpreadsheetApp.newDataValidation().requireValueInList(['TRUE', 'FALSE'], true).setAllowInvalid(false).build();
+  displayRange.setDataValidation(displayRule);
+
+  // Autofit table columns
+  sheet.autoResizeColumns(1, 6);
+
+  // Force autofit on specific columns and add spacing
+  for (var col = 1; col <= 6; col++) {
+    sheet.autoResizeColumn(col);
+    var currentWidth = sheet.getColumnWidth(col);
+    sheet.setColumnWidth(col, currentWidth + 10);
+  }
+
+  // Write instructions in column H (after the table)
+  var instructions = getInstructions();
+  var instructionRange = sheet.getRange(1, 8, instructions.length, 1);
+  instructionRange.setValues(instructions);
+
+  // Style the instructions
+  var instructionHeaderRange = sheet.getRange(1, 8, 1, 1);
+  instructionHeaderRange.setFontWeight('bold').setFontSize(14).setBackground('#4A86E8').setFontColor('white');
+
+  // Style section headers
+  var sectionHeaders = findSectionHeaders(instructions);
+  sectionHeaders.forEach(function (rowIndex) {
+    var sectionRange = sheet.getRange(rowIndex + 1, 8, 1, 1);
+    sectionRange.setFontWeight('bold').setFontSize(12).setBackground('#E8F0FE').setFontColor('#1A73E8');
+  });
+
+  // Set instructions column width to be wide enough
+  sheet.setColumnWidth(8, 650);
+
+  // Freeze header row
+  sheet.setFrozenRows(1);
+}
+
 /***** UI FUNCTIONS *****/
 
 /**
@@ -788,138 +2004,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SCRIPTS').addItem('Manage Time Slots', 'manageTimeSlots').addItem('Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('Generate Discord Pings', 'generateDiscordPings').addItem('Clear Responses', 'clearResponses').addToUi();
-}
-
-/**
- * Creates a UI for managing the timeslots using UI prompts
- */
-function manageTimeSlots() {
-  var ui = SpreadsheetApp.getUi();
-  var GAME_DAY = getGameDay();
-  var TIME_SLOTS = getTimeSlots();
-  var result = ui.prompt('Manage Time Slots and Game Day', "Current settings:\n" + "Game Day: ".concat(GAME_DAY, "\n") + "Time Slots: ".concat(TIME_SLOTS.join(", "), "\n\n") + 'Enter your choice:\n' + '[1]: Manage Time Slots\n' + '[2]: Change Game Day\n', ui.ButtonSet.OK_CANCEL);
-  if (result.getSelectedButton() == ui.Button.OK) {
-    var choice = result.getResponseText().trim().toUpperCase();
-    switch (choice) {
-      case '1':
-        manageTimeSlotsMenu();
-        break;
-      case '2':
-        changeGameDay();
-        break;
-      default:
-        ui.alert('Invalid Choice', 'Please enter 1, 2, or click on Cancel.', ui.ButtonSet.OK);
-        manageTimeSlots();
-      // Recursive call to try again
-    }
-  } else {
-    // User clicked Cancel or closed the dialog
-    ui.alert('Cancelled', 'Settings management was cancelled. Current settings remain unchanged.', ui.ButtonSet.OK);
-  }
-}
-
-/**
- * Creates a UI for the user to choose how to manage time slots
- * They can have the script parse the time slots given in the Google form or manually enter their own time slots
- * Called from user input
- */
-function manageTimeSlotsMenu() {
-  var ui = SpreadsheetApp.getUi();
-  var TIME_SLOTS = getTimeSlots();
-  var result = ui.prompt('Manage Time Slots', "Current Time Slots: ".concat(TIME_SLOTS.join(", "), "\n\n") + 'Enter your choice:\n' + '[1]: Automatically determines the time slots from the "Time Slots" column (if available)\n' + '[2]: Manually input time slots\n' + '[3]: Cancel (Keep current time slots)', ui.ButtonSet.OK_CANCEL);
-  if (result.getSelectedButton() == ui.Button.OK) {
-    var choice = result.getResponseText().trim().toUpperCase();
-    switch (choice) {
-      case '1':
-        setAutomaticTimeSlots();
-        break;
-      case '2':
-        manuallyInputTimeSlots();
-        break;
-      case '3':
-        ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
-        break;
-      default:
-        ui.alert('Invalid Choice', 'Please enter 1, 2, or 3.', ui.ButtonSet.OK);
-        manageTimeSlotsMenu();
-      // Recursive call to try again
-    }
-  } else {
-    // User clicked Cancel or closed the dialog
-    ui.alert('Cancelled', 'Time slot management was cancelled. Current time slots remain unchanged.', ui.ButtonSet.OK);
-  }
-}
-function changeGameDay() {
-  var ui = SpreadsheetApp.getUi();
-  var GAME_DAY = getGameDay();
-  var result = ui.prompt('Change Game Day', "Current Game Day: ".concat(GAME_DAY, "\n\n") + 'Enter the new game day (e.g., "Sunday", "Monday", etc.):', ui.ButtonSet.OK_CANCEL);
-  if (result.getSelectedButton() == ui.Button.OK) {
-    var newGameDay = result.getResponseText().trim();
-    if (newGameDay) {
-      setGameDay(newGameDay);
-      ui.alert('Game Day Updated', "Game day has been set to: ".concat(newGameDay), ui.ButtonSet.OK);
-    } else {
-      ui.alert('No Input', 'No game day was entered. Keeping the current game day.', ui.ButtonSet.OK);
-    }
-  } else {
-    ui.alert('Cancelled', 'Game day change was cancelled. Current game day remains unchanged.', ui.ButtonSet.OK);
-  }
-}
-
-/**
- * Allows the user to change the timeslots using values that they manually provide
- * Called from user input
- */
-function manuallyInputTimeSlots() {
-  var ui = SpreadsheetApp.getUi();
-  var result = ui.prompt('Set Custom Time Slots', 'Please enter time slots separated by commas (e.g., "6pm PST/9pm EST, 7pm PST/10pm EST"):', ui.ButtonSet.OK_CANCEL);
-  var button = result.getSelectedButton();
-  var text = result.getResponseText();
-  if (button == ui.Button.OK) {
-    if (text) {
-      var newTimeSlots = text.split(',').map(function (slot) {
-        return slot.trim();
-      });
-      setTimeSlots(newTimeSlots); // Store the new time slots
-      ui.alert('Time Slots Set', "Time slots have been set to: ".concat(newTimeSlots.join(", ")), ui.ButtonSet.OK);
-    } else {
-      ui.alert('No Input', 'No time slots were entered. Using current time slots.', ui.ButtonSet.OK);
-    }
-  } else if (button == ui.Button.CANCEL) {
-    ui.alert('Cancelled', 'Manual time slot setting was cancelled. Using current time slots.', ui.ButtonSet.OK);
-  }
-}
-
-/**
- * Parses the available time slots from the Google Form responses and sets the script's
- * time slots to use those values.
- * Called from user input.
- */
-function setAutomaticTimeSlots() {
-  var ui = SpreadsheetApp.getUi();
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0]; // Get the first sheet
-
-  // Get time slots from the 5th column
-  var timeSlotsRange = sheet.getRange(2, TIME_SLOTS_COLUMN, sheet.getLastRow() - 1, 1);
-  var timeSlotValues = timeSlotsRange.getValues().flat().filter(Boolean);
-
-  // Split any combined time slots
-  var splitTimeSlots = timeSlotValues.flatMap(function (slot) {
-    return slot.split(',').map(function (s) {
-      return s.trim();
-    });
-  });
-
-  // Use Set to remove duplicates, then convert back to array
-  var uniqueTimeSlots = _toConsumableArray(new Set(splitTimeSlots));
-  if (uniqueTimeSlots.length > 0) {
-    setTimeSlots(uniqueTimeSlots); // Store the new time slots
-    ui.alert('Time Slots Updated', "Time slots have been set to: ".concat(uniqueTimeSlots.join(", ")), ui.ButtonSet.OK);
-  } else {
-    ui.alert('No Time Slots Found', 'No time slots were found in the "Time Slots" column. Using current time slots.', ui.ButtonSet.OK);
-  }
+  ui.createMenu('SCRIPTS').addItem('⚖️ Balance Teams and Players', 'sortPlayersIntoBalancedTeams').addItem('🔔 Generate Discord Pings', 'generateDiscordPings').addSeparator().addItem('⚙️ Load Column Configuration', 'openColumnConfigurationSheet').addItem('💾 Save & Apply Config', 'saveColumnConfiguration').addItem('♻️ Restore from Last Save', 'restoreFromLastSave').addItem('🧹 Reset Config to Default', 'restoreDefaultConfiguration').addSeparator().addItem('📅 Change Game Day', 'changeGameDay').addItem('🧽 Clear Responses', 'clearResponses').addToUi();
 }
 
 // Import UI functions
@@ -927,7 +2012,12 @@ function setAutomaticTimeSlots() {
 // Expose functions to the global scope for Google Apps Script
 var global = {};
 global.onOpen = onOpen;
-global.manageTimeSlots = manageTimeSlots;
 global.sortPlayersIntoBalancedTeams = sortPlayersIntoBalancedTeams;
 global.generateDiscordPings = generateDiscordPings;
 global.clearResponses = clearResponses;
+global.saveColumnConfiguration = saveColumnConfiguration;
+global.loadColumnConfiguration = loadColumnConfiguration;
+global.restoreDefaultConfiguration = restoreDefaultConfiguration;
+global.restoreFromLastSave = restoreFromLastSave;
+global.openColumnConfigurationSheet = openColumnConfigurationSheet;
+global.showFormResponseHeaders = showFormResponseHeaders;

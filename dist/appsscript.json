@@ -7,16 +7,32 @@
   "sheets": {
     "macros": [
         {
-            "menuName": "Manage Time Slots",
-            "functionName": "manageTimeSlots"
-        },
-        {
-            "menuName": "Sort and Balance Players",
+            "menuName": "Balance Teams and Players",
             "functionName": "sortPlayersIntoBalancedTeams"
         },
         {
             "menuName": "Generate Discord Pings",
             "functionName": "generateDiscordPings"
+        },
+        {
+            "menuName": "Open Column Configuration",
+            "functionName": "openColumnConfigurationSheet"
+        },
+        {
+            "menuName": "Save & Apply Column Config",
+            "functionName": "saveColumnConfiguration"
+        },
+        {
+            "menuName": "Restore Default Config",
+            "functionName": "restoreDefaultConfiguration"
+        },
+        {
+            "menuName": "Restore from Last Save",
+            "functionName": "restoreFromLastSave"
+        },
+        {
+            "menuName": "Manage Game Day",
+            "functionName": "manageGameDay"
         },
         {
             "menuName": "Clear Responses",

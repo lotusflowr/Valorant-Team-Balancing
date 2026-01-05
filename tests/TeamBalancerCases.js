@@ -6,76 +6,88 @@
 export const players = [
   { //start test case
     caseName: "2 teams out of 10 players",
-    timeSlot: "7pm CEST/8pm WEST",
+    timeSlot: "7pm PST/10pm EST",
     players: [
-      { discordUsername: "Player1", duo: "", currentRank: 'Bronze 1', peakRank: 'Bronze 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player2", duo: "", currentRank: 'Silver 1', peakRank: 'Silver 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player3", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player4", duo: "", currentRank: 'Platinum 1', peakRank: 'Platinum 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player5", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player6", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player7", duo: "", currentRank: 'Ascendant 3', peakRank: 'Ascendant 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player8", duo: "", currentRank: 'Immortal 1', peakRank: 'Immortal 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player9", duo: "", currentRank: 'Immortal 2', peakRank: 'Immortal 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "Player10", duo: "", currentRank: 'Immortal 3', peakRank: 'Radiant', timeSlots: ["7pm CEST/8pm WEST"] }
+      { discordUsername: "Player1", duo: "", currentRank: 'Bronze 1', peakRank: 'Bronze 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player2", duo: "", currentRank: 'Silver 1', peakRank: 'Silver 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player3", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player4", duo: "", currentRank: 'Platinum 1', peakRank: 'Platinum 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player5", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player6", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player7", duo: "", currentRank: 'Ascendant 3', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player8", duo: "", currentRank: 'Immortal 1', peakRank: 'Immortal 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player9", duo: "", currentRank: 'Immortal 2', peakRank: 'Immortal 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "Player10", duo: "", currentRank: 'Immortal 3', peakRank: 'Radiant', timeSlots: ["7pm PST/10pm EST"] }
     ],
     expectResults: {
-     /*
-      * Right now team sorting is randomized until it finds a balance, but from a programmatic perspective,
-      * it would be better to have a deterministic algorithm. When we have that, we can add the array of
-      * expected teams & subs for what we know would be balanced, but for now, just put in the amount of objects
-      * we would expect to have so the count is accurate in the test
-      */
-      subs: [], // No substitutes since exactly 10 players
-      teams: [{},{}],
-      balanceThreshold: 20
+      subs: [], // 0
+      teams: [{},{}], // 2
+      balanceThreshold: 5
     }
   }, //end test case
   { //start test case
     caseName: "4 teams out of 28 players",
-    timeSlot: "7pm CEST/8pm WEST",
+    timeSlot: "7pm PST/10pm EST",
     players: [
-      { discordUsername: "mysticwolf", duo: "crimsonblade", currentRank: 'Platinum 1', peakRank: 'Diamond 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "blazingstar", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "nightfalcon", duo: "", currentRank: 'Bronze 3', peakRank: 'Silver 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "stardust", duo: "", currentRank: 'Gold 3', peakRank: 'Platinum 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "quicksilver", duo: "", currentRank: 'Diamond 2', peakRank: 'Ascendant 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "crimsonblade", duo: "mysticwolf", currentRank: 'Silver 1', peakRank: 'Gold 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "shadowwalker", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "radiantphoenix", duo: "", currentRank: 'Gold 2', peakRank: 'Platinum 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "darkknight", duo: "", currentRank: 'Bronze 1', peakRank: 'Silver 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "lunarflare", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "aurorasky", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "thundercat", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "starfighter", duo: "moonshadow", currentRank: 'Platinum 3', peakRank: 'Diamond 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "moonshadow", duo: "starfighter", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "firestorm", duo: "", currentRank: 'Ascendant 1', peakRank: 'Immortal 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "silentshadow", duo: "", currentRank: 'Bronze 2', peakRank: 'Silver 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "blazingnova", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "echohawk", duo: "shadowphoenix", currentRank: 'Silver 2', peakRank: 'Gold 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "radiantstorm", duo: "", currentRank: 'Diamond 3', peakRank: 'Ascendant 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "ghostblade", duo: "", currentRank: 'Gold 3', peakRank: 'Platinum 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "starshatter", duo: "firestorm", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "frostfang", duo: "radiantstorm", currentRank: 'Platinum 1', peakRank: 'Diamond 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "crimsonhunter", duo: "", currentRank: 'Silver 2', peakRank: 'Gold 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "mysticdragon", duo: "lunarflare", currentRank: 'Bronze 3', peakRank: 'Silver 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "lunarshadow", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "shadowphoenix", duo: "echohawk", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "blazingmoon", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 2', timeSlots: ["7pm CEST/8pm WEST"] },
-      { discordUsername: "stormfury", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm CEST/8pm WEST"] },
+      { discordUsername: "mysticwolf", duo: "crimsonblade", currentRank: 'Platinum 1', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "blazingstar", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "nightfalcon", duo: "", currentRank: 'Bronze 3', peakRank: 'Silver 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "stardust", duo: "", currentRank: 'Gold 3', peakRank: 'Platinum 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "quicksilver", duo: "", currentRank: 'Diamond 2', peakRank: 'Ascendant 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "crimsonblade", duo: "mysticwolf", currentRank: 'Silver 1', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "shadowwalker", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "radiantphoenix", duo: "", currentRank: 'Gold 2', peakRank: 'Platinum 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "darkknight", duo: "", currentRank: 'Bronze 1', peakRank: 'Silver 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "lunarflare", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "aurorasky", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "thundercat", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "starfighter", duo: "moonshadow", currentRank: 'Platinum 3', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "moonshadow", duo: "starfighter", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "firestorm", duo: "", currentRank: 'Ascendant 1', peakRank: 'Immortal 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "silentshadow", duo: "", currentRank: 'Bronze 2', peakRank: 'Silver 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "blazingnova", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 3', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "echohawk", duo: "shadowphoenix", currentRank: 'Silver 2', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "radiantstorm", duo: "", currentRank: 'Diamond 3', peakRank: 'Ascendant 1', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "ghostblade", duo: "", currentRank: 'Gold 3', peakRank: 'Platinum 2', timeSlots: ["7pm PST/10pm EST"] },
+      { discordUsername: "starshatter", duo: "firestorm", currentRank: 'Ascendant 1', peakRank: 'Ascendant 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "frostfang", duo: "radiantstorm", currentRank: 'Platinum 1', peakRank: 'Diamond 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "crimsonhunter", duo: "", currentRank: 'Silver 2', peakRank: 'Gold 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "mysticdragon", duo: "lunarflare", currentRank: 'Bronze 3', peakRank: 'Silver 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "lunarshadow", duo: "", currentRank: 'Ascendant 2', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "shadowphoenix", duo: "echohawk", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "blazingmoon", duo: "", currentRank: 'Silver 3', peakRank: 'Gold 2', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' },
+      { discordUsername: "stormfury", duo: "", currentRank: 'Ascendant 1', peakRank: 'Ascendant 3', timeSlots: ["7pm PST/10pm EST"], willSub: 'yes' }
     ],
     expectResults: {
-     /*
-      * Right now team sorting is randomized until it finds a balance, but from a programmatic perspective,
-      * it would be better to have a deterministic algorithm. When we have that, we can add the array of
-      * expected teams & subs for what we know would be balanced, but for now, just put in the amount of objects
-      * we would expect to have so the count is accurate in the test & we don't have to change it too much 
-      */
       subs: [{},{},{},{},{},{},{},{}], //8
       teams: [{},{},{},{}], //4
-      balanceThreshold: 20
+      balanceThreshold: 5
     }
-  } //end test case
+  }, //end test case
+  { //start test case
+    caseName: "4 teams out of 17 players with timeslots variability",
+    timeSlot: "6pm PST/9pm EST",
+    players: [
+      { discordUsername: "Player1", duo: "", currentRank: 'Gold 1', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'yes' },
+      { discordUsername: "Player2", duo: "", currentRank: 'Silver 3', peakRank: 'Silver 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player3", duo: "", currentRank: 'Iron 1', peakRank: 'Iron 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player4", duo: "", currentRank: 'Iron 1', peakRank: 'Iron 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player5", duo: "", currentRank: 'Gold 2', peakRank: 'Gold 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player6", duo: "", currentRank: 'Silver 2', peakRank: 'Silver 2', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player7", duo: "", currentRank: 'Platinum 2', peakRank: 'Platinum 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player8", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'no', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player9", duo: "", currentRank: 'Silver 1', peakRank: 'Silver 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player10", duo: "", currentRank: 'Bronze 1', peakRank: 'Bronze 3', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      // 2 more players, also available for this slot, but willSub: 'yes' and 'no' for sub clarity
+      { discordUsername: "Player11", duo: "", currentRank: 'Platinum 2', peakRank: 'Diamond 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'yes', lobbyHost: 'no' },
+      { discordUsername: "Player12", duo: "", currentRank: 'Diamond 1', peakRank: 'Diamond 1', timeSlots: ["6pm PST/9pm EST"], multipleGames: 'yes', willSub: 'no', lobbyHost: 'no' }
+    ],
+    expectResults: {
+      subs: [{}], // 1
+      teams: [{},{}], // 2
+      balanceThreshold: 5
+    }
+  }
 ];
 
 export const teams = [
@@ -106,6 +118,52 @@ export const teams = [
     expectResults: {
       shouldImprove: true,
       balanceThreshold: 245
+    }
+  }
+];
+
+export const multiSlotCases = [
+  {
+    caseName: "balanced slots",
+    players: (() => {
+      const players = [];
+      const ranks = ['Bronze 1','Silver 1','Gold 1','Platinum 1','Diamond 1','Ascendant 1','Ascendant 2','Immortal 1','Immortal 2','Immortal 3'];
+      ranks.forEach((rank, i) => {
+        players.push({ discordUsername: `S${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['6pm PST/9pm EST'] });
+      });
+      ranks.forEach((rank, i) => {
+        players.push({ discordUsername: `T${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['7pm PST/10pm EST'] });
+      });
+      return players;
+    })(),
+    expectResults: {
+      totalTeams: 4,
+      slot6Teams: 2,
+      slot7Teams: 2,
+      slot6Subs: 0,
+      slot7Subs: 0
+    }
+  },
+  {
+    caseName: "insufficient players for one slot",
+    players: (() => {
+      const p = [];
+      const ranks6 = ['Bronze 1','Silver 1','Gold 1','Platinum 1','Diamond 1','Ascendant 1','Ascendant 2','Immortal 1'];
+      ranks6.forEach((rank, i) => {
+        p.push({ discordUsername: `U${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['6pm PST/9pm EST'], willSub: 'yes' });
+      });
+      const ranks7 = ['Bronze 2','Silver 2','Gold 2','Platinum 2','Diamond 2','Ascendant 3','Immortal 2','Immortal 3','Gold 3','Platinum 3'];
+      ranks7.forEach((rank, i) => {
+        p.push({ discordUsername: `V${i+1}`, currentRank: rank, peakRank: rank, timeSlots: ['7pm PST/10pm EST'] });
+      });
+      return p;
+    })(),
+    expectResults: {
+      totalTeams: 2,
+      slot6Teams: 0,
+      slot7Teams: 2,
+      slot6Subs: 8,
+      slot7Subs: 0
     }
   }
 ];
