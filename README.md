@@ -1,5 +1,5 @@
 # 🎮 Galorants Scripts
-This repository contains automation scripts for the Galorants discord server, primarily focused on balancing teams for custom server games.
+This repository contains automation scripts for Google Spreadsheet, primarily focused on balancing teams for custom server games on Valorant.
 # ✨ Features
 - 🎯 Team balancing functionality for custom games
 - 🚀 Automated deployment pipeline
