@@ -1,6 +1,7 @@
 # Valorant Team Balancer
 
 Automation scripts for Google Sheets, focused on balancing teams for custom Valorant games.
+If you wish to start immediately, simply copy the dist/appsscript.json file into your Google Sheet document's Apps Script.
 
 ## Features
 
