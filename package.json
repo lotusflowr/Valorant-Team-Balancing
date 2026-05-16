@@ -15,7 +15,7 @@
         "@rollup/plugin-babel": "^6.0.4",
         "@rollup/plugin-node-resolve": "^15.3.0",
         "jest": "^29.7.0",
-        "rollup": "^4.24.0"
+        "rollup": "^4.60.4"
     },
     "jest": {
         "setupFilesAfterEnv": [ "./tests/setupJest.js" ]
